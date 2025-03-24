@@ -20,15 +20,18 @@ function BookCallHeadline() {
 
   return (
     <div className="w-full max-w-[1200px] mx-auto px-4 text-center py-6">
-      <h1 className="text-[2rem] sm:text-[2.5rem] md:text-[3rem] lg:text-[3.5rem] font-medium tracking-tight leading-none text-gray-900">
+      <h1 className="text-[2rem] sm:text-[2.5rem] md:text-[3rem] lg:text-[3.5rem] tracking-tight leading-none text-gray-900">
         {showQuestionnaire ? (
           <div className="flex items-center justify-center gap-2 font-bold">
             Fill Out The Form Below ⬇️
           </div>
         ) : (
-          <div className="flex items-center justify-center gap-2 font-bold">
-            Watch This Video Before You Book Your Call
-          </div>
+          <>
+            <div className="mb-1">Watch This Video Before You</div>
+            <div className="font-bold flex items-center justify-center gap-2">
+              Book Your Call ⬇️
+            </div>
+          </>
         )}
       </h1>
     </div>
