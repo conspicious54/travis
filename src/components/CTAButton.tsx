@@ -17,7 +17,7 @@ export const CTAButton: React.FC<CTAButtonProps> = ({ className = '', theme = 'd
   };
 
   return (
-    <div className={`text-center mt-12 ${className}`}>
+    <div className={`text-center mt-4 ${className}`}>
       <button 
         onClick={handleClick}
         className={`cta-button w-full max-w-4xl mx-auto py-4 px-8 rounded-lg text-2xl font-bold text-white ${
