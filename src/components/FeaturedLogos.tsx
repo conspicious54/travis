@@ -8,8 +8,8 @@ export const FeaturedLogos: React.FC<FeaturedLogosProps> = ({ theme = 'dark' }) 
   const isLight = theme === 'light';
 
   return (
-    <div className="mt-8 pb-4">
-      <p className={`text-center ${isLight ? 'text-blue-600' : 'text-[#9FE870]'} text-sm font-medium mb-6`}>
+    <div className="mt-4 pb-2">
+      <p className={`text-center ${isLight ? 'text-blue-600' : 'text-[#9FE870]'} text-sm font-medium mb-4`}>
         AS FEATURED IN
       </p>
       <div className="flex flex-wrap justify-center items-center gap-6 md:gap-12 px-4 grayscale opacity-80 max-w-5xl mx-auto">

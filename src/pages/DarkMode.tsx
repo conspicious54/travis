@@ -37,7 +37,7 @@ function MainContent() {
         {!showQuestionnaire && <RatingBar />}
         <Headline />
 
-        <div className="relative max-w-4xl mx-auto px-4 mb-8">
+        <div className="relative max-w-4xl mx-auto px-4 mb-4">
           {!showQuestionnaire && (
             <>
               <div className="absolute -right-2 md:-right-8 -top-4 md:-top-8 z-10 transform rotate-15 transition-transform hover:scale-105">
@@ -71,7 +71,7 @@ function MainContent() {
                 : 'opacity-0 translate-y-8'
             }`}
           >
-            <div className="max-w-4xl mx-auto px-4 mb-8">
+            <div className="max-w-4xl mx-auto px-4">
               <CTAButton />
             </div>
             <Benefits />
