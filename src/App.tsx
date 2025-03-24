@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DarkMode } from './pages/DarkMode';
 import { LightMode } from './pages/LightMode';
 import { VideoProgressProvider } from './context/VideoProgressContext';
@@ -17,6 +17,7 @@ function AppWrapper() {
               <Routes>
                 <Route path="/" element={<DarkMode />} />
                 <Route path="/getstarted" element={<LightMode />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>
           </QuestionnaireProvider>
