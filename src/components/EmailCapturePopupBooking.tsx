@@ -37,7 +37,7 @@ export const EmailCapturePopupBooking: React.FC = () => {
         </div>
 
         <div className="mt-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Unlock Your Training</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Get Your Call</h2>
           <p className="text-gray-600 mb-6">Enter your email to access my proven Amazon success formula</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
