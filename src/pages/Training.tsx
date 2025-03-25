@@ -46,6 +46,11 @@ function MainContent() {
               theme="light"
             />
           </div>
+          <div className="mt-8 text-center">
+            <p className="text-lg text-gray-700 max-w-2xl mx-auto">
+              The content in this video is extremely important. Please make sure to watch prior to your call so that you are fully prepared to take the next steps.
+            </p>
+          </div>
         </div>
       </div>
     </div>
