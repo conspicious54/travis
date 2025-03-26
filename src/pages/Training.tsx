@@ -2,7 +2,6 @@ import React from 'react';
 import { HeaderLight } from '../components/HeaderLight';
 import { CustomVideoPlayer } from '../components/CustomVideoPlayer';
 import { useEmailCapture } from '../context/EmailCaptureContext';
-import { EmailCapturePopup } from '../components/EmailCapturePopup';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 
 function TrainingHeadline() {
@@ -23,7 +22,7 @@ function MainContent() {
   const { isUnlocked } = useEmailCapture();
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-white to-gray-50 text-gray-900 relative overflow-hidden transition-all duration-500 ${!isUnlocked ? 'blur-sm' : ''}`}>
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 text-gray-900 relative overflow-hidden">
       {/* Background Patterns */}
       <div className="absolute inset-0 bg-grid-pattern-light opacity-100"></div>
       <div className="absolute inset-0 bg-dot-pattern opacity-50"></div>
@@ -58,12 +57,9 @@ function MainContent() {
 }
 
 export function Training() {
-  const { isUnlocked } = useEmailCapture();
-
   return (
     <>
       <MainContent />
-      {!isUnlocked && <EmailCapturePopup theme="light" />}
       <ExitIntentPopup theme="light" />
     </>
   );
