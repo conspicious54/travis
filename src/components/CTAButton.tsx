@@ -19,7 +19,7 @@ export const CTAButton: React.FC<CTAButtonProps> = ({ className = '', theme = 'd
   };
 
   const buttonText = location.pathname === '/getstarted' 
-    ? 'Claim Your FREE Step By Step Amazon FBA Planning Call'
+    ? 'Claim Your FREE Amazon FBA Planning Call'
     : 'Start Making Money on Amazon';
 
   return (

@@ -14,6 +14,7 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
   const location = useLocation();
   const isLight = theme === 'light';
   const isBookingPage = location.pathname === '/bookacall';
+  const isTrainingPage = location.pathname === '/training';
 
   useEffect(() => {
     let timeout: NodeJS.Timeout;
@@ -43,7 +44,8 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (isBookingPage) {
+  // Booking page exit popup
+  if (isBookingPage || isTrainingPage) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
         <div 
@@ -110,6 +112,7 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
     );
   }
 
+  // Questionnaire exit popup
   if (showQuestionnaire) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -179,6 +182,7 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
     );
   }
 
+  // Default exit popup
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div 
@@ -263,7 +267,7 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
 
         <div className="flex flex-col sm:flex-row gap-4">
           <button
-            onClick={() => setShowExitPopup(false)}
+            onClick={handleContinue}
             className={`flex-1 font-bold py-4 px-6 rounded-lg transition-all text-lg ${
               isLight 
                 ? 'bg-blue-500 text-white hover:bg-blue-600' 
