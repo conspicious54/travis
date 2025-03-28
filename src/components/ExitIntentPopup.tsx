@@ -15,6 +15,7 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
   const isLight = theme === 'light';
   const isBookingPage = location.pathname === '/bookacall';
   const isTrainingPage = location.pathname === '/training';
+  const isGetStartedPage = location.pathname === '/getstarted';
 
   useEffect(() => {
     let timeout: NodeJS.Timeout;
