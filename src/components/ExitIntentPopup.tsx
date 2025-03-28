@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 import { useExitIntent } from '../context/ExitIntentContext';
+import { useQuestionnaire } from '../context/QuestionnaireContext';
+import { useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
 
 interface ExitIntentPopupProps {
@@ -8,7 +10,10 @@ interface ExitIntentPopupProps {
 
 export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark' }) => {
   const { showExitPopup, setShowExitPopup, hasTriggered, setHasTriggered } = useExitIntent();
+  const { showQuestionnaire } = useQuestionnaire();
+  const location = useLocation();
   const isLight = theme === 'light';
+  const isBookingPage = location.pathname === '/bookacall';
 
   useEffect(() => {
     let timeout: NodeJS.Timeout;
@@ -32,6 +37,147 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
   }, [hasTriggered, setHasTriggered, setShowExitPopup]);
 
   if (!showExitPopup) return null;
+
+  const handleContinue = () => {
+    setShowExitPopup(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  if (isBookingPage) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div 
+          className={`absolute inset-0 ${
+            isLight 
+              ? 'bg-gray-500/30 backdrop-blur-sm' 
+              : 'bg-black/60 backdrop-blur-sm'
+          }`}
+          onClick={() => setShowExitPopup(false)}
+        ></div>
+        
+        <div className={`relative ${
+          isLight 
+            ? 'bg-white border-gray-200' 
+            : 'bg-[#0A0A0A] border-[#39FF14]/20'
+          } border rounded-2xl p-8 max-w-2xl w-full ${
+            isLight 
+              ? 'shadow-[0_0_50px_rgba(59,130,246,0.15)]' 
+              : 'shadow-[0_0_50px_rgba(57,255,20,0.15)]'
+          } animate-popup`}>
+          <button 
+            onClick={() => setShowExitPopup(false)}
+            className={`absolute top-4 right-4 ${
+              isLight ? 'text-gray-400 hover:text-gray-600' : 'text-gray-400 hover:text-white'
+            } transition-colors`}
+          >
+            <X size={24} />
+          </button>
+
+          <div className="text-center">
+            <div className="mb-6">
+              <img 
+                src="https://media.tenor.com/NMvVsicSz_cAAAAM/onenolesfan3-snap.gif"
+                alt="Snap"
+                className="w-full max-w-[300px] mx-auto rounded-xl shadow-lg"
+              />
+            </div>
+            
+            <h2 className={`text-3xl font-bold ${
+              isLight ? 'text-gray-900' : 'text-white'
+            } mb-4`}>
+              WOAH WOAH WOAH, Hold Up...
+            </h2>
+            
+            <p className={`text-lg ${isLight ? 'text-gray-600' : 'text-gray-300'} mb-8`}>
+              I can't let you leave that easy. It takes 10 seconds for my team & I to give you a personalized Amazon FBA plan on how you can make $100k/yr.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={handleContinue}
+                className={`flex-1 font-bold py-4 px-6 rounded-lg transition-all text-lg ${
+                  isLight 
+                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                    : 'bg-[#39FF14] text-black hover:bg-[#32D912]'
+                }`}
+              >
+                Yes, I want a personalized Amazon FBA plan →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showQuestionnaire) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div 
+          className={`absolute inset-0 ${
+            isLight 
+              ? 'bg-gray-500/30 backdrop-blur-sm' 
+              : 'bg-black/60 backdrop-blur-sm'
+          }`}
+          onClick={() => setShowExitPopup(false)}
+        ></div>
+        
+        <div className={`relative ${
+          isLight 
+            ? 'bg-white border-gray-200' 
+            : 'bg-[#0A0A0A] border-[#39FF14]/20'
+          } border rounded-2xl p-8 max-w-2xl w-full ${
+            isLight 
+              ? 'shadow-[0_0_50px_rgba(59,130,246,0.15)]' 
+              : 'shadow-[0_0_50px_rgba(57,255,20,0.15)]'
+          } animate-popup`}>
+          <button 
+            onClick={() => setShowExitPopup(false)}
+            className={`absolute top-4 right-4 ${
+              isLight ? 'text-gray-400 hover:text-gray-600' : 'text-gray-400 hover:text-white'
+            } transition-colors`}
+          >
+            <X size={24} />
+          </button>
+
+          <div className="text-center">
+            <div className="mb-6">
+              <img 
+                src="https://i.imgur.com/mUYi4Qh.png"
+                alt="ATV in Greece"
+                className="w-full rounded-xl shadow-lg"
+              />
+            </div>
+            
+            <h2 className={`text-3xl font-bold ${
+              isLight ? 'text-gray-900' : 'text-white'
+            } mb-4`}>
+              Don't Miss This Opportunity!
+            </h2>
+            
+            <p className={`text-lg ${isLight ? 'text-gray-600' : 'text-gray-300'} mb-8`}>
+              I'm able to ride ATVs in Greece on a random Tuesday because I figured out how to make money on Amazon.
+              <br /><br />
+              I'm now showing you how to do the same in this training video. So why wouldn't you keep watching it?
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={handleContinue}
+                className={`flex-1 font-bold py-4 px-6 rounded-lg transition-all text-lg ${
+                  isLight 
+                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                    : 'bg-[#39FF14] text-black hover:bg-[#32D912]'
+                }`}
+              >
+                Yes, I wanna know how to make money on Amazon →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">

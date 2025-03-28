@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuestionnaire } from '../context/QuestionnaireContext';
+import { useLocation } from 'react-router-dom';
 
 interface CTAButtonProps {
   className?: string;
@@ -8,6 +9,7 @@ interface CTAButtonProps {
 
 export const CTAButton: React.FC<CTAButtonProps> = ({ className = '', theme = 'dark' }) => {
   const { setShowQuestionnaire } = useQuestionnaire();
+  const location = useLocation();
   const isLight = theme === 'light';
 
   const handleClick = () => {
@@ -15,6 +17,10 @@ export const CTAButton: React.FC<CTAButtonProps> = ({ className = '', theme = 'd
     // Scroll to top with smooth animation
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const buttonText = location.pathname === '/getstarted' 
+    ? 'Claim Your FREE Step By Step Amazon FBA Planning Call'
+    : 'Start Making Money on Amazon';
 
   return (
     <div className={`text-center mt-4 ${className}`}>
@@ -26,7 +32,7 @@ export const CTAButton: React.FC<CTAButtonProps> = ({ className = '', theme = 'd
             : 'bg-black hover:opacity-90'
         } transition-all duration-300`}
       >
-        Start Making Money on Amazon
+        {buttonText}
       </button>
       <div className={`flex items-center justify-center mt-4 ${isLight ? 'text-gray-700' : 'text-gray-300'}`}>
         <div className="student-avatars">
