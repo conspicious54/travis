@@ -106,7 +106,7 @@ export function Terms() {
           <p className="mb-6">We do not sell your personal information to third parties.</p>
 
           <h3 className="text-2xl font-bold mb-4">4. Data Security</h3>
-          <p className="mb-6">We implement reasonable security measures to protect your information from unauthorized access, alteration, disclosure, or destruction.</p>
+          <p className="mb-6">We implement reasonable security measures to protect your information from unauthorized access, alteration, disclosure, or destruction.. No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</p>
 
           <h3 className="text-2xl font-bold mb-4">5. Data Retention</h3>
           <p className="mb-6">We retain your information for as long as necessary to fulfill the purposes outlined in this Privacy Policy, unless a longer retention period is required by law.</p>
