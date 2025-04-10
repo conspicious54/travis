@@ -100,6 +100,67 @@ export const Testimonials: React.FC<TestimonialsProps> = ({ theme = 'dark' }) =>
       poster: "https://cdn.prod.website-files.com/66fefebbdd3ababfcd16bca4/677d8940754208aefd65c5a5_Refund.webp",
       likes: 156,
       comments: 234
+    },
+    // New testimonials
+    {
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80",
+      name: "Darryl M",
+      amount: "$348k",
+      text: "The strategies I learned in this program completely transformed my Amazon business.",
+      video: "https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/Darryl%20Testimonial%20(1).mp4",
+      poster: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80",
+      likes: 289,
+      comments: 97
+    },
+    {
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80",
+      name: "James H",
+      amount: "$192k",
+      text: "This program gave me the blueprint I needed to succeed on Amazon.",
+      video: "https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/James%20Testimonial%20(shorter).mp4",
+      poster: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80",
+      likes: 234,
+      comments: 82
+    },
+    {
+      avatar: "https://images.unsplash.com/photo-1619380061814-58f03707f082?auto=format&fit=crop&w=800&q=80",
+      name: "Jonathan P",
+      amount: "$427k",
+      text: "The mentorship and support in this program are absolutely invaluable.",
+      video: "https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/Jonathan%20Testimonial%20(1).mp4",
+      poster: "https://images.unsplash.com/photo-1619380061814-58f03707f082?auto=format&fit=crop&w=800&q=80",
+      likes: 312,
+      comments: 108
+    },
+    {
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=800&q=80",
+      name: "Killian R",
+      amount: "$283k",
+      text: "Following Travis's system step by step made all the difference in my success.",
+      video: "https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/Killian%20Testimonial%20(1).mp4",
+      poster: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=800&q=80",
+      likes: 276,
+      comments: 94
+    },
+    {
+      avatar: "https://images.unsplash.com/photo-1517070208541-6ddc4d3efbcb?auto=format&fit=crop&w=800&q=80",
+      name: "Taylor S",
+      amount: "$156k",
+      text: "The accelerator program fast-tracked my path to Amazon success.",
+      video: "https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/Taylor%20Testimonial%20(accelerator).mp4",
+      poster: "https://images.unsplash.com/photo-1517070208541-6ddc4d3efbcb?auto=format&fit=crop&w=800&q=80",
+      likes: 245,
+      comments: 86
+    },
+    {
+      avatar: "https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&w=800&q=80",
+      name: "Vikram P",
+      amount: "$394k",
+      text: "The depth of knowledge and practical strategies in this program are exceptional.",
+      video: "https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/Vikram%20Testimonial.mp4",
+      poster: "https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&w=800&q=80",
+      likes: 298,
+      comments: 102
     }
   ];
 

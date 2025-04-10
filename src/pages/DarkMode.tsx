@@ -63,23 +63,16 @@ function MainContent() {
 
         {!showQuestionnaire && <FeaturedLogos />}
 
-        {!showQuestionnaire && (
-          <div 
-            className={`transition-all duration-1000 ${
-              hasReachedThreeMinutes 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-8'
-            }`}
-          >
+        {!showQuestionnaire && hasReachedThreeMinutes && (
+          <div className="transition-all duration-1000 opacity-100 translate-y-0">
             <div className="max-w-4xl mx-auto px-4">
               <CTAButton />
             </div>
             <Benefits />
             <LearningSteps />
+            <Testimonials />
           </div>
         )}
-
-        {!isSubmitted && <Testimonials />}
       </div>
     </div>
   );

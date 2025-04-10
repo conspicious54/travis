@@ -90,23 +90,16 @@ function MainContent() {
 
         {!showQuestionnaire && <FeaturedLogos theme="light" />}
 
-        {!showQuestionnaire && (
-          <div 
-            className={`transition-all duration-1000 ${
-              hasReachedThreeMinutes 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-8'
-            }`}
-          >
+        {!showQuestionnaire && hasReachedThreeMinutes && (
+          <div className="transition-all duration-1000 opacity-100 translate-y-0">
             <div className="max-w-4xl mx-auto px-4">
               <CTAButton theme="light" />
             </div>
             <Benefits theme="light" />
             <LearningSteps theme="light" />
+            <Testimonials theme="light" />
           </div>
         )}
-
-        {!isSubmitted && <Testimonials theme="light" />}
       </div>
     </div>
   );
