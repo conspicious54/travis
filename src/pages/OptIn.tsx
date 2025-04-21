@@ -88,8 +88,8 @@ export function OptIn() {
                         <li>Message frequency varies (up to 5 msgs/week)</li>
                         <li>Msg & data rates may apply</li>
                         <li>Consent is not required for purchase</li>
-                        <li>I can text STOP to 12345 to opt-out at any time</li>
-                        <li>I can text HELP to 12345 for help</li>
+                        <li>Text STOP to opt-out at any time</li>
+                        <li>Text HELP for assistance</li>
                       </ul>
                       By checking this box, I certify that I am over 18 and agree to the{' '}
                       <Link to="/terms" className="text-blue-500 hover:text-blue-600 font-medium">
@@ -115,7 +115,7 @@ export function OptIn() {
                 Supported carriers: AT&T, T-Mobile, Verizon, Sprint, and most other major carriers
               </p>
               <p>
-                For support: Text HELP to 12345 or email support@passionproduct.com
+                For support: Email support@passionproduct.com or text HELP
               </p>
               <p>
                 To opt-out: Reply STOP to any message
