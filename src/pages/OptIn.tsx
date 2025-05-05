@@ -35,8 +35,16 @@ export function OptIn() {
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Thank You!</h1>
-          <p className="text-gray-600">Your phone number has been successfully registered. You will receive SMS updates about our Amazon FBA program.</p>
-          <p className="text-gray-500 mt-4">Text HELP for help. Text STOP to cancel.</p>
+          <p className="text-gray-600 mb-4">Your phone number has been successfully registered. You will receive important updates about your Amazon FBA consultation and follow-up information.</p>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <p className="text-blue-800 font-medium">Important Information:</p>
+            <ul className="text-blue-700 text-sm mt-2 space-y-1">
+              <li>Text HELP for assistance</li>
+              <li>Text STOP to cancel messages at any time</li>
+              <li>Message frequency: Up to 5 msgs/week</li>
+              <li>Msg&Data rates may apply</li>
+            </ul>
+          </div>
         </div>
       </div>
     );
@@ -48,8 +56,18 @@ export function OptIn() {
       
       <div className="max-w-lg mx-auto px-4 py-16">
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">SMS Program Enrollment</h1>
-          <p className="text-gray-600 mb-8 text-center">Sign up to receive important updates about the Passion Product Formula Amazon FBA program</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">SMS Updates Registration</h1>
+          <p className="text-gray-600 mb-8 text-center">Sign up to receive important updates about your Amazon FBA consultation</p>
+
+          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-8">
+            <h2 className="font-semibold text-blue-900 mb-2">What to Expect:</h2>
+            <ul className="text-blue-800 space-y-2 text-sm">
+              <li>• Consultation reminders and preparation information</li>
+              <li>• Follow-up resources and next steps</li>
+              <li>• Important program updates and announcements</li>
+              <li>• Message frequency: Up to 5 messages per week</li>
+            </ul>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -69,35 +87,38 @@ export function OptIn() {
             </div>
 
             <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="flex items-start">
+              <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <div className="flex items-start gap-3">
                   <div className="flex items-center h-5 mt-1">
                     <input
                       id="terms"
                       type="checkbox"
                       checked={acceptedTerms}
                       onChange={(e) => setAcceptedTerms(e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                      className="w-5 h-5 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
                       required
                     />
                   </div>
-                  <div className="ml-3">
-                    <label htmlFor="terms" className="text-sm text-gray-700">
-                      I agree to receive recurring automated text messages from Passion Product Formula about the Amazon FBA program. I understand that:
-                      <ul className="list-disc pl-5 mt-2 space-y-1">
-                        <li>Message frequency varies (up to 5 msgs/week)</li>
-                        <li>Msg & data rates may apply</li>
-                        <li>Consent is not required for purchase</li>
-                        <li>Text STOP to opt-out at any time</li>
-                        <li>Text HELP for assistance</li>
-                      </ul>
-                      By checking this box, I certify that I am over 18 and agree to the{' '}
+                  <label htmlFor="terms" className="text-sm text-gray-700">
+                    <span className="font-semibold block mb-2">Express Written Consent for SMS Communications</span>
+                    By checking this box, I expressly consent and agree to receive recurring automated marketing text messages from Passion Product Formula about the Amazon FBA program at the mobile number provided above. I understand and acknowledge that:
+                    <ul className="list-disc pl-5 mt-3 space-y-2">
+                      <li>These messages will include consultation reminders, follow-up information, and program updates</li>
+                      <li>Message frequency may be up to 5 messages per week</li>
+                      <li>Message and data rates may apply</li>
+                      <li>This consent is not a condition of any purchase</li>
+                      <li>I can text STOP to opt-out at any time</li>
+                      <li>I can text HELP for assistance</li>
+                      <li>I am at least 18 years old</li>
+                    </ul>
+                    <p className="mt-3">
+                      By checking this box, I also confirm that I have read and agree to the{' '}
                       <Link to="/terms" className="text-blue-500 hover:text-blue-600 font-medium">
                         Terms and Conditions
                       </Link>
                       {' '}and consent to receive automated marketing messages.
-                    </label>
-                  </div>
+                    </p>
+                  </label>
                 </div>
               </div>
             </div>
@@ -105,9 +126,9 @@ export function OptIn() {
             <button
               type="submit"
               disabled={!phone || !acceptedTerms || isSubmitting}
-              className="w-full bg-blue-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-500 text-white py-4 px-6 rounded-lg font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Submitting...' : 'Sign Up for SMS Updates'}
+              {isSubmitting ? 'Processing...' : 'Sign Up for SMS Updates'}
             </button>
 
             <div className="text-sm text-gray-500 space-y-2">
