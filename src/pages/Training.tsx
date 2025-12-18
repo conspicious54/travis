@@ -46,16 +46,11 @@ function MainContent() {
             />
           </div>
           <div className="mt-8 text-center">
-<<<<<<< HEAD
             <p className="text-xl font-semibold text-blue-600 max-w-2xl mx-auto mb-4">
               📌 Bookmark this page now so you can easily come back to it!
             </p>
             <p className="text-lg text-gray-700 max-w-2xl mx-auto">
               This training contains the exact blueprint that has helped thousands of students build 6-figure Amazon businesses. Watch every minute to maximize your success on our upcoming call.
-=======
-            <p className="text-lg text-gray-700 max-w-2xl mx-auto">
-              The content in this video is extremely important. Please make sure to watch prior to your call so that you are fully prepared to take the next steps.
->>>>>>> de124c96e04b3b44b958f56e55f27a30cb880119
             </p>
           </div>
         </div>
