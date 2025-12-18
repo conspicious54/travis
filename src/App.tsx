@@ -6,7 +6,10 @@ import { BookCall } from './pages/BookCall';
 import { Training } from './pages/Training';
 import { Terms } from './pages/Terms';
 import { OptIn } from './pages/OptIn';
+<<<<<<< HEAD
 import { FreeCourse } from './pages/FreeCourse';
+=======
+>>>>>>> de124c96e04b3b44b958f56e55f27a30cb880119
 import { VideoProgressProvider } from './context/VideoProgressContext';
 import { EmailCaptureProvider } from './context/EmailCaptureContext';
 import { ExitIntentProvider } from './context/ExitIntentContext';
@@ -26,7 +29,10 @@ function AppWrapper() {
                 <Route path="/training" element={<Training />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/optin" element={<OptIn />} />
+<<<<<<< HEAD
                 <Route path="/freecourse" element={<FreeCourse />} />
+=======
+>>>>>>> de124c96e04b3b44b958f56e55f27a30cb880119
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>

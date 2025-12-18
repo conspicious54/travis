@@ -1,10 +1,19 @@
+<<<<<<< HEAD
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
 
+=======
+>>>>>>> de124c96e04b3b44b958f56e55f27a30cb880119
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+<<<<<<< HEAD
+=======
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+
+>>>>>>> de124c96e04b3b44b958f56e55f27a30cb880119
 @layer base {
   body {
     font-family: 'Poppins', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
