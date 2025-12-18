@@ -7,6 +7,7 @@ import { Training } from './pages/Training';
 import { Terms } from './pages/Terms';
 import { OptIn } from './pages/OptIn';
 import { FreeCourse } from './pages/FreeCourse';
+import { AJ } from './pages/AJ';
 import { VideoProgressProvider } from './context/VideoProgressContext';
 import { EmailCaptureProvider } from './context/EmailCaptureContext';
 import { ExitIntentProvider } from './context/ExitIntentContext';
@@ -27,6 +28,7 @@ function AppWrapper() {
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/optin" element={<OptIn />} />
                 <Route path="/freecourse" element={<FreeCourse />} />
+                <Route path="/aj" element={<AJ />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>
