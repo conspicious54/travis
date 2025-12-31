@@ -8,6 +8,8 @@ import { Terms } from './pages/Terms';
 import { OptIn } from './pages/OptIn';
 import { FreeCourse } from './pages/FreeCourse';
 import { AJ } from './pages/AJ';
+import { Darryl } from './pages/Darryl';
+import { ProductResearchBonus } from './pages/ProductResearchBonus';
 import { VideoProgressProvider } from './context/VideoProgressContext';
 import { EmailCaptureProvider } from './context/EmailCaptureContext';
 import { ExitIntentProvider } from './context/ExitIntentContext';
@@ -29,6 +31,8 @@ function AppWrapper() {
                 <Route path="/optin" element={<OptIn />} />
                 <Route path="/freecourse" element={<FreeCourse />} />
                 <Route path="/aj" element={<AJ />} />
+                <Route path="/darryl" element={<Darryl />} />
+                <Route path="/productresearchbonus" element={<ProductResearchBonus />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>
