@@ -261,7 +261,7 @@ export function ProductEstimator() {
             value={searchVolume}
             onChange={setSearchVolume}
             min={0}
-            max={500000}
+            max={100000}
             step={1000}
             formatValue={(v) => v.toLocaleString()}
             description="The average number of monthly searches for your product keyword on Amazon"
