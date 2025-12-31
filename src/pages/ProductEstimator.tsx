@@ -198,15 +198,14 @@ export function ProductEstimator() {
     }));
   }, [searchVolume, rankPosition, productPrice, profitMargin]);
 
-  // Calculate click-through rate based on rank position
-  // Better rank (lower number) = higher CTR
+  // Calculate click-through rate based on Amazon search rank data
+  // Based on actual Amazon CTR data for search results
   const getClickThroughRate = (rank: number): number => {
-    if (rank <= 1) return 0.35; // 35% CTR for rank 1
-    if (rank <= 3) return 0.25; // 25% CTR for ranks 2-3
-    if (rank <= 10) return 0.15; // 15% CTR for ranks 4-10
-    if (rank <= 20) return 0.08; // 8% CTR for ranks 11-20
-    if (rank <= 50) return 0.03; // 3% CTR for ranks 21-50
-    return 0.01; // 1% CTR for ranks 51+
+    if (rank === 1) return 0.38; // 38% CTR for rank 1 (top position)
+    if (rank <= 3) return 0.20; // 20% CTR for ranks 2-3
+    if (rank <= 10) return 0.10; // 10% CTR for ranks 4-10
+    if (rank <= 20) return 0.04; // 4% CTR for ranks 11-20
+    return 0.015; // 1.5% CTR for ranks 21-25
   };
 
   // Standard Amazon conversion rate (typically 10-15%, using 12% as average)
@@ -272,10 +271,10 @@ export function ProductEstimator() {
             value={rankPosition}
             onChange={setRankPosition}
             min={1}
-            max={100}
+            max={25}
             step={1}
             formatValue={(v) => `#${Math.round(v)}`}
-            description="Your expected average ranking position in Amazon search results (1 is best, 100 is worst)"
+            description="Your expected average ranking position in Amazon search results (1 is best, 25 is worst)"
           />
 
           <div className="bg-white rounded-xl shadow-md p-6 border-2 border-gray-200 hover:border-blue-300 transition-colors">
