@@ -10,6 +10,7 @@ import { FreeCourse } from './pages/FreeCourse';
 import { AJ } from './pages/AJ';
 import { Darryl } from './pages/Darryl';
 import { ProductResearchBonus } from './pages/ProductResearchBonus';
+import { ProductScorecard } from './pages/ProductScorecard';
 import { VideoProgressProvider } from './context/VideoProgressContext';
 import { EmailCaptureProvider } from './context/EmailCaptureContext';
 import { ExitIntentProvider } from './context/ExitIntentContext';
@@ -33,6 +34,7 @@ function AppWrapper() {
                 <Route path="/aj" element={<AJ />} />
                 <Route path="/darryl" element={<Darryl />} />
                 <Route path="/productresearchbonus" element={<ProductResearchBonus />} />
+                <Route path="/productscorecard" element={<ProductScorecard />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>
