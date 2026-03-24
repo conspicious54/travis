@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HeaderLight } from '../components/HeaderLight';
 import { FeaturedLogos } from '../components/FeaturedLogos';
 import {
@@ -9,7 +9,7 @@ import {
   ResourceSection,
   SharedFooter,
 } from '../components/TrainingNewSections';
-import { CheckCircle, Phone, UserPlus, Clock, Search, BookOpen, Star, Calendar, Shield } from 'lucide-react';
+import { CheckCircle, Phone, UserPlus, Clock, Star, Shield } from 'lucide-react';
 
 /* ─────────────────── region & platform detection ─────────────────── */
 
@@ -36,13 +36,13 @@ function detectRegion(): Region {
   return 'us';
 }
 
-type Platform = 'ios' | 'android' | 'other';
+type Platform = 'ios' | 'android' | 'desktop';
 
 function detectPlatform(): Platform {
   const ua = navigator.userAgent;
   if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
   if (/Android/.test(ua)) return 'android';
-  return 'other';
+  return 'desktop';
 }
 
 function generateVCard(phone: string): string {
@@ -52,7 +52,7 @@ function generateVCard(phone: string): string {
     'FN:Passion Product Team',
     'ORG:Passion Product',
     `TEL;TYPE=WORK,VOICE:${phone}`,
-    'NOTE:Your Passion Product strategy call setter. Save this contact so you recognize the number when we call.',
+    'NOTE:Your Passion Product strategy call. Save this contact so you recognize the number when we call.',
     'END:VCARD',
   ].join('\n');
 }
@@ -74,7 +74,7 @@ function downloadVCard(phone: string) {
 
 function SetterConfirmationBanner() {
   const [region, setRegion] = useState<Region>('us');
-  const [platform, setPlatform] = useState<Platform>('other');
+  const [platform, setPlatform] = useState<Platform>('desktop');
 
   useEffect(() => {
     setRegion(detectRegion());
@@ -82,22 +82,24 @@ function SetterConfirmationBanner() {
   }, []);
 
   const phone = PHONE_NUMBERS[region];
+  const isMobile = platform === 'ios' || platform === 'android';
 
   return (
     <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200">
-      <div className="max-w-4xl mx-auto px-4 py-8 md:py-12 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-green-100 mb-4">
-          <CheckCircle className="w-10 h-10 md:w-12 md:h-12 text-green-600" />
+      <div className="max-w-4xl mx-auto px-4 py-8 md:py-10 text-center">
+        <div className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
+          <CheckCircle className="w-3.5 h-3.5" />
+          Step 1 of 2 — Complete
         </div>
         <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">
-          You're In — We'll Be Calling You Soon!
+          You're In — We'll Be Calling You Soon
         </h1>
-        <p className="text-lg md:text-xl text-gray-600 mb-6">
-          A member of our team will reach out to schedule your personalized strategy session. Here's the number we'll be calling from:
+        <p className="text-base md:text-lg text-gray-600 mb-6">
+          A member of our team will call you from the number below. Save it so you don't miss us.
         </p>
 
-        {/* Phone number display */}
-        <div className="inline-block bg-white border-2 border-green-200 rounded-2xl p-6 md:p-8 shadow-sm mb-6">
+        {/* Phone number card */}
+        <div className="inline-block bg-white border-2 border-green-200 rounded-2xl p-6 md:p-8 shadow-sm mb-5">
           <div className="flex items-center justify-center gap-3 mb-3">
             <Phone className="w-6 h-6 text-green-600" />
             <span className="text-2xl md:text-3xl font-bold text-gray-900 tracking-wide">{phone.display}</span>
@@ -106,26 +108,31 @@ function SetterConfirmationBanner() {
             Calling from: {phone.label}
           </p>
 
-          {/* Add to contacts button */}
-          <button
-            onClick={() => downloadVCard(phone.raw)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition-colors shadow-md cursor-pointer"
-          >
-            <UserPlus className="w-5 h-5" />
-            {platform === 'ios'
-              ? 'Save to iPhone Contacts'
-              : platform === 'android'
-                ? 'Save to Android Contacts'
-                : 'Save to Contacts'}
-          </button>
-
-          <p className="text-xs text-gray-400 mt-3">
-            Save this number so you recognize us when we call
-          </p>
+          {isMobile ? (
+            /* Mobile: show download button */
+            <button
+              onClick={() => downloadVCard(phone.raw)}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition-colors shadow-md cursor-pointer"
+            >
+              <UserPlus className="w-5 h-5" />
+              {platform === 'ios' ? 'Save to iPhone Contacts' : 'Save to Android Contacts'}
+            </button>
+          ) : (
+            /* Desktop: show simple instructions */
+            <div className="bg-gray-50 rounded-lg p-4 text-left max-w-sm mx-auto">
+              <p className="text-sm font-medium text-gray-900 mb-2">Save this number to your phone:</p>
+              <ol className="text-sm text-gray-600 space-y-1.5 list-decimal list-inside">
+                <li>Open the Contacts app on your phone</li>
+                <li>Tap the <span className="font-medium">+</span> button to add a new contact</li>
+                <li>Enter <span className="font-mono font-medium text-gray-900">{phone.display}</span></li>
+                <li>Save as <span className="font-medium">"Passion Product Team"</span></li>
+              </ol>
+            </div>
+          )}
         </div>
 
-        {/* Region selector — in case auto-detection is wrong */}
-        <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+        {/* Region selector */}
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-500 mb-4">
           <span>Not in {phone.label}?</span>
           <div className="flex gap-1">
             {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map(r => (
@@ -140,39 +147,10 @@ function SetterConfirmationBanner() {
           </div>
         </div>
 
-        <div className="mt-6 inline-flex items-center gap-2 text-green-700 bg-green-100 px-4 py-2 rounded-full text-sm font-medium">
+        <div className="inline-flex items-center gap-2 text-green-700 bg-green-100 px-4 py-2 rounded-full text-sm font-medium">
           <Clock className="w-4 h-4" />
-          Check your email for additional details from our team
+          Now complete Step 2 below before your call
         </div>
-      </div>
-    </div>
-  );
-}
-
-function SetterNextSteps() {
-  const steps = [
-    { num: 1, icon: <Phone className="w-5 h-5" />, title: 'Save our number to your contacts', desc: 'So you recognize us when we call — don\'t let it go to voicemail' },
-    { num: 2, icon: <Search className="w-5 h-5" />, title: 'Do your research — we\'ll help', desc: 'Watch the video below to learn about us and whether this is the right fit' },
-    { num: 3, icon: <BookOpen className="w-5 h-5" />, title: 'Get your specific questions answered', desc: 'Explore the breakout videos that match your situation' },
-    { num: 4, icon: <Star className="w-5 h-5" />, title: 'Be ready when we call', desc: 'The more prepared you are, the more value you\'ll get from the conversation' },
-  ];
-
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-10 md:py-14">
-      <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center mb-8">
-        Here's What Happens Next
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {steps.map((s) => (
-          <div key={s.num} className="relative bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold shrink-0">{s.num}</span>
-              <span className="text-blue-600">{s.icon}</span>
-            </div>
-            <h3 className="font-semibold text-gray-900 text-sm leading-snug mb-1">{s.title}</h3>
-            <p className="text-xs text-gray-500">{s.desc}</p>
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -192,7 +170,7 @@ function SetterFinalCTA() {
         <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 max-w-md mx-auto mb-8">
           <Phone className="w-8 h-8 text-white mx-auto mb-3" />
           <p className="text-white font-medium mb-1">Don't miss our call</p>
-          <p className="text-blue-200 text-sm">Make sure you've saved our number to your contacts so you pick up when we reach out.</p>
+          <p className="text-blue-200 text-sm">Make sure you've saved our number so you pick up when we reach out.</p>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-6 text-blue-100 text-sm">
@@ -212,7 +190,6 @@ export function TrainingNewSetter() {
     <div className="min-h-screen bg-white text-gray-900">
       <HeaderLight />
       <SetterConfirmationBanner />
-      <SetterNextSteps />
       <ResearchVideo />
       <BreakoutVideos />
       <OpportunitySection />
