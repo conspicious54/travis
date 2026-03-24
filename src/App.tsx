@@ -5,6 +5,8 @@ import { LightMode } from './pages/LightMode';
 import { BookCall } from './pages/BookCall';
 import { Training } from './pages/Training';
 import { TrainingNew } from './pages/TrainingNew';
+import { TrainingNewSetter } from './pages/TrainingNewSetter';
+import { TrainingNewCloser } from './pages/TrainingNewCloser';
 import { Terms } from './pages/Terms';
 import { OptIn } from './pages/OptIn';
 import { FreeCourse } from './pages/FreeCourse';
@@ -31,6 +33,8 @@ function AppWrapper() {
                 <Route path="/bookacall" element={<BookCall />} />
                 <Route path="/training" element={<Training />} />
                 <Route path="/trainingnew" element={<TrainingNew />} />
+                <Route path="/trainingnew/setter" element={<TrainingNewSetter />} />
+                <Route path="/trainingnew/closer" element={<TrainingNewCloser />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/optin" element={<OptIn />} />
                 <Route path="/freecourse" element={<FreeCourse />} />
