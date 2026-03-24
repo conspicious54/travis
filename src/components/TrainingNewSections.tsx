@@ -94,7 +94,7 @@ export function YouTubeLazyEmbed({ videoId, title }: { videoId: string; title: s
 export function ResearchVideo() {
   return (
     <div className="max-w-3xl mx-auto px-4 pt-6 pb-10">
-      <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center mb-4">
+      <h2 className="text-3xl md:text-5xl font-black text-gray-900 text-center mb-6 tracking-tight">
         Watch This Before Your Call
       </h2>
       <div className="rounded-2xl overflow-hidden shadow-lg">
@@ -121,8 +121,8 @@ export function BreakoutVideos() {
   return (
     <div className="bg-gray-50 py-10 md:py-14">
       <div className="max-w-5xl mx-auto px-4">
-        <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center mb-8">
-          Your Top Questions — Answered
+        <h2 className="text-2xl md:text-4xl font-black text-gray-900 text-center mb-8 tracking-tight">
+          Every Question You Have — Answered
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -146,8 +146,8 @@ export function OpportunitySection() {
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-10">
           <p className="text-amber-600 text-sm font-semibold uppercase tracking-wider mb-2">Why Now Matters</p>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
-            The Amazon Window Is More Open Than Ever
+          <h2 className="text-2xl md:text-4xl font-black text-gray-900 mb-3 tracking-tight">
+            The Window Is Wide Open — Right Now
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
             While most people are scared away by headlines, the data tells a different story. Here's what's actually happening on the ground.
@@ -270,9 +270,8 @@ export function TestimonialHighlights() {
     <div className="bg-white py-12 md:py-16">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-10">
-          <p className="text-blue-600 text-sm font-semibold uppercase tracking-wider mb-2">Step 3 — See the Proof</p>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-            Real Students. Real Results. Real Businesses.
+          <h2 className="text-2xl md:text-4xl font-black text-gray-900 mb-2 tracking-tight">
+            People Just Like You Who Took Action
           </h2>
           <p className="text-gray-600 max-w-xl mx-auto">
             These are people who were exactly where you are — they booked a call, showed up, took action, and built something real.
@@ -376,9 +375,8 @@ export function ResourceSection() {
     <div className="bg-gradient-to-b from-gray-50 to-white py-12 md:py-16">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-10">
-          <p className="text-blue-600 text-sm font-semibold uppercase tracking-wider mb-2">While You Wait</p>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-            Your Amazon FBA Starter Resource Page
+          <h2 className="text-2xl md:text-4xl font-black text-gray-900 mb-2 tracking-tight">
+            Get a Head Start Before Your Call
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
             Here are the tools and resources our most successful students use. Explore at your own pace — there's no homework, just a head start.

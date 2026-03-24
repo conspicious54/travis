@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { HeaderLight } from '../components/HeaderLight';
-import { FeaturedLogos } from '../components/FeaturedLogos';
 import {
   ResearchVideo,
   BreakoutVideos,
@@ -49,7 +47,7 @@ function generateVCard(phone: string): string {
   return [
     'BEGIN:VCARD',
     'VERSION:3.0',
-    'FN:Passion Product Team',
+    'FN:Travis Marziani',
     'ORG:Passion Product',
     `TEL;TYPE=WORK,VOICE:${phone}`,
     'NOTE:Your Passion Product strategy call. Save this contact so you recognize the number when we call.',
@@ -63,7 +61,7 @@ function downloadVCard(phone: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Passion-Product-Team.vcf';
+  a.download = 'Travis-Marziani.vcf';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -94,18 +92,17 @@ function SetterConfirmationBanner() {
           </h1>
         </div>
         <p className="text-sm text-gray-500 mb-4">
-          We'll call you from <span className="font-semibold text-gray-900">{phone.display}</span>
-          <span className="text-gray-400"> ({phone.label})</span>
+          Save <span className="font-bold text-gray-900">{phone.display}</span> as <span className="font-bold text-gray-900">"Travis Marziani"</span> in your phone
           {' — '}
           {isMobile ? (
             <button
               onClick={() => downloadVCard(phone.raw)}
               className="text-blue-600 font-semibold underline underline-offset-2 cursor-pointer"
             >
-              save to contacts
+              tap here to save
             </button>
           ) : (
-            <span>save this number to your phone</span>
+            <span>so you pick up when we call</span>
           )}
         </p>
 
@@ -158,14 +155,12 @@ function SetterFinalCTA() {
 export function TrainingNewSetter() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <HeaderLight />
       <SetterConfirmationBanner />
       <ResearchVideo />
       <BreakoutVideos />
       <OpportunitySection />
       <TestimonialHighlights />
       <ResourceSection />
-      <FeaturedLogos theme="light" />
       <SetterFinalCTA />
       <SharedFooter />
     </div>

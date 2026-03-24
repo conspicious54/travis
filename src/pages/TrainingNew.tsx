@@ -1,6 +1,4 @@
 import React from 'react';
-import { HeaderLight } from '../components/HeaderLight';
-import { FeaturedLogos } from '../components/FeaturedLogos';
 import {
   ResearchVideo,
   BreakoutVideos,
@@ -87,14 +85,12 @@ function FinalCTA() {
 export function TrainingNew() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <HeaderLight />
       <ConfirmationBanner />
       <ResearchVideo />
       <BreakoutVideos />
       <OpportunitySection />
       <TestimonialHighlights />
       <ResourceSection />
-      <FeaturedLogos theme="light" />
       <FinalCTA />
       <SharedFooter />
     </div>
