@@ -14,9 +14,9 @@ import { CheckCircle, Phone, UserPlus, Star, Shield } from 'lucide-react';
 type Region = 'us' | 'eu' | 'aunz';
 
 const PHONE_NUMBERS: Record<Region, { display: string; raw: string; label: string }> = {
-  us:   { display: '+1 (XXX) XXX-XXXX', raw: '+1XXXXXXXXXX',  label: 'United States' },
-  eu:   { display: '+44 XXXX XXXXXX',   raw: '+44XXXXXXXXXX', label: 'Europe / UK' },
-  aunz: { display: '+61 XXX XXX XXX',   raw: '+61XXXXXXXXX',  label: 'Australia / NZ' },
+  us:   { display: '(830) 357-7613',    raw: '+18303577613',  label: 'USA / Canada' },
+  eu:   { display: '+44 7853 306509',   raw: '+447853306509', label: 'UK / Europe' },
+  aunz: { display: '+61 489 089 374',   raw: '+61489089374',  label: 'Australia / NZ' },
 };
 
 function detectRegion(): Region {
