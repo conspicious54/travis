@@ -9,7 +9,7 @@ import {
   ResourceSection,
   SharedFooter,
 } from '../components/TrainingNewSections';
-import { CheckCircle, Phone, UserPlus, Clock, Star, Shield } from 'lucide-react';
+import { CheckCircle, Phone, UserPlus, Star, Shield } from 'lucide-react';
 
 /* ─────────────────── region & platform detection ─────────────────── */
 
@@ -85,71 +85,41 @@ function SetterConfirmationBanner() {
   const isMobile = platform === 'ios' || platform === 'android';
 
   return (
-    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200">
-      <div className="max-w-4xl mx-auto px-4 py-8 md:py-10 text-center">
-        <div className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
-          <CheckCircle className="w-3.5 h-3.5" />
-          Step 1 of 2 — Complete
+    <div className="bg-gradient-to-b from-green-50 to-white border-b border-green-100">
+      <div className="max-w-4xl mx-auto px-4 py-5 md:py-6 text-center">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          <h1 className="text-lg md:text-xl font-bold text-gray-900">
+            You're In — Now Complete Step 2
+          </h1>
         </div>
-        <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">
-          You're In — We'll Be Calling You Soon
-        </h1>
-        <p className="text-base md:text-lg text-gray-600 mb-6">
-          A member of our team will call you from the number below. Save it so you don't miss us.
-        </p>
-
-        {/* Phone number card */}
-        <div className="inline-block bg-white border-2 border-green-200 rounded-2xl p-6 md:p-8 shadow-sm mb-5">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <Phone className="w-6 h-6 text-green-600" />
-            <span className="text-2xl md:text-3xl font-bold text-gray-900 tracking-wide">{phone.display}</span>
-          </div>
-          <p className="text-sm text-gray-500 mb-4">
-            Calling from: {phone.label}
-          </p>
-
+        <p className="text-sm text-gray-500 mb-4">
+          We'll call you from <span className="font-semibold text-gray-900">{phone.display}</span>
+          <span className="text-gray-400"> ({phone.label})</span>
+          {' — '}
           {isMobile ? (
-            /* Mobile: show download button */
             <button
               onClick={() => downloadVCard(phone.raw)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition-colors shadow-md cursor-pointer"
+              className="text-blue-600 font-semibold underline underline-offset-2 cursor-pointer"
             >
-              <UserPlus className="w-5 h-5" />
-              {platform === 'ios' ? 'Save to iPhone Contacts' : 'Save to Android Contacts'}
+              save to contacts
             </button>
           ) : (
-            /* Desktop: show simple instructions */
-            <div className="bg-gray-50 rounded-lg p-4 text-left max-w-sm mx-auto">
-              <p className="text-sm font-medium text-gray-900 mb-2">Save this number to your phone:</p>
-              <ol className="text-sm text-gray-600 space-y-1.5 list-decimal list-inside">
-                <li>Open the Contacts app on your phone</li>
-                <li>Tap the <span className="font-medium">+</span> button to add a new contact</li>
-                <li>Enter <span className="font-mono font-medium text-gray-900">{phone.display}</span></li>
-                <li>Save as <span className="font-medium">"Passion Product Team"</span></li>
-              </ol>
-            </div>
+            <span>save this number to your phone</span>
           )}
-        </div>
+        </p>
 
-        {/* Region selector */}
-        <div className="flex items-center justify-center gap-2 text-sm text-gray-500 mb-4">
-          <span>Not in {phone.label}?</span>
-          <div className="flex gap-1">
-            {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map(r => (
-              <button
-                key={r}
-                onClick={() => setRegion(r)}
-                className="text-blue-600 hover:text-blue-800 underline underline-offset-2 cursor-pointer"
-              >
-                {PHONE_NUMBERS[r].label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="inline-flex items-center gap-2 text-green-700 bg-green-100 px-4 py-2 rounded-full text-sm font-medium">
-          <Clock className="w-4 h-4" />
-          Now complete Step 2 below before your call
+        <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+          <span>Wrong region?</span>
+          {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map(r => (
+            <button
+              key={r}
+              onClick={() => setRegion(r)}
+              className="text-blue-500 hover:text-blue-700 underline underline-offset-2 cursor-pointer"
+            >
+              {PHONE_NUMBERS[r].label}
+            </button>
+          ))}
         </div>
       </div>
     </div>

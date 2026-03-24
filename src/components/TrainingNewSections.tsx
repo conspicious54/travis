@@ -93,48 +93,16 @@ export function YouTubeLazyEmbed({ videoId, title }: { videoId: string; title: s
 
 export function ResearchVideo() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 md:py-10">
-      <div className="text-center mb-5">
-        <div className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
-          <Play className="w-3.5 h-3.5" />
-          Step 2 of 2 — Required Before Your Call
-        </div>
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-          Watch This Before Your Call
-        </h2>
-        <p className="text-gray-600 max-w-xl mx-auto text-sm">
-          This is how you'll know if we're the right fit — and it's how you'll get 10x more value from your strategy session.
-        </p>
-      </div>
-
-      <div className="rounded-2xl overflow-hidden border-2 border-blue-200 shadow-lg">
+    <div className="max-w-3xl mx-auto px-4 pt-6 pb-10">
+      <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center mb-4">
+        Watch This Before Your Call
+      </h2>
+      <div className="rounded-2xl overflow-hidden shadow-lg">
         <LazyVideo
           src="https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/Draft%204%201080-1.m4v"
           poster="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1200&q=80"
-          title="Help us help you do your research"
+          title="Watch this before your call"
         />
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {[
-          { time: '0:00', label: 'Who is Travis Marziani?' },
-          { time: '1:15', label: 'Real numbers — what Travis sells on Amazon' },
-          { time: '3:00', label: 'How the Passion Product method works' },
-          { time: '5:20', label: 'What to expect on your strategy call' },
-          { time: '7:00', label: 'Student results & proof' },
-        ].map((ch, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
-            <span className="text-blue-600 font-mono text-xs font-medium shrink-0">{ch.time}</span>
-            <span>{ch.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-5">
-        <p className="text-sm text-blue-900 font-medium mb-1">This is NOT a sales pitch — it's a research tool.</p>
-        <p className="text-sm text-blue-800">
-          Travis still makes more money selling on Amazon than from any coaching program — he's not a guru, he's still doing the thing. This video helps you verify that for yourself so you show up to your call informed and ready.
-        </p>
       </div>
     </div>
   );
@@ -142,89 +110,28 @@ export function ResearchVideo() {
 
 export function BreakoutVideos() {
   const breakouts = [
-    {
-      icon: <TrendingUp className="w-5 h-5" />,
-      objection: '"Amazon is too saturated."',
-      headline: 'Is It Actually Too Late to Start on Amazon?',
-      summary: 'There are fewer new sellers entering Amazon right now than at any point in recent history. Travis launched 5 products this past year — every single one was profitable in month one.',
-      studentProof: { name: 'Emanuel Ruiz', result: '$3M+/year' },
-    },
-    {
-      icon: <DollarSign className="w-5 h-5" />,
-      objection: '"I don\'t have enough money."',
-      headline: 'Think You Need Tens of Thousands?',
-      summary: 'Travis launched a Golden Retriever Dog Brush for $750. It makes $5K+/month. AJ raised $100K on Kickstarter before manufacturing a single unit.',
-      studentProof: { name: 'Mina Elias', result: '$900 → $4M+' },
-    },
-    {
-      icon: <Clock className="w-5 h-5" />,
-      objection: '"I don\'t have the time."',
-      headline: 'Working Full-Time? Here\'s the Reality.',
-      summary: 'Brent is a helicopter pilot with 3 kids. He built a $3M+ business in year one. Once launched, Amazon handles fulfillment — most businesses run on a few hours a week.',
-      studentProof: { name: 'Brent Frazey', result: '$3M+ yr 1' },
-    },
-    {
-      icon: <Lightbulb className="w-5 h-5" />,
-      objection: '"I have no idea or experience."',
-      headline: 'No Idea? That\'s the Best Starting Point.',
-      summary: 'Half our students start with zero experience. Wyatt started at 13 and makes $5K+/month at 14. The program is built for people who don\'t know what they\'re doing yet.',
-      studentProof: { name: 'Wyatt Moore', result: '$5K+/mo at 14' },
-    },
-    {
-      icon: <Shield className="w-5 h-5" />,
-      objection: '"This feels like another guru thing."',
-      headline: 'Skeptical? Good — You Should Be.',
-      summary: 'Travis made more money selling on Amazon last year than from coaching. He still launches products. No Lamborghinis. The target is $100K/year — specific, achievable, real.',
-      studentProof: { name: 'AJ', result: '$500K+ yr 1' },
-    },
-    {
-      icon: <AlertTriangle className="w-5 h-5" />,
-      objection: '"What if I pick the wrong product?"',
-      headline: 'Afraid of Picking Wrong?',
-      summary: 'Before you spend a dollar, the idea is validated with real search data. If the data says go, it works. AJ raised $100K on Kickstarter before producing a single unit.',
-      studentProof: { name: 'Calvin', result: '$400K from $7K' },
-    },
+    'Is It Actually Too Late to Start on Amazon?',
+    'Think You Need Tens of Thousands to Get Started?',
+    'Working Full-Time? Here\'s How Students Do Both.',
+    'No Product Idea or Experience? That\'s Actually Ideal.',
+    'Skeptical of Online Courses? Good — You Should Be.',
+    'What If You Pick the Wrong Product?',
   ];
 
   return (
-    <div className="bg-gray-50 py-12 md:py-16">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-            Your Top Questions — Answered
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            These are the concerns everyone has. Watch the ones that match your situation — you'll feel much more prepared for your call.
-          </p>
-        </div>
+    <div className="bg-gray-50 py-10 md:py-14">
+      <div className="max-w-5xl mx-auto px-4">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center mb-8">
+          Your Top Questions — Answered
+        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {breakouts.map((b, i) => (
-            <div key={i} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-              {/* Video placeholder — replace with actual breakout video */}
-              <div className="aspect-video bg-gray-100 border-b border-gray-200 flex flex-col items-center justify-center">
-                <Play className="w-10 h-10 text-gray-400 mb-2" />
-                <p className="text-sm text-gray-400 font-medium">Breakout video coming soon</p>
-                <p className="text-xs text-gray-400">2–5 min</p>
+          {breakouts.map((headline, i) => (
+            <div key={i} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+              <div className="aspect-video bg-gray-100 flex items-center justify-center">
+                <Play className="w-10 h-10 text-gray-400" />
               </div>
-
-              <div className="p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 shrink-0">
-                    {b.icon}
-                  </span>
-                  <p className="text-xs text-gray-400 italic">{b.objection}</p>
-                </div>
-                <h3 className="font-bold text-gray-900 text-base mb-2">{b.headline}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed mb-3">{b.summary}</p>
-
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="bg-blue-50 text-blue-700 font-semibold px-2.5 py-1 rounded-full">
-                    {b.studentProof.name}
-                  </span>
-                  <span className="text-blue-600 font-bold">{b.studentProof.result}</span>
-                </div>
-              </div>
+              <h3 className="font-bold text-gray-900 text-base p-4">{headline}</h3>
             </div>
           ))}
         </div>

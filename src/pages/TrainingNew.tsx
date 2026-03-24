@@ -9,49 +9,40 @@ import {
   ResourceSection,
   SharedFooter,
 } from '../components/TrainingNewSections';
-import { CheckCircle, Calendar, Clock, Star, Shield } from 'lucide-react';
+import { CheckCircle, Calendar, Star, Shield } from 'lucide-react';
 
 /* ───────────────────── generic confirmation sections ─────────────── */
 
 function ConfirmationBanner() {
   return (
-    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200">
-      <div className="max-w-4xl mx-auto px-4 py-8 md:py-10 text-center">
-        <div className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
-          <CheckCircle className="w-3.5 h-3.5" />
-          Step 1 of 2 — Complete
+    <div className="bg-gradient-to-b from-green-50 to-white border-b border-green-100">
+      <div className="max-w-4xl mx-auto px-4 py-5 md:py-6 text-center">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          <h1 className="text-lg md:text-xl font-bold text-gray-900">
+            Your Call is Booked — Now Complete Step 2
+          </h1>
         </div>
-        <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">
-          Your Strategy Call is Booked!
-        </h1>
-        <p className="text-base md:text-lg text-gray-600 mb-6">
-          Add it to your calendar — then complete Step 2 below before your call.
-        </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-5">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <a
             href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Amazon+Strategy+Call+with+Passion+Product&details=Your+personalized+Amazon+FBA+strategy+session.+Join+link+will+be+in+your+confirmation+email."
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
           >
-            <Calendar className="w-4 h-4" />
-            Add to Google Calendar
+            <Calendar className="w-3.5 h-3.5" />
+            Google Calendar
           </a>
           <a
             href="https://outlook.live.com/calendar/0/deeplink/compose?subject=Amazon+Strategy+Call+with+Passion+Product&body=Your+personalized+Amazon+FBA+strategy+session."
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
           >
-            <Calendar className="w-4 h-4" />
-            Add to Outlook
+            <Calendar className="w-3.5 h-3.5" />
+            Outlook
           </a>
-        </div>
-
-        <div className="inline-flex items-center gap-2 text-green-700 bg-green-100 px-4 py-2 rounded-full text-sm font-medium">
-          <Clock className="w-4 h-4" />
-          Now complete Step 2 below before your call
         </div>
       </div>
     </div>
