@@ -47,10 +47,10 @@ function generateVCard(phone: string): string {
   return [
     'BEGIN:VCARD',
     'VERSION:3.0',
+    'N:Marziani;Travis;;;',
     'FN:Travis Marziani',
-    'ORG:Passion Product',
-    `TEL;TYPE=WORK,VOICE:${phone}`,
-    'NOTE:Your Passion Product strategy call. Save this contact so you recognize the number when we call.',
+    `TEL;TYPE=CELL:${phone}`,
+    'NOTE:Save this contact so you recognize the number when we call.',
     'END:VCARD',
   ].join('\n');
 }
