@@ -5,8 +5,60 @@ import { CheckCircle } from 'lucide-react';
 
 type SellingStatus = 'yes_walmart' | 'yes_amazon' | 'neither' | null;
 
-/* TODO: Replace with your actual Make.com webhook URL that routes to Mailchimp */
-const WALMART_WEBHOOK_URL = 'https://hook.us2.make.com/YOUR_WALMART_WEBHOOK_HERE';
+/* Mailchimp subscribe endpoint — Effective Ecommerce audience */
+const MC_U = '390599db9e3bac1fdce322d15';
+const MC_ID = 'e97b6c6353';
+const MC_DC = 'us7';
+const MC_TAG = 'Get Help On Walmart';
+
+function subscribeToMailchimp(email: string, sellingStatus: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const callbackName = 'mc_callback_' + Date.now();
+    const statusLabels: Record<string, string> = {
+      yes_walmart: 'Sells on Walmart',
+      yes_amazon: 'Sells on Amazon only',
+      neither: 'Not selling yet',
+    };
+
+    const params = new URLSearchParams({
+      u: MC_U,
+      id: MC_ID,
+      f_id: '0001cee1f0',
+      c: callbackName,
+      EMAIL: email,
+      ENTRYSR: 'Walmart Landing Page',
+      MMERGE1: statusLabels[sellingStatus] || sellingStatus,
+      tags: MC_TAG,
+    });
+
+    const url = `https://${MC_DC}.api.mailchimp.com/subscribe/post-json?${params.toString()}`;
+
+    // JSONP callback
+    (window as any)[callbackName] = (data: any) => {
+      delete (window as any)[callbackName];
+      document.head.removeChild(script);
+      if (data.result === 'success') {
+        resolve();
+      } else {
+        // "already subscribed" is still a success for us
+        if (data.msg && data.msg.includes('already subscribed')) {
+          resolve();
+        } else {
+          reject(new Error(data.msg || 'Mailchimp subscription failed'));
+        }
+      }
+    };
+
+    const script = document.createElement('script');
+    script.src = url;
+    script.onerror = () => {
+      delete (window as any)[callbackName];
+      document.head.removeChild(script);
+      reject(new Error('Failed to reach Mailchimp'));
+    };
+    document.head.appendChild(script);
+  });
+}
 
 /* Walmart brand colors */
 const WM_BLUE = '#0071DC';
@@ -32,23 +84,13 @@ export function Walmart() {
 
     setIsSubmitting(true);
     try {
-      await fetch(WALMART_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          selling_status: sellingStatus,
-          source: 'walmart_landing_page',
-          timestamp: new Date().toISOString(),
-        }),
-      });
-      setIsSubmitted(true);
+      await subscribeToMailchimp(email, sellingStatus);
     } catch (error) {
-      console.error('Error submitting:', error);
-      setIsSubmitted(true);
-    } finally {
-      setIsSubmitting(false);
+      console.error('Mailchimp subscribe error:', error);
+      // Still show success — they may already be subscribed
     }
+    setIsSubmitted(true);
+    setIsSubmitting(false);
   };
 
   if (isSubmitted) {
