@@ -10,6 +10,7 @@ import { TrainingNewCloser } from './pages/TrainingNewCloser';
 import { Walmart } from './pages/Walmart';
 import { Refund } from './pages/Refund';
 import { Live } from './pages/Live';
+import { VA } from './pages/VA';
 import { Terms } from './pages/Terms';
 import { OptIn } from './pages/OptIn';
 import { FreeCourse } from './pages/FreeCourse';
@@ -41,6 +42,7 @@ function AppWrapper() {
                 <Route path="/walmart" element={<Walmart />} />
                 <Route path="/refund" element={<Refund />} />
                 <Route path="/live" element={<Live />} />
+                <Route path="/va" element={<VA />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/optin" element={<OptIn />} />
                 <Route path="/freecourse" element={<FreeCourse />} />
