@@ -24,12 +24,9 @@ export function Refund() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Wire to your refund processing webhook
-      await fetch('https://hook.us2.make.com/67dsntvx5ikpa21o25wl05wc8v4tv1vf', {
+      await fetch('https://script.google.com/macros/s/AKfycbwWQxhoK-NIIG9-kub1SaPFmy1lJDuQOTnxu6fEHsV1esYp2WagzM85XKZ77qOx4Tb-2A/exec', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'refund_request',
           full_name: fullName,
           email,
           reason: refundReason,
