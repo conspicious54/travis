@@ -11,6 +11,7 @@ import { Walmart } from './pages/Walmart';
 import { Refund } from './pages/Refund';
 import { Live } from './pages/Live';
 import { VA } from './pages/VA';
+import { PPC } from './pages/PPC';
 import { Terms } from './pages/Terms';
 import { OptIn } from './pages/OptIn';
 import { FreeCourse } from './pages/FreeCourse';
@@ -43,6 +44,7 @@ function AppWrapper() {
                 <Route path="/refund" element={<Refund />} />
                 <Route path="/live" element={<Live />} />
                 <Route path="/va" element={<VA />} />
+                <Route path="/ppc" element={<PPC />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/optin" element={<OptIn />} />
                 <Route path="/freecourse" element={<FreeCourse />} />

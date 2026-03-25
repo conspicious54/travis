@@ -17,7 +17,7 @@ function subscribeToMailchimp(email: string, tag: string): Promise<void> {
       f_id: '0001cee1f0',
       c: callbackName,
       EMAIL: email,
-      ENTRYSR: 'VA Landing Page',
+      ENTRYSR: 'PPC Course Landing Page',
       tags: tag,
     });
 
@@ -46,7 +46,7 @@ function subscribeToMailchimp(email: string, tag: string): Promise<void> {
 
 /* ──────────────────────── page ───────────────────────────────────── */
 
-export function VA() {
+export function PPC() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -56,7 +56,7 @@ export function VA() {
     if (!email) return;
     setIsSubmitting(true);
     try {
-      await subscribeToMailchimp(email, 'VA');
+      await subscribeToMailchimp(email, 'PPC');
     } catch (error) {
       console.error('Mailchimp error:', error);
     }
@@ -73,7 +73,7 @@ export function VA() {
           </div>
           <h1 className="text-3xl md:text-4xl font-black text-gray-900 mb-3 tracking-tight">You're On the List</h1>
           <p className="text-gray-600">
-            We'll send you everything you need to know about the VA Intensive Program — keep an eye on your inbox.
+            We'll send you everything you need to know about the Amazon PPC Course — keep an eye on your inbox.
           </p>
         </div>
       </div>
@@ -90,10 +90,10 @@ export function VA() {
             className="h-10 mx-auto mb-6"
           />
           <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight mb-3">
-            6-Week VA<br />Intensive Program
+            In-Depth Amazon<br />PPC Course
           </h1>
           <p className="text-gray-600 text-base md:text-lg">
-            Learn how to hire, train, and manage a virtual assistant — so you can get your time back and focus on growing your business.
+            Learn the exact PPC strategies top sellers use to rank fast, scale profitably, and turn ad spend into real revenue.
           </p>
         </div>
 
@@ -111,7 +111,7 @@ export function VA() {
             disabled={isSubmitting || !email}
             className="w-full py-3.5 px-6 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold rounded-xl transition-colors text-sm cursor-pointer"
           >
-            {isSubmitting ? 'Submitting...' : 'Get the VA Guide'}
+            {isSubmitting ? 'Submitting...' : 'Get the PPC Training'}
           </button>
         </form>
 
