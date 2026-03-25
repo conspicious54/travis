@@ -197,74 +197,71 @@ export function OpportunitySection() {
 }
 
 export function TestimonialHighlights() {
-  const videoTestimonials = [
-    {
-      name: 'Mina Elias',
-      amount: '$4M+',
-      background: 'Started with $900 — no Amazon experience',
-      quote: 'From $900 and a passion for MMA to a multi-million dollar supplement brand.',
-      video: "https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/mina's_story%20(540p).mp4",
-      poster: 'https://cdn.prod.website-files.com/66fefebbdd3ababfcd16bca4/677d7519befd324ec14d84be_677d70999ffc3ba242d8ed89_66ff0ab3ac2c8e55c331a54a_Mina-p-500%20copy.webp',
-    },
-    {
-      name: 'Troy A.',
-      amount: '$521.6K',
-      background: 'College student, built it alongside school',
-      quote: 'The biggest shortcut to my success. I don\'t think I could have done it without Travis & the program.',
-      video: "https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/troy's_story%20(720p).mp4",
-      poster: 'https://cdn.prod.website-files.com/66fefebbdd3ababfcd16bca4/677d8940371ae287aa0dfb62_Troy.webp',
-    },
-    {
-      name: 'Darryl Gordon',
-      amount: '$16K in 6 months',
-      background: 'Complete beginner — affirmation stickers',
-      quote: 'The strategies I learned in this program completely transformed my Amazon business.',
-      video: 'https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/Darryl%20Testimonial%20(1).mp4',
-      poster: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      name: 'Julianna R.',
-      amount: '$112K',
-      background: 'Stay-at-home parent, no prior experience',
-      quote: 'If you\'re looking to sell on Amazon, there is no better way!',
-      video: "https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/julianna's_testimonial%20(720p).mp4",
-      poster: 'https://cdn.prod.website-files.com/66fefebbdd3ababfcd16bca4/677d8940dd0e6c60fb389b1b_Juliana.webp',
-    },
-    {
-      name: 'Jonathan P.',
-      amount: '$427K',
-      background: 'Started while raising a family',
-      quote: 'The mentorship and support in this program are absolutely invaluable.',
-      video: 'https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/Jonathan%20Testimonial%20(1).mp4',
-      poster: 'https://images.unsplash.com/photo-1619380061814-58f03707f082?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      name: 'Jeremy Suelflow',
-      amount: '$100K in 6 months',
-      background: 'Entirely Kickstarter-funded launch',
-      quote: 'I don\'t think my product would be nearly the success it is today without the Passion Product Formula.',
-      video: "https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/jeremy's_story%20(720p).mp4",
-      poster: 'https://cdn.prod.website-files.com/66fefebbdd3ababfcd16bca4/677d894063844c7da9e9a54b_Jeremy.webp',
-    },
+  const [showAll, setShowAll] = useState(false);
+
+  const youtubeTestimonials = [
+    { id: '9GSDrJRv2CE', title: 'How I Turned $0 to $1 MILLION with Amazon FBA' },
+    { id: 'ZRKOfZ1dhMQ', title: 'Amazon FBA to Shark Tank - How I Made $2 MILLION' },
+    { id: '-z12BPgI1Wk', title: 'Amazon FBA to Shark Tank - How I Made $2.7 MILLION' },
+    { id: 'Xg-ELT32Hvs', title: 'Amazon FBA to Shark Tank - How I Made $5.2 MILLION' },
+    { id: 'z7e05PDZ8ao', title: 'Amazon FBA to Shark Tank - How I Made $1.3 MILLION' },
+    { id: 'mmKSnvLMLQY', title: 'How I Turned $700 Into $1.5 Million on Amazon' },
+    { id: 'xhic32ZsIsk', title: 'Meet The Kid Who Makes $10 Million a Year With Amazon FBA' },
+    { id: 'ZXJQ0Djz7-k', title: 'I Tried Every Amazon FBA Selling Method - Here\'s What Made Me $2 Million' },
+    { id: 'Wi2sK5GjvFk', title: 'How I Turned $0 to $3M+' },
+    { id: 'TOTLViQC_AY', title: 'How I Started An Amazon FBA Business With $0' },
+    { id: 'IRb5EpPGnRU', title: 'How I Created a $1M+ Brand' },
+    { id: '0FQHEwSVjQw', title: 'Meet The $250K Amazon Seller' },
+    { id: '2X10mIm5eXc', title: 'My First Year Selling On Amazon FBA - The Honest Results' },
+    { id: 'R-NmmLoh2jo', title: 'I Tested if Amazon FBA Still Works in 2026 - The Honest Results' },
+    { id: 'Sg3Vg6C3E-4', title: 'My Honest Amazon FBA Results in 2026' },
+    { id: 'TE9uGqS0tt0', title: 'I Tried Amazon FBA In 2026 - The Honest Results' },
+    { id: 'sO9ne4DVaR4', title: 'I Tried Amazon FBA In 2026 (RAW RESULTS)' },
+    { id: 'Vw9OrGVTGoI', title: 'Exposing the TRUTH about Amazon FBA...' },
+    { id: 'plUMdd5W5Fo', title: 'Amazon FBA 2026 - My Honest Results' },
+    { id: 'ujMaZSEOFKM', title: 'I Tried Amazon FBA In 2026 - My Real Results' },
+    { id: 'RniagkArQ2Q', title: 'I Tried Amazon FBA 2026 - My Honest Results' },
+    { id: 'gWGMmZqLr1w', title: 'I Tried Amazon FBA For 1 Year... Here\'s What They Won\'t Tell You' },
+    { id: 'ApGQl9mNqrM', title: 'I Tried Amazon FBA With No Experience - The Honest Results' },
+    { id: 'SH24ylGlT8k', title: 'My First Year Selling on Amazon FBA' },
+    { id: 'sWabSSwVsXg', title: 'My First Year Selling on Amazon FBA - My Amazon Guy Results' },
+    { id: 'SvWcnRlXQqQ', title: 'I Tried Amazon FBA for 6 Months - The Honest Results' },
+    { id: 'faZRpz7roPI', title: 'I Tried Amazon FBA For 6 Months - The Honest Results' },
+    { id: 'k7XMP5U1DCk', title: 'THE TRUTH of Starting an Amazon FBA Business in 2026' },
+    { id: 'IDgGFwK1H1o', title: 'I Tried Amazon FBA For 3 Months - The Honest Results' },
+    { id: 'vM2lRASP0YI', title: 'How I Made $250K+' },
+    { id: 'gpkaZsTgePo', title: 'Passive Income: How Amazon FBA Made Me $430K+' },
+    { id: 'psC5efZpdIM', title: 'How I Make $5K+/Month' },
+    { id: 'qOknVztF9c8', title: 'I Tried Selling on Walmart.com - The Honest Results' },
+    { id: 'ix6rLsCJqeQ', title: 'I Tried Selling On Amazon FBA - The Honest Results' },
+    { id: 'E8HQu4glbEY', title: 'I Tried Selling On Amazon FBA For 1 Month - The Honest Results' },
+    { id: 'TK6Qgd_UmRo', title: 'How Scott Made $400K+' },
+    { id: 'Hzl9b8trydU', title: 'I Tried Amazon FBA For 1 Year - The Honest Results' },
+    { id: 'A3mW5yzush0', title: 'I Tried Amazon FBA For 1 Month - The Honest Results' },
+    { id: 'UC-bOKUK3jk', title: 'My First Year Selling on Amazon FBA - The Honest Results' },
+    { id: 'HQxeNn2S9m8', title: 'How To ACTUALLY Make $10K+/Month' },
+    { id: 'b_qIEC8Wnhw', title: 'I Tried Amazon FBA for 3 Months - The Honest Results' },
+    { id: 'uJxgKMbOdLE', title: 'I Tried Amazon FBA For 2 Weeks - The Honest Results' },
+    { id: '5UPi4XZIdZA', title: 'I Tried Amazon FBA - Honest New Product Results' },
+    { id: 'HX2LoqSdHJA', title: 'My Amazon FBA Business Failed...' },
+    { id: 'pdm1mQWHRWE', title: 'My First Ecommerce Business - The Honest Results' },
+    { id: 'EP--rNIg--I', title: 'Amazon FBA Success Stories - Honest Results' },
+    { id: '8mZNPOi-Rq8', title: 'How I Made $57K+' },
+    { id: '5EBJIqKslKg', title: 'How I Used TikTok To Raise $40K+' },
+    { id: 'rNt5LtAgbKA', title: '$170K+ Amazon FBA Results' },
+    { id: 'AQam5rsO7I8', title: 'I Tried Amazon FBA for 1 Year - The Honest Results' },
+    { id: 'rqatb8mOlF8', title: 'My First Year Selling On Amazon - The Honest Results' },
+    { id: '4apONZaT8G8', title: 'I Tried Amazon FBA For 2 Months - The Truth' },
+    { id: 'z2YIae_QeWo', title: 'I Tried Amazon FBA for 2 Weeks - My Honest Results' },
+    { id: 'oiqdgmZYnDU', title: 'Amazon FBA: I Launched a Board Game - The Honest Results' },
+    { id: 'r9Ra5KJEpiU', title: 'I Tried Amazon FBA - The Honest Results' },
+    { id: 'eJiiN-dkRcI', title: 'Amazon FBA Private Label is Dead in 2026 - My Honest Results' },
+    { id: '2eIf8HkISnM', title: 'I Quit Amazon FBA - My Business Went Bankrupt' },
+    { id: 'u0uTL3662Ic', title: 'My Amazon FBA Business Failed... (Honest Results)' },
+    { id: '-OA9kOOLCj0', title: 'We Built a $1M+ Brand' },
   ];
 
-  const additionalResults = [
-    { name: 'AJ', result: '$500K+ year one → millions total', detail: 'Bartender who lost his job during the pandemic' },
-    { name: 'Brent Frazey', result: '$3M+ in year one', detail: 'Helicopter pilot & father of three' },
-    { name: 'Emanuel Ruiz', result: '$3M+ annually', detail: 'Real estate → 3 Amazon brands' },
-    { name: 'Hank Watt', result: '$2M+ revenue, Shark Tank deal', detail: 'Nature\'s Wild Berry — Lori Greiner & Mark Cuban' },
-    { name: 'Ryan', result: '$3M in 3 years', detail: 'Built Maju Superfoods while working full-time as a lawyer' },
-    { name: 'Calvin', result: '$400K year one', detail: 'Engineer who quit his job — $7K starting investment' },
-    { name: 'Wyatt Moore', result: '$5K+/month at age 14', detail: 'Started at 13 with his mom\'s permission' },
-    { name: 'Michael', result: '$4M over 5 years', detail: 'Started at 17 with $500' },
-    { name: 'Karla', result: '$80K/year on 5 hrs/week', detail: 'Niche tea business, 11 products' },
-    { name: 'Taylor Davis', result: '5 products launched', detail: 'Burned-out nurse → Amazon brand owner' },
-    { name: 'Jules', result: '$148K in 6 months', detail: 'Created an entirely new product category on Amazon' },
-    { name: 'Bradley', result: '$3.6M across 500+ products', detail: 'Warehouse worker → product empire' },
-    { name: 'Edgar', result: '$15M+ total Amazon sales', detail: 'Family lime juice → own manufacturing plant' },
-    { name: 'Silvia', result: '£2M+ over 6 years', detail: 'Started with £1,000 — now works 5-10 hrs/week as a mom' },
-    { name: 'Jared, Brett & Oscar', result: '$1.4M year one', detail: 'Construction workers → Nectr nootropic pouches' },
-  ];
+  const visible = showAll ? youtubeTestimonials : youtubeTestimonials.slice(0, 6);
 
   return (
     <div className="bg-white py-12 md:py-16">
@@ -274,45 +271,35 @@ export function TestimonialHighlights() {
             People Just Like You Who Took Action
           </h2>
           <p className="text-gray-600 max-w-xl mx-auto">
-            These are people who were exactly where you are — they booked a call, showed up, took action, and built something real.
+            {youtubeTestimonials.length}+ real student stories. Watch any of them.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {videoTestimonials.map((t, i) => (
-            <div key={i} className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
-              <LazyVideo src={t.video} poster={t.poster} title={`${t.name} testimonial`} />
-              <div className="p-5">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-bold text-gray-900">{t.name}</h4>
-                  <span className="text-lg font-bold text-blue-600">{t.amount}</span>
-                </div>
-                <p className="text-xs text-gray-400 mb-2">{t.background}</p>
-                <p className="text-sm text-gray-600 italic">"{t.quote}"</p>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {visible.map((v) => (
+            <div key={v.id} className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+              <YouTubeLazyEmbed videoId={v.id} title={v.title} />
+              <p className="font-semibold text-gray-900 text-sm p-4">{v.title}</p>
             </div>
           ))}
         </div>
 
-        <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6 md:p-8">
-          <h3 className="text-lg font-bold text-gray-900 text-center mb-6">
-            More Student Results — From Every Background Imaginable
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {additionalResults.map((r, i) => (
-              <div key={i} className="bg-white rounded-lg border border-gray-100 p-4 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-gray-900 text-sm">{r.name}</span>
-                  <span className="text-blue-600 font-bold text-xs">{r.result}</span>
-                </div>
-                <p className="text-xs text-gray-500">{r.detail}</p>
-              </div>
-            ))}
+        {!showAll && (
+          <div className="text-center mt-8">
+            <button
+              onClick={() => setShowAll(true)}
+              className="px-8 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer"
+            >
+              Show All {youtubeTestimonials.length} Student Stories
+            </button>
           </div>
-          <p className="text-center text-xs text-gray-400 mt-5">
-            These are documented results from real students. Individual results vary. Past performance doesn't guarantee future results.
+        )}
+
+        {showAll && (
+          <p className="text-center text-xs text-gray-400 mt-6">
+            Individual results vary. Past performance doesn't guarantee future results.
           </p>
-        </div>
+        )}
       </div>
     </div>
   );
