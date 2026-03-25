@@ -27,7 +27,7 @@ function subscribeToMailchimp(email: string, sellingStatus: string): Promise<voi
       c: callbackName,
       EMAIL: email,
       ENTRYSR: 'Walmart Landing Page',
-      MMERGE1: statusLabels[sellingStatus] || sellingStatus,
+      WALMART: statusLabels[sellingStatus] || sellingStatus,
       tags: MC_TAG,
     });
 
