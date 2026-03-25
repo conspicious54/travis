@@ -24,7 +24,7 @@ export function Refund() {
     setIsSubmitting(true);
 
     try {
-      await fetch('https://script.google.com/macros/s/AKfycbwWQxhoK-NIIG9-kub1SaPFmy1lJDuQOTnxu6fEHsV1esYp2WagzM85XKZ77qOx4Tb-2A/exec', {
+      await fetch('https://script.google.com/macros/s/AKfycbyRc-zZbRaF6kQzfHkAnp9ao4pb8DTcEkthjS9mKMDFMjP5hMBZJPzUZKZRFZDzz5YO/exec', {
         method: 'POST',
         body: JSON.stringify({
           full_name: fullName,
