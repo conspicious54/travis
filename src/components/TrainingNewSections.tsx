@@ -200,65 +200,71 @@ export function TestimonialHighlights() {
   const [showAll, setShowAll] = useState(false);
 
   const youtubeTestimonials = [
-    { id: '9GSDrJRv2CE', title: 'How I Turned $0 to $1 MILLION with Amazon FBA' },
-    { id: 'ZRKOfZ1dhMQ', title: 'Amazon FBA to Shark Tank - How I Made $2 MILLION' },
-    { id: '-z12BPgI1Wk', title: 'Amazon FBA to Shark Tank - How I Made $2.7 MILLION' },
-    { id: 'Xg-ELT32Hvs', title: 'Amazon FBA to Shark Tank - How I Made $5.2 MILLION' },
-    { id: 'z7e05PDZ8ao', title: 'Amazon FBA to Shark Tank - How I Made $1.3 MILLION' },
-    { id: 'mmKSnvLMLQY', title: 'How I Turned $700 Into $1.5 Million on Amazon' },
-    { id: 'xhic32ZsIsk', title: 'Meet The Kid Who Makes $10 Million a Year With Amazon FBA' },
-    { id: 'ZXJQ0Djz7-k', title: 'I Tried Every Amazon FBA Selling Method - Here\'s What Made Me $2 Million' },
-    { id: 'Wi2sK5GjvFk', title: 'How I Turned $0 to $3M+' },
-    { id: 'TOTLViQC_AY', title: 'How I Started An Amazon FBA Business With $0' },
-    { id: 'IRb5EpPGnRU', title: 'How I Created a $1M+ Brand' },
-    { id: '0FQHEwSVjQw', title: 'Meet The $250K Amazon Seller' },
-    { id: '2X10mIm5eXc', title: 'My First Year Selling On Amazon FBA - The Honest Results' },
-    { id: 'R-NmmLoh2jo', title: 'I Tested if Amazon FBA Still Works in 2026 - The Honest Results' },
-    { id: 'Sg3Vg6C3E-4', title: 'My Honest Amazon FBA Results in 2026' },
-    { id: 'TE9uGqS0tt0', title: 'I Tried Amazon FBA In 2026 - The Honest Results' },
-    { id: 'sO9ne4DVaR4', title: 'I Tried Amazon FBA In 2026 (RAW RESULTS)' },
-    { id: 'Vw9OrGVTGoI', title: 'Exposing the TRUTH about Amazon FBA...' },
-    { id: 'plUMdd5W5Fo', title: 'Amazon FBA 2026 - My Honest Results' },
-    { id: 'ujMaZSEOFKM', title: 'I Tried Amazon FBA In 2026 - My Real Results' },
-    { id: 'RniagkArQ2Q', title: 'I Tried Amazon FBA 2026 - My Honest Results' },
-    { id: 'gWGMmZqLr1w', title: 'I Tried Amazon FBA For 1 Year... Here\'s What They Won\'t Tell You' },
-    { id: 'ApGQl9mNqrM', title: 'I Tried Amazon FBA With No Experience - The Honest Results' },
-    { id: 'SH24ylGlT8k', title: 'My First Year Selling on Amazon FBA' },
-    { id: 'sWabSSwVsXg', title: 'My First Year Selling on Amazon FBA - My Amazon Guy Results' },
-    { id: 'SvWcnRlXQqQ', title: 'I Tried Amazon FBA for 6 Months - The Honest Results' },
-    { id: 'faZRpz7roPI', title: 'I Tried Amazon FBA For 6 Months - The Honest Results' },
-    { id: 'k7XMP5U1DCk', title: 'THE TRUTH of Starting an Amazon FBA Business in 2026' },
-    { id: 'IDgGFwK1H1o', title: 'I Tried Amazon FBA For 3 Months - The Honest Results' },
-    { id: 'vM2lRASP0YI', title: 'How I Made $250K+' },
-    { id: 'gpkaZsTgePo', title: 'Passive Income: How Amazon FBA Made Me $430K+' },
-    { id: 'psC5efZpdIM', title: 'How I Make $5K+/Month' },
-    { id: 'qOknVztF9c8', title: 'I Tried Selling on Walmart.com - The Honest Results' },
-    { id: 'ix6rLsCJqeQ', title: 'I Tried Selling On Amazon FBA - The Honest Results' },
-    { id: 'E8HQu4glbEY', title: 'I Tried Selling On Amazon FBA For 1 Month - The Honest Results' },
-    { id: 'TK6Qgd_UmRo', title: 'How Scott Made $400K+' },
-    { id: 'Hzl9b8trydU', title: 'I Tried Amazon FBA For 1 Year - The Honest Results' },
-    { id: 'A3mW5yzush0', title: 'I Tried Amazon FBA For 1 Month - The Honest Results' },
-    { id: 'UC-bOKUK3jk', title: 'My First Year Selling on Amazon FBA - The Honest Results' },
-    { id: 'HQxeNn2S9m8', title: 'How To ACTUALLY Make $10K+/Month' },
-    { id: 'b_qIEC8Wnhw', title: 'I Tried Amazon FBA for 3 Months - The Honest Results' },
-    { id: 'uJxgKMbOdLE', title: 'I Tried Amazon FBA For 2 Weeks - The Honest Results' },
-    { id: '5UPi4XZIdZA', title: 'I Tried Amazon FBA - Honest New Product Results' },
-    { id: 'HX2LoqSdHJA', title: 'My Amazon FBA Business Failed...' },
-    { id: 'pdm1mQWHRWE', title: 'My First Ecommerce Business - The Honest Results' },
-    { id: 'EP--rNIg--I', title: 'Amazon FBA Success Stories - Honest Results' },
-    { id: '8mZNPOi-Rq8', title: 'How I Made $57K+' },
-    { id: '5EBJIqKslKg', title: 'How I Used TikTok To Raise $40K+' },
-    { id: 'rNt5LtAgbKA', title: '$170K+ Amazon FBA Results' },
-    { id: 'AQam5rsO7I8', title: 'I Tried Amazon FBA for 1 Year - The Honest Results' },
-    { id: 'rqatb8mOlF8', title: 'My First Year Selling On Amazon - The Honest Results' },
-    { id: '4apONZaT8G8', title: 'I Tried Amazon FBA For 2 Months - The Truth' },
-    { id: 'z2YIae_QeWo', title: 'I Tried Amazon FBA for 2 Weeks - My Honest Results' },
-    { id: 'oiqdgmZYnDU', title: 'Amazon FBA: I Launched a Board Game - The Honest Results' },
-    { id: 'r9Ra5KJEpiU', title: 'I Tried Amazon FBA - The Honest Results' },
-    { id: 'eJiiN-dkRcI', title: 'Amazon FBA Private Label is Dead in 2026 - My Honest Results' },
-    { id: '2eIf8HkISnM', title: 'I Quit Amazon FBA - My Business Went Bankrupt' },
-    { id: 'u0uTL3662Ic', title: 'My Amazon FBA Business Failed... (Honest Results)' },
-    { id: '-OA9kOOLCj0', title: 'We Built a $1M+ Brand' },
+    { id: '9GSDrJRv2CE', name: 'AJ Rantz', revenue: '$1M', time: '3 years' },
+    { id: '2X10mIm5eXc', name: 'Brent', revenue: '$293K', time: '12 months' },
+    { id: 'SH24ylGlT8k', name: 'Calvin', revenue: '$400K', time: '12 months' },
+    { id: 'R-NmmLoh2jo', name: 'Mina', revenue: '$242K', time: '12 months' },
+    { id: 'ZRKOfZ1dhMQ', name: 'Juliana', revenue: '$101K', time: '12 months' },
+    { id: 'Sg3Vg6C3E-4', name: 'Mindy', revenue: '$2M', time: '5 years' },
+    { id: 'u0uTL3662Ic', name: 'Jenny', revenue: '$244K', time: '12 months' },
+    { id: 'TE9uGqS0tt0', name: 'Alyssa', revenue: '$126K', time: '8 months' },
+    { id: 'Vw9OrGVTGoI', name: 'Michael', revenue: '$310K', time: '12 months' },
+    { id: 'ZXJQ0Djz7-k', name: 'Drew', revenue: '$50K', time: '8 months' },
+    { id: '-z12BPgI1Wk', name: 'Silvia', revenue: '$2.3M', time: '7 years' },
+    { id: 'Xg-ELT32Hvs', name: 'Armand Ferranti', revenue: '$2.7M', time: '4 years' },
+    { id: 'sO9ne4DVaR4', name: 'Cheryl Rigdon', revenue: '$5M', time: '11 years' },
+    { id: 'gpkaZsTgePo', name: 'Lisa Curtis', revenue: '$1.6M', time: '8 years' },
+    { id: '-OA9kOOLCj0', name: 'Bradley Rice', revenue: '$3.6M', time: '8 years' },
+    { id: 'z7e05PDZ8ao', name: 'Brett, Jared & Oscar', revenue: '$1.4M', time: '12 months' },
+    { id: 'plUMdd5W5Fo', name: 'Ori Zohar', revenue: '$1.4M', time: '5 years' },
+    { id: 'ujMaZSEOFKM', name: 'Hrag Kalebijan', revenue: '$159K', time: '4 years' },
+    { id: 'eJiiN-dkRcI', name: 'James', revenue: '$28K', time: '13 months' },
+    { id: 'RniagkArQ2Q', name: 'Kammel', revenue: '$14K', time: '9 months' },
+    { id: 'oiqdgmZYnDU', name: 'Travis Marziani', revenue: '$300K', time: '3 months' },
+    { id: 'r9Ra5KJEpiU', name: 'Eman', revenue: '$2.6M', time: '7 years' },
+    { id: 'Wi2sK5GjvFk', name: 'Brian', revenue: '$6.2K', time: '11 months' },
+    { id: 'gWGMmZqLr1w', name: 'Sydney', revenue: '$173K', time: '2 years' },
+    { id: '2eIf8HkISnM', name: 'Ryan', revenue: '$3M', time: '3 years' },
+    { id: 'ApGQl9mNqrM', name: 'Jeff', revenue: '$15.4K', time: '6 months' },
+    { id: 'm-R0PWcaL0o', name: 'Cynthia', revenue: '$24.5K', time: '11 months' },
+    { id: 'sWabSSwVsXg', name: 'Rafael', revenue: '$238K', time: '6 months' },
+    { id: 'SvWcnRlXQqQ', name: 'Kammel', revenue: '$913', time: '11 months' },
+    { id: 'faZRpz7roPI', name: 'Connor', revenue: '$20K', time: '9 months' },
+    { id: 'k7XMP5U1DCk', name: 'Steven Pope', revenue: '$90.9K', time: '12 months' },
+    { id: 'xhic32ZsIsk', name: 'Usmani', revenue: '$93.4K', time: '7 months' },
+    { id: 'vM2lRASP0YI', name: 'Daryl & Amanda', revenue: '$46.5K', time: '6 months' },
+    { id: 'IDgGFwK1H1o', name: 'Elena T. & Elena B.', revenue: '$318K', time: '3 years' },
+    { id: 'mmKSnvLMLQY', name: 'Joseph', revenue: '$50K', time: '6 months' },
+    { id: 'psC5efZpdIM', name: 'Dr. Killian Stingle', revenue: '$140K', time: '10 months' },
+    { id: 'qOknVztF9c8', name: 'Dakota', revenue: '$14M', time: '4–5 years' },
+    { id: 'ix6rLsCJqeQ', name: 'Rhett', revenue: '$20M', time: '7 years' },
+    { id: 'E8HQu4glbEY', name: 'Gary', revenue: '$100K', time: '12 months' },
+    { id: 'TK6Qgd_UmRo', name: 'Troy', revenue: '$260K', time: '2 years' },
+    { id: 'Hzl9b8trydU', name: 'Taylor', revenue: '$19K', time: '3 months' },
+    { id: 'A3mW5yzush0', name: 'Anna', revenue: '$1.5M', time: '3 years' },
+    { id: 'UC-bOKUK3jk', name: 'Edgar', revenue: '$15M', time: '5 years' },
+    { id: 'HQxeNn2S9m8', name: 'Jeremy', revenue: '$100K', time: '6 months' },
+    { id: 'b_qIEC8Wnhw', name: 'Fred', revenue: '$10K', time: '6 months' },
+    { id: 'uJxgKMbOdLE', name: 'Travis Marziani', revenue: '$5M', time: '10 years' },
+    { id: '5UPi4XZIdZA', name: 'Michael', revenue: '$180K', time: '5 years' },
+    { id: 'HX2LoqSdHJA', name: 'Ariana', revenue: '$100K', time: '3 years' },
+    { id: 'pdm1mQWHRWE', name: 'Travis & Willem', revenue: '$7.8K', time: '1 month' },
+    { id: '0FQHEwSVjQw', name: 'Michael', revenue: '$20M', time: '5 years' },
+    { id: 'EP--rNIg--I', name: 'Kalina', revenue: '$500K', time: '6 years' },
+    { id: '8mZNPOi-Rq8', name: 'Scott', revenue: '$400M', time: '10 years' },
+    { id: '5EBJIqKslKg', name: 'Andrew', revenue: '$54K', time: '12 months' },
+    { id: 'TOTLViQC_AY', name: 'Justin & Karyna', revenue: '$1.6K', time: '1 month' },
+    { id: 'rNt5LtAgbKA', name: 'AJ Rantz', revenue: '$500K', time: '1 year' },
+    { id: 'IRb5EpPGnRU', name: 'Andrew', revenue: '$330K', time: '12 months' },
+    { id: 'AQam5rsO7I8', name: 'JP', revenue: '$10M', time: '14 years' },
+    { id: 'rqatb8mOlF8', name: 'Logan & Leanne', revenue: 'Failure', time: '3 months' },
+    { id: '4apONZaT8G8', name: 'AJ Rantz', revenue: '$147K', time: '3 months' },
+    { id: 'z2YIae_QeWo', name: 'Brandy', revenue: '$20K', time: '1 month' },
+    { id: 'YLGlmna7IWU', name: 'Travis', revenue: '$7K', time: '1 month' },
+    { id: 'otw5gvZ2P-Q', name: 'Ariana', revenue: '$78K', time: '2 years' },
+    { id: 'QrqojLYcguc', name: 'Travis', revenue: '$80K', time: '12 months' },
+    { id: 'PdkQ6An2l5w', name: 'Travis', revenue: '$3M', time: '8 years' },
+    { id: '7jyiqoK7YwQ', name: 'AJ Rantz', revenue: '$54K', time: '1 month' },
   ];
 
   const visible = showAll ? youtubeTestimonials : youtubeTestimonials.slice(0, 6);
@@ -271,15 +277,21 @@ export function TestimonialHighlights() {
             People Just Like You Who Took Action
           </h2>
           <p className="text-gray-600 max-w-xl mx-auto">
-            {youtubeTestimonials.length}+ real student stories. Watch any of them.
+            {youtubeTestimonials.length} real student stories. Watch any of them.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {visible.map((v) => (
-            <div key={v.id} className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
-              <YouTubeLazyEmbed videoId={v.id} title={v.title} />
-              <p className="font-semibold text-gray-900 text-sm p-4">{v.title}</p>
+          {visible.map((v, i) => (
+            <div key={v.id + '-' + i} className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+              <YouTubeLazyEmbed videoId={v.id} title={`${v.name} testimonial`} />
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="font-bold text-gray-900 text-sm">{v.name}</span>
+                  <span className={`font-bold text-sm ${v.revenue === 'Failure' ? 'text-red-500' : 'text-blue-600'}`}>{v.revenue}</span>
+                </div>
+                <p className="text-xs text-gray-500">in {v.time}</p>
+              </div>
             </div>
           ))}
         </div>
