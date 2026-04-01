@@ -6,6 +6,7 @@ type RouterState = 'loading' | 'dq-question' | 'redirecting';
 const GROUP_A_URL = "https://start.travismarziani.com/nextstep";
 const GROUP_B_URL = "https://start.travismarziani.com/passion-product-fasttrack";
 const DQ_YES_URL = "https://thepassionproductformula.com/waitlist";
+const TRACKING_ENDPOINT = "https://dashboardpp.vercel.app/api/webhooks/router";
 
 const EUROPE_COUNTRIES = [
   "AL","AD","AT","BY","BE","BA","BG","HR","CY","CZ","DK","EE","FI","FR",
@@ -16,9 +17,46 @@ const EUROPE_COUNTRIES = [
 
 const ALLOWED_COUNTRIES = ["US","CA","AU","NZ", ...EUROPE_COUNTRIES];
 
-function doRedirect(url: string) {
-  const queryString = window.location.search;
-  window.location.replace(url + queryString);
+/* ─────────────── tracking pixel + redirect helpers ───────────────── */
+
+function getPassthroughParams(): URLSearchParams {
+  return new URLSearchParams(window.location.search);
+}
+
+function fireTrackingPixel(extraParams?: Record<string, string>) {
+  const p = getPassthroughParams();
+  const params = new URLSearchParams({
+    email: p.get('email') || '',
+    first_name: p.get('first_name') || '',
+    last_name: p.get('last_name') || '',
+    country: p.get('country') || '',
+    result: extraParams?.result || p.get('result') || '',
+    has_500: extraParams?.has_500 || p.get('has_500') || '',
+    utm_source: p.get('utm_source') || '',
+    utm_campaign: p.get('utm_campaign') || '',
+    utm_medium: p.get('utm_medium') || '',
+  });
+  const img = new Image();
+  img.src = TRACKING_ENDPOINT + '?' + params.toString();
+}
+
+function buildRedirectUrl(baseUrl: string, extraParams: Record<string, string>): string {
+  const incoming = getPassthroughParams();
+  // Merge incoming query params with extra params (extra takes precedence)
+  const merged = new URLSearchParams(incoming);
+  for (const [key, value] of Object.entries(extraParams)) {
+    merged.set(key, value);
+  }
+  const qs = merged.toString();
+  return qs ? baseUrl + '?' + qs : baseUrl;
+}
+
+function doRedirect(baseUrl: string, extraParams: Record<string, string>) {
+  // Fire pixel before redirecting
+  fireTrackingPixel(extraParams);
+  const url = buildRedirectUrl(baseUrl, extraParams);
+  // Small delay to let pixel fire
+  setTimeout(() => window.location.replace(url), 50);
 }
 
 /* ─────────────────────── loading screen ──────────────────────────── */
@@ -58,7 +96,7 @@ function LoadingScreen({ progress }: { progress: number }) {
 
 /* ──────────────────── DQ capital question ─────────────────────────── */
 
-function CapitalQuestion() {
+function CapitalQuestion({ detectedCountry }: { detectedCountry: string }) {
   return (
     <div className="max-w-md w-full relative z-10">
       <div className="text-center mb-8">
@@ -83,13 +121,13 @@ function CapitalQuestion() {
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
-            onClick={() => doRedirect(DQ_YES_URL)}
+            onClick={() => doRedirect(DQ_YES_URL, { result: 'formula', has_500: 'yes', country: detectedCountry })}
             className="px-8 py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-500/30 cursor-pointer text-sm"
           >
             Yes, I Have $500+
           </button>
           <button
-            onClick={() => doRedirect(GROUP_B_URL)}
+            onClick={() => doRedirect(GROUP_B_URL, { result: 'fasttrack', has_500: 'no', country: detectedCountry })}
             className="px-8 py-3.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 font-medium rounded-xl transition-all border border-slate-700/50 cursor-pointer text-sm"
           >
             No, Not Right Now
@@ -105,6 +143,7 @@ function CapitalQuestion() {
 export function Router() {
   const [progress, setProgress] = useState(0);
   const [state, setState] = useState<RouterState>('loading');
+  const [detectedCountry, setDetectedCountry] = useState('');
 
   useEffect(() => {
     const progressInterval = setInterval(() => {
@@ -119,15 +158,16 @@ export function Router() {
         const response = await fetch("https://ipapi.co/json/");
         const data = await response.json();
         const country = data.country;
+        setDetectedCountry(country);
 
         if (ALLOWED_COUNTRIES.includes(country)) {
-          doRedirect(GROUP_A_URL);
+          doRedirect(GROUP_A_URL, { result: 'qualified', country });
         } else {
           // DQ country — ask the capital question first
           setState('dq-question');
         }
       } catch (error) {
-        doRedirect(GROUP_A_URL);
+        doRedirect(GROUP_A_URL, { result: 'qualified' });
       }
     };
 
@@ -146,7 +186,7 @@ export function Router() {
       <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-orange-500/30 rounded-full animate-pulse delay-300"></div>
 
       {state === 'loading' && <LoadingScreen progress={progress} />}
-      {state === 'dq-question' && <CapitalQuestion />}
+      {state === 'dq-question' && <CapitalQuestion detectedCountry={detectedCountry} />}
     </div>
   );
 }
