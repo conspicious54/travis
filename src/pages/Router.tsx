@@ -23,7 +23,7 @@ function getPassthroughParams(): URLSearchParams {
   return new URLSearchParams(window.location.search);
 }
 
-function fireTrackingPixel(extraParams?: Record<string, string>) {
+function fireTrackingPixel(extraParams?: Record<string, string>): Promise<void> {
   const p = getPassthroughParams();
   const data: Record<string, string> = {
     email: p.get('email') || '',
@@ -37,15 +37,17 @@ function fireTrackingPixel(extraParams?: Record<string, string>) {
     utm_medium: p.get('utm_medium') || '',
   };
   const qs = new URLSearchParams(data).toString();
+  const url = TRACKING_ENDPOINT + '?' + qs;
 
-  // Fire image pixel
-  const img = new Image();
-  img.src = TRACKING_ENDPOINT + '?' + qs;
-
-  // Also use sendBeacon as backup — survives page navigation
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon(TRACKING_ENDPOINT + '?' + qs);
-  }
+  // Primary: image pixel — wait for it to actually load
+  return new Promise<void>((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+    img.src = url;
+    // Safety timeout — resolve after 500ms no matter what
+    setTimeout(resolve, 500);
+  });
 }
 
 function buildRedirectUrl(baseUrl: string, extraParams: Record<string, string>): string {
@@ -59,10 +61,10 @@ function buildRedirectUrl(baseUrl: string, extraParams: Record<string, string>):
   return qs ? baseUrl + '?' + qs : baseUrl;
 }
 
-function doRedirect(baseUrl: string, extraParams: Record<string, string>) {
-  // Fire pixel before redirecting
-  fireTrackingPixel(extraParams);
+async function doRedirect(baseUrl: string, extraParams: Record<string, string>) {
   const url = buildRedirectUrl(baseUrl, extraParams);
+  // Wait for pixel to fire, then redirect
+  await fireTrackingPixel(extraParams);
   window.location.replace(url);
 }
 
