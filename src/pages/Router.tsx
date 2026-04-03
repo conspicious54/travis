@@ -63,8 +63,7 @@ function doRedirect(baseUrl: string, extraParams: Record<string, string>) {
   // Fire pixel before redirecting
   fireTrackingPixel(extraParams);
   const url = buildRedirectUrl(baseUrl, extraParams);
-  // Delay to let pixel fire before navigating away
-  setTimeout(() => window.location.replace(url), 300);
+  window.location.replace(url);
 }
 
 /* ─────────────────────── loading screen ──────────────────────────── */
