@@ -97,10 +97,13 @@ export function ResearchVideo() {
       <h2 className="text-3xl md:text-5xl font-black text-gray-900 text-center mb-6 tracking-tight">
         Watch This Before Your Call
       </h2>
-      <div className="rounded-2xl overflow-hidden shadow-lg">
-        <LazyVideo
-          src="https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/Draft%204%201080-1.m4v"
-          poster="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1200&q=80"
+      <div className="rounded-2xl overflow-hidden shadow-lg aspect-video">
+        <iframe
+          src="https://videos.sproutvideo.com/embed/5a9adbb3181fe6cfd0/12f186a3bf77fb51"
+          className="w-full h-full"
+          frameBorder="0"
+          allowFullScreen
+          referrerPolicy="no-referrer-when-downgrade"
           title="Watch this before your call"
         />
       </div>
