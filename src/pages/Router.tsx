@@ -23,9 +23,9 @@ function getPassthroughParams(): URLSearchParams {
   return new URLSearchParams(window.location.search);
 }
 
-function fireTrackingPixel(extraParams?: Record<string, string>): Promise<void> {
+function fireTracking(extraParams?: Record<string, string>): Promise<void> {
   const p = getPassthroughParams();
-  const data: Record<string, string> = {
+  const data = {
     email: p.get('email') || '',
     first_name: p.get('first_name') || '',
     last_name: p.get('last_name') || '',
@@ -36,18 +36,14 @@ function fireTrackingPixel(extraParams?: Record<string, string>): Promise<void> 
     utm_campaign: p.get('utm_campaign') || '',
     utm_medium: p.get('utm_medium') || '',
   };
-  const qs = new URLSearchParams(data).toString();
-  const url = TRACKING_ENDPOINT + '?' + qs;
 
-  // Primary: image pixel — wait for it to actually load
-  return new Promise<void>((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve();
-    img.onerror = () => resolve();
-    img.src = url;
-    // Safety timeout — resolve after 500ms no matter what
-    setTimeout(resolve, 500);
-  });
+  return fetch(TRACKING_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+    .then(() => {})
+    .catch(() => {});
 }
 
 function buildRedirectUrl(baseUrl: string, extraParams: Record<string, string>): string {
@@ -63,8 +59,8 @@ function buildRedirectUrl(baseUrl: string, extraParams: Record<string, string>):
 
 async function doRedirect(baseUrl: string, extraParams: Record<string, string>) {
   const url = buildRedirectUrl(baseUrl, extraParams);
-  // Wait for pixel to fire, then redirect
-  await fireTrackingPixel(extraParams);
+  // Wait for tracking POST to complete, then redirect
+  await fireTracking(extraParams);
   window.location.replace(url);
 }
 
