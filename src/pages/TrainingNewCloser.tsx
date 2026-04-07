@@ -63,6 +63,7 @@ function parseDate(val: string | null): Date | null {
 function parseMeetingInfo(): MeetingInfo | null {
   if (typeof window === 'undefined') return null;
   const p = new URLSearchParams(window.location.search);
+  const relay = getRelayData();
 
   const start =
     parseDate(p.get('start')) ||
@@ -85,16 +86,48 @@ function parseMeetingInfo(): MeetingInfo | null {
     title: p.get('title') || 'Amazon Strategy Call with Passion Product',
     joinUrl: p.get('join') || p.get('joinUrl') || p.get('conferenceUrl') || '',
     organizer: p.get('organizer') || p.get('organizerName') || 'Passion Product Team',
-    firstName: p.get('first_name') || p.get('firstName') || '',
-    lastName: p.get('last_name') || p.get('lastName') || '',
-    email: p.get('email') || '',
+    firstName: p.get('first_name') || p.get('firstName') || p.get('firstname') || relay.firstname || '',
+    lastName: p.get('last_name') || p.get('lastName') || p.get('lastname') || relay.lastname || '',
+    email: p.get('email') || relay.email || '',
   };
+}
+
+/* localStorage data persisted by the booking-relay page before HubSpot */
+interface BookingRelayData {
+  firstname?: string;
+  lastname?: string;
+  phone?: string;
+  email?: string;
+  location?: string;
+  reason?: string;
+  tried?: string;
+  travis?: string;
+  value?: string;
+  money?: string;
+  _captured_at?: string;
+}
+
+function getRelayData(): BookingRelayData {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem('pp_booking_data');
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
 }
 
 function getFirstName(): string {
   if (typeof window === 'undefined') return '';
   const p = new URLSearchParams(window.location.search);
-  return p.get('first_name') || p.get('firstName') || '';
+  return (
+    p.get('first_name') ||
+    p.get('firstName') ||
+    p.get('firstname') ||
+    getRelayData().firstname ||
+    ''
+  );
 }
 
 function formatForICS(d: Date): string {
