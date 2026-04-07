@@ -4,10 +4,13 @@
    the confirmation pages can show the most relevant content for each
    visitor.
 
-   Each Typeform answer comes through as a long string. We match the
-   string against substrings to map it to a stable tag (e.g. "asset",
-   "freedom", "exploring") so the rest of the app doesn't have to know
-   the exact answer copy.
+   We normalize each value before matching:
+   - lowercase
+   - smart quotes / curly apostrophes flattened
+   - punctuation collapsed to spaces
+   - whitespace collapsed
+
+   Then we match against unique fingerprint words for each answer.
 ──────────────────────────────────────────────────────────────────── */
 
 const STORAGE_KEY = 'pp_booking_data';
@@ -47,67 +50,92 @@ function readStorage(): Record<string, string> {
   }
 }
 
-function lc(s: string | undefined): string {
-  return (s || '').toLowerCase();
+/* Normalize a string for matching: lowercase, strip smart quotes,
+   replace punctuation with spaces, collapse whitespace. This makes
+   matching robust against curly apostrophes, periods, hyphens, etc. */
+function normalize(s: string | undefined): string {
+  if (!s) return '';
+  return s
+    .toLowerCase()
+    // smart/curly quotes → straight
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+    // em/en dashes → hyphen → space
+    .replace(/[\u2013\u2014]/g, '-')
+    // strip ALL punctuation to spaces (keeps letters, numbers, spaces)
+    .replace(/[^a-z0-9\s]/g, ' ')
+    // collapse whitespace
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/* True if `needle` (already normalized) appears in `haystack` */
+function has(haystack: string, needle: string): boolean {
+  return haystack.includes(needle);
 }
 
 function mapRegion(val: string): Region {
-  const v = lc(val);
+  const v = normalize(val);
   if (!v) return 'unknown';
-  if (v.includes('usa') || v.includes('united states') || v === 'us') return 'usa';
-  if (v.includes('canada')) return 'canada';
-  if (v.includes('europe') || v.includes('uk') || v.includes('united kingdom')) return 'europe';
-  if (v.includes('new zealand') || v === 'nz') return 'newzealand';
-  if (v.includes('australia') || v === 'au') return 'australia';
+  if (has(v, 'new zealand') || v === 'nz') return 'newzealand';
+  if (has(v, 'australia') || v === 'au') return 'australia';
+  if (has(v, 'canada')) return 'canada';
+  if (has(v, 'europe') || has(v, 'uk') || has(v, 'united kingdom')) return 'europe';
+  if (has(v, 'usa') || has(v, 'united states') || v === 'us') return 'usa';
   return 'unknown';
 }
 
 function mapReason(val: string): Reason {
-  const v = lc(val);
+  const v = normalize(val);
   if (!v) return 'unknown';
-  if (v.includes('asset') || v.includes('without trading')) return 'asset';
-  if (v.includes('freedom') || v.includes('9-to-5') || v.includes('9 to 5') || v.includes('quit')) return 'freedom';
-  if (v.includes('exploring') || v.includes('figure out') || v.includes('makes the most sense')) return 'exploring';
+  // Each option has one unique fingerprint word
+  if (has(v, 'asset')) return 'asset';
+  if (has(v, 'freedom')) return 'freedom';
+  if (has(v, 'exploring')) return 'exploring';
   return 'unknown';
 }
 
 function mapSituation(val: string): Situation {
-  const v = lc(val);
+  const v = normalize(val);
   if (!v) return 'unknown';
-  if (v.includes('never started') || v.includes('structure and accountability')) return 'never_started';
-  if (v.includes('tried entrepreneurship') || v.includes("didn't have the right roadmap") || v.includes('didnt have the right roadmap')) return 'tried_failed';
-  if (v.includes('currently sell on amazon') || v.includes('stuck and need')) return 'amazon_stuck';
-  if (v.includes('researching') || v.includes('evaluating')) return 'researching';
+  // Order matters — check more specific phrases first
+  if (has(v, 'stuck')) return 'amazon_stuck';
+  if (has(v, 'tried entrepreneurship') || has(v, 'roadmap')) return 'tried_failed';
+  if (has(v, 'never started')) return 'never_started';
+  if (has(v, 'researching') || has(v, 'evaluating')) return 'researching';
   return 'unknown';
 }
 
 function mapTravis(val: string): TravisHistory {
-  const v = lc(val);
+  const v = normalize(val);
   if (!v) return 'unknown';
-  if (v.includes('over a year') || v.includes('over year')) return 'over_year';
-  if (v.includes('several months') || v.includes('months')) return 'months';
-  if (v.includes('recently discovered') || v.includes('recently')) return 'recent';
-  if (v.includes("haven't seen") || v.includes('havent seen') || v.includes('never seen')) return 'never';
+  // Order matters — "over a year" must check before "months"
+  if (has(v, 'over a year') || has(v, 'over year')) return 'over_year';
+  if (has(v, 'haven t seen') || has(v, 'havent seen') || has(v, 'never seen') || has(v, 'haven t')) return 'never';
+  if (has(v, 'recently discovered') || has(v, 'recently')) return 'recent';
+  if (has(v, 'several months') || has(v, 'months')) return 'months';
   return 'unknown';
 }
 
 function mapValue(val: string): ValuedFeature {
-  const v = lc(val);
+  const v = normalize(val);
   if (!v) return 'unknown';
-  if (v.includes('group coaching') || v.includes('small group')) return 'group_calls';
-  if (v.includes('one-on-one') || v.includes('one on one') || v.includes('1-on-1')) return 'one_on_one';
-  if (v.includes('curriculum') || v.includes('worksheets') || v.includes('roadmap')) return 'curriculum';
-  if (v.includes('community') || v.includes('accountability')) return 'community';
+  // "1:1" becomes "1 1" after normalize. Also "one-on-one" → "one on one"
+  if (has(v, '1 1') || has(v, 'one on one') || has(v, '1on1')) return 'one_on_one';
+  if (has(v, 'group coaching') || has(v, 'small group') || has(v, 'group calls')) return 'group_calls';
+  if (has(v, 'curriculum') || has(v, 'worksheets')) return 'curriculum';
+  if (has(v, 'community') || has(v, 'accountability')) return 'community';
   return 'unknown';
 }
 
 function mapCapital(val: string): Capital {
-  const v = lc(val);
+  const v = normalize(val);
   if (!v) return 'unknown';
-  if (v.includes('have capital set aside') || v.includes('set aside')) return 'have';
-  if (v.includes('can access') || v.includes('access the capital')) return 'access';
-  if (v.includes('would need time') || v.includes('save the capital')) return 'save';
-  if (v.includes('do not have') || v.includes("don't have")) return 'none';
+  // Order matters — check most specific first
+  if (has(v, 'do not have') || has(v, 'don t have') || has(v, 'dont have')) return 'none';
+  if (has(v, 'set aside') || has(v, 'have capital')) return 'have';
+  if (has(v, 'can access') || has(v, 'access the capital') || has(v, 'access capital')) return 'access';
+  if (has(v, 'would need time') || has(v, 'need time to save') || has(v, 'save the capital') || has(v, 'save capital')) return 'save';
   return 'unknown';
 }
 
