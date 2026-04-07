@@ -704,7 +704,7 @@ const CARD_BY_TIER: Record<CreditTier, CardRecommendation> = {
       'No annual fee — keeps it open after the intro period',
       'Use it to fund inventory, manufacturing, marketing, and tools',
     ],
-    applyUrl: 'https://www.wellsfargo.com/credit-cards/reflect/',
+    applyUrl: 'https://creditcards.wellsfargo.com/reflect-visa-credit-card/',
     bestFor: '670+ credit (Good to Excellent)',
   },
   tier2: {
