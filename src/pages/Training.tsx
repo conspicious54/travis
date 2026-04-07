@@ -9,6 +9,7 @@ import {
   PersonalizedIntro,
   WhatToExpect,
   LowCapitalStrategies,
+  CreditCardQuiz,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Star, Shield } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -100,6 +101,7 @@ export function Training() {
       <OpportunitySection />
       <TestimonialHighlights p={p} />
       <LowCapitalStrategies p={p} />
+      <CreditCardQuiz p={p} />
       <ResourceSection />
       <FinalCTA />
       <SharedFooter />

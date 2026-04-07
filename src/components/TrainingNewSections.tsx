@@ -673,6 +673,276 @@ export function LowCapitalStrategies({ p }: { p?: Personalization | null }) {
   );
 }
 
+/* ───────────── credit card quiz (US, low capital only) ────────────
+   A 2-question quiz that recommends a credit card based on credit
+   score. NOTHING is saved — purely client-side, for the visitor's
+   personal reference. Only renders for US visitors with limited
+   launch capital.
+──────────────────────────────────────────────────────────────────── */
+
+type CreditTier = 'tier1' | 'tier2' | 'tier3' | 'tier4';
+
+interface CardRecommendation {
+  name: string;
+  tagline: string;
+  apr: string;
+  fee: string;
+  highlights: string[];
+  applyUrl: string;
+  bestFor: string;
+}
+
+const CARD_BY_TIER: Record<CreditTier, CardRecommendation> = {
+  tier1: {
+    name: 'Wells Fargo Reflect Card',
+    tagline: '21 months 0% APR — the gold standard for funding a launch',
+    apr: '0% APR for 21 months on purchases and balance transfers',
+    fee: '$0 annual fee',
+    highlights: [
+      '21 months of 0% APR — nearly 2 years to fund and pay down',
+      'Average approved limit around $10,831',
+      'No annual fee — keeps it open after the intro period',
+      'Use it to fund inventory, manufacturing, marketing, and tools',
+    ],
+    applyUrl: 'https://www.wellsfargo.com/credit-cards/reflect/',
+    bestFor: '670+ credit (Good to Excellent)',
+  },
+  tier2: {
+    name: 'Capital One QuicksilverOne',
+    tagline: 'The realistic best card for fair credit',
+    apr: 'No 0% intro period — but the best card you can realistically get at this tier',
+    fee: '$39 annual fee',
+    highlights: [
+      '1.5% unlimited cash back on every purchase',
+      'Designed specifically for fair credit',
+      'Automatic credit line consideration in as little as 6 months',
+      'Check pre-approval without a hard pull',
+    ],
+    applyUrl: 'https://www.capitalone.com/credit-cards/quicksilverone/',
+    bestFor: '600–670 credit (Fair)',
+  },
+  tier3: {
+    name: 'Capital One Quicksilver Secured',
+    tagline: 'Build credit fast and graduate to unsecured',
+    apr: 'No 0% intro — focus is on building credit',
+    fee: '$0 annual fee',
+    highlights: [
+      '1.5% cash back on every purchase',
+      '$200 minimum refundable deposit to start',
+      'Credit limits from $1,000 to $3,000 based on creditworthiness',
+      'Reports to all three bureaus — graduate to unsecured over time',
+    ],
+    applyUrl: 'https://www.capitalone.com/credit-cards/quicksilver-secured/',
+    bestFor: '500–600 credit (Bad)',
+  },
+  tier4: {
+    name: 'Capital One Platinum Secured',
+    tagline: 'No credit score required — start here',
+    apr: 'No 0% intro — focus is on establishing credit',
+    fee: '$0 annual fee',
+    highlights: [
+      'No credit score required to apply — only income and debt info',
+      'Deposit as low as $49 for at least a $200 starting line',
+      'Automatic credit line review in as little as 6 months — no extra deposit needed',
+      'Reports to all three bureaus — graduate to unsecured over time',
+    ],
+    applyUrl: 'https://www.capitalone.com/credit-cards/platinum-secured/',
+    bestFor: 'Below 500 (Very Bad / No Credit)',
+  },
+};
+
+export function CreditCardQuiz({ p }: { p?: Personalization | null }) {
+  const [hasCards, setHasCards] = useState<'yes' | 'no' | null>(null);
+  const [tier, setTier] = useState<CreditTier | null>(null);
+  const [started, setStarted] = useState(false);
+
+  // Only render for US visitors with limited capital
+  if (!p) return null;
+  const isLowCapital = p.capital === 'none' || p.capital === 'save';
+  const isUS = p.region === 'usa';
+  if (!isLowCapital || !isUS) return null;
+
+  const recommendation = tier ? CARD_BY_TIER[tier] : null;
+
+  return (
+    <div className="bg-gradient-to-b from-orange-50/40 via-white to-white py-14 md:py-20 border-t border-gray-100">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="text-center mb-10">
+          <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
+            Funding Strategy
+          </span>
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight leading-[1.1]">
+            One of the Best Tools You Can Get?<br />
+            <span className="text-orange-600">A Business Credit Card.</span>
+          </h2>
+          <p className="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-3">
+            Hear us out. There's <span className="font-bold text-gray-900">bad debt</span>, and there's <span className="font-bold text-gray-900">good debt</span>.
+          </p>
+          <p className="text-gray-600 text-base max-w-2xl mx-auto">
+            Bad debt is borrowing to buy things that lose value. Good debt is borrowing to build something that <em>generates</em> value. If you're using a 0% APR card to fund a business that can make you $100,000 a year, that's good debt — it's exactly how the wealthiest people fund everything they build.
+          </p>
+        </div>
+
+        {!started && (
+          <div className="bg-gray-900 text-white rounded-2xl p-7 md:p-10 text-center max-w-2xl mx-auto shadow-xl">
+            <p className="text-xs font-bold uppercase tracking-[0.15em] text-orange-400 mb-2">Free Quick Quiz</p>
+            <h3 className="text-xl md:text-3xl font-black mb-3 leading-tight">
+              See Which Card You Could Qualify For
+            </h3>
+            <p className="text-sm md:text-base text-slate-300 mb-6 max-w-md mx-auto">
+              Two quick questions. We'll match you with the best card based on your situation — including options with up to <span className="font-bold text-white">21 months of 0% APR</span>.
+            </p>
+            <button
+              onClick={() => setStarted(true)}
+              className="inline-flex items-center gap-2 px-8 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-orange-500/30 cursor-pointer text-sm"
+            >
+              Start the Quiz →
+            </button>
+            <p className="text-xs text-slate-500 mt-5">
+              We don't save any of your answers. This is purely for your personal reference.
+            </p>
+          </div>
+        )}
+
+        {started && !recommendation && (
+          <div className="bg-white border border-gray-200 rounded-2xl p-7 md:p-10 shadow-xl max-w-2xl mx-auto">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-6 text-center">
+              <p className="text-xs text-orange-800 font-medium">
+                🔒 Nothing you answer is saved. This is for your personal reference only.
+              </p>
+            </div>
+
+            {/* Question 1 */}
+            <div className="mb-8">
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Question 1 of 2</p>
+              <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">
+                Do you currently have any credit cards?
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setHasCards('yes')}
+                  className={`px-5 py-3 rounded-xl border-2 font-bold text-sm transition-all cursor-pointer ${
+                    hasCards === 'yes'
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setHasCards('no')}
+                  className={`px-5 py-3 rounded-xl border-2 font-bold text-sm transition-all cursor-pointer ${
+                    hasCards === 'no'
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  No
+                </button>
+              </div>
+            </div>
+
+            {/* Question 2 */}
+            {hasCards && (
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Question 2 of 2</p>
+                <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">
+                  What's your approximate credit score?
+                </h3>
+                <div className="space-y-2">
+                  {([
+                    { tier: 'tier1' as CreditTier, label: 'Above 670', sub: 'Good to Excellent' },
+                    { tier: 'tier2' as CreditTier, label: 'Between 600 and 670', sub: 'Fair' },
+                    { tier: 'tier3' as CreditTier, label: 'Between 500 and 600', sub: 'Bad' },
+                    { tier: 'tier4' as CreditTier, label: 'Below 500', sub: 'Very Bad / No Credit' },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.tier}
+                      onClick={() => setTier(opt.tier)}
+                      className="w-full text-left px-5 py-4 rounded-xl border-2 border-gray-200 bg-white hover:border-orange-300 hover:bg-orange-50/50 transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-gray-900 text-sm group-hover:text-orange-700">{opt.label}</p>
+                          <p className="text-xs text-gray-500">{opt.sub}</p>
+                        </div>
+                        <span className="text-orange-500 font-bold text-lg">→</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {recommendation && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-gradient-to-br from-orange-500 to-amber-500 text-white rounded-2xl p-7 md:p-9 shadow-2xl">
+              <div className="text-center mb-6">
+                <p className="text-xs font-bold uppercase tracking-[0.15em] text-orange-100 mb-2">Your Best Match</p>
+                <h3 className="text-2xl md:text-3xl font-black leading-tight mb-1">{recommendation.name}</h3>
+                <p className="text-orange-100 text-sm">{recommendation.tagline}</p>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 mb-6">
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-white mt-0.5 shrink-0" />
+                    <p className="text-white font-medium">{recommendation.apr}</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-white mt-0.5 shrink-0" />
+                    <p className="text-white font-medium">{recommendation.fee}</p>
+                  </div>
+                </div>
+              </div>
+
+              <ul className="space-y-2 mb-6">
+                {recommendation.highlights.map((h, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-orange-50">
+                    <span className="text-white mt-0.5">→</span>
+                    <span>{h}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <a
+                href={recommendation.applyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full text-center px-6 py-4 bg-white text-orange-700 font-black rounded-xl hover:bg-orange-50 transition-colors shadow-lg cursor-pointer text-sm md:text-base"
+              >
+                Apply for {recommendation.name} →
+              </a>
+
+              <p className="text-center text-xs text-orange-100 mt-3">
+                Best for: {recommendation.bestFor}
+              </p>
+            </div>
+
+            <div className="text-center mt-5">
+              <button
+                onClick={() => {
+                  setTier(null);
+                  setHasCards(null);
+                }}
+                className="text-sm text-gray-500 hover:text-gray-700 underline underline-offset-2 cursor-pointer"
+              >
+                Take the quiz again
+              </button>
+            </div>
+
+            <p className="text-center text-xs text-gray-400 mt-6 max-w-md mx-auto">
+              These are general recommendations, not financial advice. Approval depends on the lender. We don't track or save your answers.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ResourceSection() {
   const [openCategory, setOpenCategory] = useState<number | null>(null);
 

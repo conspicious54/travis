@@ -9,6 +9,7 @@ import {
   PersonalizedIntro,
   WhatToExpect,
   LowCapitalStrategies,
+  CreditCardQuiz,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Phone, UserPlus, Star, Shield } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -195,6 +196,7 @@ export function TrainingNewSetter() {
       <OpportunitySection />
       <TestimonialHighlights p={p} />
       <LowCapitalStrategies p={p} />
+      <CreditCardQuiz p={p} />
       <ResourceSection />
       <SetterFinalCTA />
       <SharedFooter />
