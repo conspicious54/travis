@@ -8,6 +8,7 @@ import {
   SharedFooter,
   PersonalizedIntro,
   WhatToExpect,
+  LowCapitalStrategies,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Phone, UserPlus, Star, Shield } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -187,12 +188,13 @@ export function TrainingNewSetter() {
     <div className="min-h-screen bg-white text-gray-900">
       <StepProgressBar />
       <SetterConfirmationBanner />
-      <PersonalizedIntro p={p} />
       <ResearchVideo />
+      <PersonalizedIntro p={p} />
       <WhatToExpect p={p} />
       <BreakoutVideos p={p} />
       <OpportunitySection />
       <TestimonialHighlights p={p} />
+      <LowCapitalStrategies p={p} />
       <ResourceSection />
       <SetterFinalCTA />
       <SharedFooter />

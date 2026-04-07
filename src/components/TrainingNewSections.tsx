@@ -98,42 +98,42 @@ const REASON_COPY: Record<Reason, { eyebrow: string; headline: string; body: str
   asset: {
     eyebrow: 'You Want a Real Asset',
     headline: "Building something that pays you whether you're working or not",
-    body: 'You don\'t want another job — you want an asset. The Amazon brands our students build keep generating sales while they sleep, travel, and spend time with family. That\'s exactly what you\'re about to map out on your call.',
+    body: "You don't want another job — you want an asset. An Amazon brand keeps generating sales while you sleep, travel, and spend time with family. That's exactly what you're about to map out on your call.",
     icon: <Award className="w-5 h-5" />,
   },
   freedom: {
     eyebrow: 'You Want Your Time Back',
     headline: 'Built so you never have to ask permission again',
-    body: 'The 9-to-5 isn\'t the goal — freedom is. Most of our students started exactly where you are: tired of the schedule, the commute, the cap on what they could earn. On your call, we\'ll build the path that gets you out.',
+    body: "The 9-to-5 isn't the goal — freedom is. The path out is real, and it's been walked by thousands of people who started exactly where you are: tired of the schedule, tired of the commute, tired of the cap on what they could earn. On your call, we'll build the path that gets you out.",
     icon: <Heart className="w-5 h-5" />,
   },
   exploring: {
     eyebrow: "You're Doing Your Research",
     headline: "Smart — most people skip this part and regret it",
-    body: 'Looking before you leap is the right move. The video below walks you through exactly what we do, who it\'s for, and why it works — so by the time you\'re on the call, you\'ll know if this is the right path for you.',
+    body: "Looking before you leap is the right move. The video above walks you through exactly what we do, who it's for, and why it works — so by the time you're on the call, you'll know if this is the right path for you.",
     icon: <Compass className="w-5 h-5" />,
   },
   unknown: {
     eyebrow: 'You Took the First Step',
     headline: "Most people don't even get this far",
-    body: 'Booking the call puts you in a tiny minority of people who actually take action. Watch the video below before your call so you show up ready, and we can spend the time on what matters most for you.',
+    body: "Booking the call puts you in a tiny minority of people who actually take action. Watch the video above before your call so you show up ready, and we can spend the time on what matters most for you.",
     icon: <Sparkles className="w-5 h-5" />,
   },
 };
 
 const SITUATION_NOTE: Record<Situation, string | null> = {
-  never_started: 'Since this is your first business, the call will focus on the structure and accountability you need to do this right from day one.',
-  tried_failed: 'Since you\'ve tried entrepreneurship before, the call will focus on what was missing the first time — the actual roadmap.',
-  amazon_stuck: 'Since you\'re already on Amazon and stuck, the call will focus on the specific lever that\'s holding you back and how to break through.',
-  researching: 'Since you\'re still evaluating your options, the call will give you a clear, honest read on whether Amazon FBA is the right fit for you.',
+  never_started: "Since this is your first business, the call will focus on the structure and accountability you need to do this right from day one.",
+  tried_failed: "Since you've tried entrepreneurship before, the call will focus on what was missing the first time — the actual roadmap.",
+  amazon_stuck: "Since you're already on Amazon and stuck, the call will focus on the specific lever that's holding you back and how to break through.",
+  researching: "Since you're still evaluating your options, the call will give you a clear, honest read on whether Amazon FBA is the right fit for you.",
   unknown: null,
 };
 
 const CAPITAL_NOTE: Record<Capital, string | null> = {
-  have: "Since you have capital ready, we'll focus on getting you launched fast — the way our top students moved.",
+  have: "Since you have capital ready, we'll focus on getting you launched fast.",
   access: "Since you can access capital when you need it, we'll map out the smart way to deploy it.",
-  save: "Since you're still building up your capital, we'll talk about how students like Mina ($900 → $4M) started small and scaled.",
-  none: "Since launch capital is tight, we'll focus on the Kickstarter route — how AJ raised $100K+ before manufacturing a single unit.",
+  save: "Since you're still building up your capital, we'll cover the strategies for launching on Amazon with less than $1,000 — see the section below.",
+  none: "Since launch capital is tight, we'll cover the strategies for launching on Amazon with less than $1,000 — see the section below.",
   unknown: null,
 };
 
@@ -214,15 +214,15 @@ export function PersonalizedIntro({ p }: { p: Personalization | null }) {
 
 const VALUE_COPY: Record<ValuedFeature, { title: string; body: string }> = {
   group_calls: {
-    title: 'Weekly group coaching is a core part of what we do',
-    body: "On your call, we'll show you exactly how the group calls work, what gets discussed, and why students say it's the thing that keeps them moving forward.",
+    title: 'Weekly group coaching is a core part of working with us',
+    body: "On your call, we'll show you exactly how the group calls work, what gets discussed, and why people say it's the thing that keeps them moving forward.",
   },
   one_on_one: {
-    title: '1-on-1 strategy calls are how students get unstuck fastest',
-    body: "On your call, we'll show you how the personalized 1-on-1 sessions work and the kinds of breakthroughs students get from them.",
+    title: '1-on-1 strategy calls are how people get unstuck fastest',
+    body: "On your call, we'll show you how the personalized 1-on-1 sessions work and the kinds of breakthroughs that come from them.",
   },
   curriculum: {
-    title: 'The structured curriculum is the spine of the program',
+    title: 'A structured roadmap is the spine of how we work together',
     body: "On your call, we'll walk you through the roadmap — every step, in order, with worksheets — so you know exactly what you'd be working on each week.",
   },
   community: {
@@ -533,9 +533,7 @@ export function TestimonialHighlights({ p }: { p?: Personalization | null }) {
   // Personalized intro line for testimonials
   let testimonialSubhead = `${ordered.length} real student stories. Watch any of them.`;
   if (p) {
-    if (p.capital === 'none' || p.capital === 'save') {
-      testimonialSubhead = `Watch students who started small and built real businesses.`;
-    } else if (p.situation === 'amazon_stuck') {
+    if (p.situation === 'amazon_stuck') {
       testimonialSubhead = `Watch how these students broke through the same plateau you're hitting.`;
     } else if (p.situation === 'never_started') {
       testimonialSubhead = `Watch students who, like you, had never started a business before.`;
@@ -588,6 +586,88 @@ export function TestimonialHighlights({ p }: { p?: Personalization | null }) {
             Individual results vary. Past performance doesn't guarantee future results.
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ───────────── low-capital strategies section ─────────────────────
+   Only renders for visitors who said they need time to save or have
+   no launch capital. Shows three concrete strategies for launching
+   on Amazon with less than $1,000.
+──────────────────────────────────────────────────────────────────── */
+
+export function LowCapitalStrategies({ p }: { p?: Personalization | null }) {
+  if (!p || (p.capital !== 'none' && p.capital !== 'save')) return null;
+
+  return (
+    <div className="bg-gradient-to-b from-white via-orange-50/40 to-white py-14 md:py-20 border-t border-gray-100">
+      <div className="max-w-5xl mx-auto px-4">
+        <div className="text-center mb-12">
+          <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
+            Built For Where You Are
+          </span>
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight leading-[1.1]">
+            How to Launch on Amazon With <br className="md:hidden" />
+            <span className="text-orange-600">Less Than $1,000</span>
+          </h2>
+          <p className="text-gray-600 text-base md:text-lg max-w-2xl mx-auto">
+            You don't need a fat bank account to start. You need the right strategy. Here are three real ways people launch on Amazon when capital is tight.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Strategy 1 — Kickstarter */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-orange-200 transition-all">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 text-orange-600 mb-4 font-black text-lg">
+              1
+            </div>
+            <h3 className="font-black text-gray-900 text-lg mb-2 leading-tight">Use Kickstarter to Fund It</h3>
+            <p className="text-sm text-gray-600 leading-relaxed mb-3">
+              Real customers paying real money for your product <em>before</em> you manufacture a single unit. You validate the demand and raise the launch capital at the same time — no risk, no out-of-pocket inventory.
+            </p>
+            <p className="text-xs text-gray-500 italic">
+              On your call, we'll walk you through how to set up a Kickstarter campaign that actually funds.
+            </p>
+          </div>
+
+          {/* Strategy 2 — Cheap product launch */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-orange-200 transition-all">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 text-orange-600 mb-4 font-black text-lg">
+              2
+            </div>
+            <h3 className="font-black text-gray-900 text-lg mb-2 leading-tight">Launch a Low-Cost Product</h3>
+            <p className="text-sm text-gray-600 leading-relaxed mb-3">
+              Not every product needs a huge inventory order. There are entire categories where you can launch profitably for under $1,000. Travis encourages this — it's far less risky and lets you prove the model before scaling up.
+            </p>
+            <p className="text-xs text-gray-500 italic">
+              On your call, we'll help you identify the right kind of product to start with.
+            </p>
+          </div>
+
+          {/* Strategy 3 — Financing */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-orange-200 transition-all">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 text-orange-600 mb-4 font-black text-lg">
+              3
+            </div>
+            <h3 className="font-black text-gray-900 text-lg mb-2 leading-tight">Use the Power of Financing</h3>
+            <p className="text-sm text-gray-600 leading-relaxed mb-3">
+              The richest people in the world use financing to fund their businesses. Every skyscraper you walk past was financed — not paid for outright. That's how rich people buy leverage. A 0% APR business credit card for 18 months is one of the easiest ways to get started.
+            </p>
+            <p className="text-xs text-gray-500 italic">
+              On your call, we'll discuss the financing strategies that actually make sense.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-10 bg-gray-900 text-white rounded-2xl p-6 md:p-8 text-center max-w-3xl mx-auto">
+          <p className="text-base md:text-lg font-bold mb-2">
+            Tight on capital? It's actually an advantage.
+          </p>
+          <p className="text-sm text-slate-300 max-w-xl mx-auto">
+            People with limited budgets are forced to be smarter, more disciplined, and more creative. The ones who figure it out almost always outperform people who just throw money at the problem.
+          </p>
+        </div>
       </div>
     </div>
   );

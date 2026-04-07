@@ -8,6 +8,7 @@ import {
   SharedFooter,
   PersonalizedIntro,
   WhatToExpect,
+  LowCapitalStrategies,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Clock, Star, Shield, ChevronDown } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -465,12 +466,13 @@ export function TrainingNewCloser() {
     <div className="min-h-screen bg-white text-gray-900">
       <StepProgressBar />
       <CloserConfirmationBanner meeting={meeting} firstName={firstName} />
-      <PersonalizedIntro p={p} />
       <ResearchVideo />
+      <PersonalizedIntro p={p} />
       <WhatToExpect p={p} />
       <BreakoutVideos p={p} />
       <OpportunitySection />
       <TestimonialHighlights p={p} />
+      <LowCapitalStrategies p={p} />
       <ResourceSection />
       <CloserFinalCTA meeting={meeting} firstName={firstName} />
       <SharedFooter />
