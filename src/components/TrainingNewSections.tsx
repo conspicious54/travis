@@ -93,19 +93,27 @@ export function YouTubeLazyEmbed({ videoId, title }: { videoId: string; title: s
 
 export function ResearchVideo() {
   return (
-    <div className="max-w-3xl mx-auto px-4 pt-6 pb-10">
-      <h2 className="text-3xl md:text-5xl font-black text-gray-900 text-center mb-6 tracking-tight">
-        Watch This Before Your Call
-      </h2>
-      <div className="rounded-2xl overflow-hidden shadow-lg aspect-video">
-        <iframe
-          src="https://videos.sproutvideo.com/embed/5a9adbb3181fe6cfd0/12f186a3bf77fb51"
-          className="w-full h-full"
-          frameBorder="0"
-          allowFullScreen
-          referrerPolicy="no-referrer-when-downgrade"
-          title="Watch this before your call"
-        />
+    <div className="max-w-4xl mx-auto px-4 pt-8 pb-14 md:pt-10 md:pb-16">
+      <div className="text-center mb-7">
+        <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
+          Most Important Step
+        </span>
+        <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1]">
+          Watch This Before<br className="md:hidden" /> Your Call
+        </h2>
+      </div>
+      <div className="relative">
+        <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
+        <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video ring-1 ring-gray-200">
+          <iframe
+            src="https://videos.sproutvideo.com/embed/5a9adbb3181fe6cfd0/12f186a3bf77fb51"
+            className="w-full h-full"
+            frameBorder="0"
+            allowFullScreen
+            referrerPolicy="no-referrer-when-downgrade"
+            title="Watch this before your call"
+          />
+        </div>
       </div>
     </div>
   );
@@ -140,15 +148,20 @@ export function BreakoutVideos() {
   ];
 
   return (
-    <div className="bg-gray-50 py-10 md:py-14">
+    <div className="bg-gradient-to-b from-gray-50 to-white py-14 md:py-20 border-t border-gray-100">
       <div className="max-w-5xl mx-auto px-4">
-        <h2 className="text-2xl md:text-4xl font-black text-gray-900 text-center mb-8 tracking-tight">
-          Every Question You Have — Answered
-        </h2>
+        <div className="text-center mb-10">
+          <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
+            Common Questions
+          </span>
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1]">
+            Every Question You Have — <span className="text-orange-600">Answered</span>
+          </h2>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {breakouts.map((b, i) => (
-            <div key={i} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            <div key={i} className="group bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-orange-200 transition-all">
               <div className="aspect-video bg-gray-900">
                 <iframe
                   src={b.embed}
@@ -159,7 +172,7 @@ export function BreakoutVideos() {
                   title={b.headline}
                 />
               </div>
-              <h3 className="font-bold text-gray-900 text-base p-4">{b.headline}</h3>
+              <h3 className="font-bold text-gray-900 text-base md:text-lg p-5 group-hover:text-orange-700 transition-colors">{b.headline}</h3>
             </div>
           ))}
         </div>
@@ -170,15 +183,15 @@ export function BreakoutVideos() {
 
 export function OpportunitySection() {
   return (
-    <div className="bg-gradient-to-b from-white to-blue-50 py-12 md:py-16">
+    <div className="bg-gradient-to-b from-white via-orange-50/30 to-white py-14 md:py-20 border-t border-gray-100">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="text-center mb-10">
-          <p className="text-amber-600 text-sm font-semibold uppercase tracking-wider mb-2">Why Now Matters</p>
-          <h2 className="text-2xl md:text-4xl font-black text-gray-900 mb-3 tracking-tight">
-            The Window Is Wide Open — Right Now
+        <div className="text-center mb-12">
+          <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">Why Now Matters</span>
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight leading-[1.1]">
+            The Window Is Wide Open — <span className="text-orange-600">Right Now</span>
           </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            While most people are scared away by headlines, the data tells a different story. Here's what's actually happening on the ground.
+          <p className="text-gray-600 text-base md:text-lg max-w-2xl mx-auto">
+            While most people get scared off by headlines, the data tells a different story.
           </p>
         </div>
 
@@ -298,25 +311,28 @@ export function TestimonialHighlights() {
   const visible = showAll ? youtubeTestimonials : youtubeTestimonials.slice(0, 6);
 
   return (
-    <div className="bg-white py-12 md:py-16">
+    <div className="bg-white py-14 md:py-20 border-t border-gray-100">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl md:text-4xl font-black text-gray-900 mb-2 tracking-tight">
-            People Just Like You Who Took Action
+        <div className="text-center mb-12">
+          <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
+            Real Students. Real Results.
+          </span>
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight leading-[1.1]">
+            People Just Like You<br className="md:hidden" /> Who <span className="text-orange-600">Took Action</span>
           </h2>
-          <p className="text-gray-600 max-w-xl mx-auto">
+          <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto">
             {youtubeTestimonials.length} real student stories. Watch any of them.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {visible.map((v, i) => (
-            <div key={v.id + '-' + i} className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+            <div key={v.id + '-' + i} className="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl hover:border-orange-200 transition-all">
               <YouTubeLazyEmbed videoId={v.id} title={`${v.name} testimonial`} />
               <div className="p-4">
                 <div className="flex items-center justify-between mb-0.5">
                   <span className="font-bold text-gray-900 text-sm">{v.name}</span>
-                  <span className={`font-bold text-sm ${v.revenue === 'Failure' ? 'text-red-500' : 'text-blue-600'}`}>{v.revenue}</span>
+                  <span className={`font-black text-sm ${v.revenue === 'Failure' ? 'text-red-500' : 'text-orange-600'}`}>{v.revenue}</span>
                 </div>
                 <p className="text-xs text-gray-500">in {v.time}</p>
               </div>
@@ -325,12 +341,12 @@ export function TestimonialHighlights() {
         </div>
 
         {!showAll && (
-          <div className="text-center mt-8">
+          <div className="text-center mt-10">
             <button
               onClick={() => setShowAll(true)}
-              className="px-8 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer"
+              className="px-8 py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer shadow-lg"
             >
-              Show All {youtubeTestimonials.length} Student Stories
+              Show All {youtubeTestimonials.length} Student Stories →
             </button>
           </div>
         )}
@@ -399,14 +415,15 @@ export function ResourceSection() {
   ];
 
   return (
-    <div className="bg-gradient-to-b from-gray-50 to-white py-12 md:py-16">
+    <div className="bg-gradient-to-b from-gray-50 to-white py-14 md:py-20 border-t border-gray-100">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl md:text-4xl font-black text-gray-900 mb-2 tracking-tight">
-            Get a Head Start Before Your Call
+        <div className="text-center mb-12">
+          <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">Optional Bonus</span>
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight leading-[1.1]">
+            Get a Head Start <span className="text-orange-600">Before Your Call</span>
           </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Here are the tools and resources our most successful students use. Explore at your own pace — there's no homework, just a head start.
+          <p className="text-gray-600 text-base md:text-lg max-w-2xl mx-auto">
+            Tools and resources our most successful students use. No homework — just a head start.
           </p>
         </div>
 
