@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users } from 'lucide-react';
+import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users, CheckCircle } from 'lucide-react';
 import type { Personalization, Reason, Situation, ValuedFeature, Capital, TravisHistory, Region } from '../lib/personalization';
 
 /* ───────────────────────────── helpers ───────────────────────────── */
