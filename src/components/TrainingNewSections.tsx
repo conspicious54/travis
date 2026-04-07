@@ -113,12 +113,30 @@ export function ResearchVideo() {
 
 export function BreakoutVideos() {
   const breakouts = [
-    'Is It Actually Too Late to Start on Amazon?',
-    'Think You Need Tens of Thousands to Get Started?',
-    'Working Full-Time? Here\'s How Students Do Both.',
-    'No Product Idea or Experience? That\'s Actually Ideal.',
-    'Skeptical of Online Courses? Good — You Should Be.',
-    'What If You Pick the Wrong Product?',
+    {
+      headline: 'Is It Actually Too Late to Start on Amazon?',
+      embed: 'https://videos.sproutvideo.com/embed/dc9adbb31513e1c056/9a833984ebbbd62f',
+    },
+    {
+      headline: 'Think You Need Tens of Thousands to Get Started?',
+      embed: 'https://videos.sproutvideo.com/embed/8c9adbb31511eec506/80d1f8e8fb8fd47b',
+    },
+    {
+      headline: 'Working Full-Time? Here\'s How Students Do Both.',
+      embed: 'https://videos.sproutvideo.com/embed/8c9adbb31510e7cd06/6d5e29c2559707a4',
+    },
+    {
+      headline: 'No Product Idea or Experience? That\'s Actually Ideal.',
+      embed: 'https://videos.sproutvideo.com/embed/8c9adbb3181ee2cb06/c87808d62d097bd1',
+    },
+    {
+      headline: 'Skeptical of Online Courses? Good — You Should Be.',
+      embed: 'https://videos.sproutvideo.com/embed/ee9adbb31513e7c164/0e0d27cd2ae31e59',
+    },
+    {
+      headline: 'What If You Pick the Wrong Product?',
+      embed: 'https://videos.sproutvideo.com/embed/aa9adbb3181ee0c020/edb75f1300af4b4d',
+    },
   ];
 
   return (
@@ -129,12 +147,19 @@ export function BreakoutVideos() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {breakouts.map((headline, i) => (
+          {breakouts.map((b, i) => (
             <div key={i} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-              <div className="aspect-video bg-gray-100 flex items-center justify-center">
-                <Play className="w-10 h-10 text-gray-400" />
+              <div className="aspect-video bg-gray-900">
+                <iframe
+                  src={b.embed}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title={b.headline}
+                />
               </div>
-              <h3 className="font-bold text-gray-900 text-base p-4">{headline}</h3>
+              <h3 className="font-bold text-gray-900 text-base p-4">{b.headline}</h3>
             </div>
           ))}
         </div>
