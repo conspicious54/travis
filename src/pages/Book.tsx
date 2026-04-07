@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { CheckCircle, Sparkles, Users, Clock, Shield } from 'lucide-react';
 
 /* ───── /book — embedded HubSpot closer scheduler ─────────────────
    Embeds the HubSpot meeting scheduler in an iframe and listens
@@ -122,25 +123,83 @@ export function Book() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50/30 via-white to-white">
+    <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white">
+      {/* Step bar */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold ring-4 ring-orange-100">
+                1
+              </div>
+              <span className="text-xs font-bold text-orange-600 uppercase tracking-wider">Book Call</span>
+            </div>
+            <div className="w-12 h-0.5 bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-bold">
+                2
+              </div>
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Prepare</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-4xl mx-auto px-4 py-10 md:py-14">
-        <div className="text-center mb-8">
-          <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
-            Step 1 of 2
-          </span>
-          <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1] mb-3">
-            Book Your <span className="text-orange-600">Strategy Call</span>
+        {/* Qualified celebration */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-green-700 mb-5">
+            <CheckCircle className="w-3.5 h-3.5" />
+            You Qualified
+          </div>
+
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.05] mb-4">
+            Congrats — You're In.<br />
+            <span className="text-orange-600">Now Pick Your Time.</span>
           </h1>
-          <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto">
-            Pick a time that works for you. We'll see you there.
+
+          <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto mb-3">
+            You're about to get on a call with someone from Travis's team. This is the same call our top students took before they built their Amazon businesses.
           </p>
+
+          <div className="inline-flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-3 text-xs md:text-sm text-gray-500">
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-orange-500" />
+              30-min strategy session
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-orange-500" />
+              1-on-1 with our team
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-orange-500" />
+              No pressure, no obligation
+            </span>
+          </div>
         </div>
 
-        <div
-          ref={containerRef}
-          className="meetings-iframe-container bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
-          data-src={buildEmbedUrl()}
-        />
+        {/* Embedded scheduler with framing */}
+        <div className="relative">
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
+              <Sparkles className="w-4 h-4 text-orange-600" />
+              <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below — spots fill up fast</p>
+            </div>
+            <div
+              ref={containerRef}
+              className="meetings-iframe-container"
+              data-src={buildEmbedUrl()}
+            />
+          </div>
+        </div>
+
+        {/* Reassurance below the embed */}
+        <div className="text-center mt-8 max-w-xl mx-auto">
+          <p className="text-sm text-gray-500">
+            After you book, you'll get a confirmation page with everything you need to prepare for your call — plus stories from real students who started exactly where you are.
+          </p>
+        </div>
       </div>
     </div>
   );
