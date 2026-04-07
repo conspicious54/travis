@@ -7,7 +7,7 @@ import {
   ResourceSection,
   SharedFooter,
 } from '../components/TrainingNewSections';
-import { CheckCircle, Calendar, Clock, Star, Shield } from 'lucide-react';
+import { CheckCircle, Calendar, Clock, Star, Shield, ChevronDown } from 'lucide-react';
 
 /* ───────────────────── closer-specific sections ──────────────────── */
 
@@ -154,6 +154,115 @@ function downloadICS(m: MeetingInfo) {
   URL.revokeObjectURL(url);
 }
 
+/* ───── calendar provider URL builders ──────────────────────────── */
+
+function formatForGoogle(d: Date): string {
+  return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+function buildGoogleUrl(m: MeetingInfo): string {
+  const description = [
+    'Your personalized Amazon FBA strategy session with the Passion Product team.',
+    '',
+    m.joinUrl ? `Join link: ${m.joinUrl}` : '',
+  ].filter(Boolean).join('\n');
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: m.title,
+    dates: `${formatForGoogle(m.start)}/${formatForGoogle(m.end)}`,
+    details: description,
+    location: m.joinUrl || 'Video Call',
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function buildOutlookWebUrl(m: MeetingInfo): string {
+  const description = [
+    'Your personalized Amazon FBA strategy session with the Passion Product team.',
+    m.joinUrl ? `Join link: ${m.joinUrl}` : '',
+  ].filter(Boolean).join('\n');
+
+  const params = new URLSearchParams({
+    path: '/calendar/action/compose',
+    rru: 'addevent',
+    subject: m.title,
+    body: description,
+    startdt: m.start.toISOString(),
+    enddt: m.end.toISOString(),
+    location: m.joinUrl || 'Video Call',
+  });
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
+
+function buildYahooUrl(m: MeetingInfo): string {
+  const params = new URLSearchParams({
+    v: '60',
+    title: m.title,
+    st: formatForGoogle(m.start),
+    et: formatForGoogle(m.end),
+    desc: m.joinUrl ? `Join link: ${m.joinUrl}` : '',
+    in_loc: m.joinUrl || 'Video Call',
+  });
+  return `https://calendar.yahoo.com/?${params.toString()}`;
+}
+
+/* ───── CalendarButton dropdown component ──────────────────────── */
+
+function CalendarButton({ meeting, variant = 'primary' }: { meeting: MeetingInfo; variant?: 'primary' | 'cta' }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const close = () => setIsOpen(false);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [isOpen]);
+
+  const buttonClasses = variant === 'cta'
+    ? 'inline-flex items-center gap-2 px-8 py-3.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-orange-500/30 cursor-pointer text-sm'
+    : 'inline-flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors shadow-md text-sm cursor-pointer';
+
+  const options = [
+    { label: 'Google Calendar', action: () => window.open(buildGoogleUrl(meeting), '_blank', 'noopener,noreferrer') },
+    { label: 'Apple Calendar', action: () => downloadICS(meeting) },
+    { label: 'Outlook (Web)', action: () => window.open(buildOutlookWebUrl(meeting), '_blank', 'noopener,noreferrer') },
+    { label: 'Outlook (Desktop)', action: () => downloadICS(meeting) },
+    { label: 'Yahoo Calendar', action: () => window.open(buildYahooUrl(meeting), '_blank', 'noopener,noreferrer') },
+    { label: 'Other (.ics file)', action: () => downloadICS(meeting) },
+  ];
+
+  return (
+    <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={buttonClasses}
+      >
+        <Calendar className="w-4 h-4" />
+        Add to My Calendar
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+          {options.map((opt) => (
+            <button
+              key={opt.label}
+              onClick={() => {
+                opt.action();
+                setIsOpen(false);
+              }}
+              className="w-full text-left px-4 py-3 text-sm text-gray-700 font-medium hover:bg-orange-50 hover:text-orange-700 transition-colors cursor-pointer border-b border-gray-100 last:border-b-0"
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function formatHumanDate(d: Date): string {
   return d.toLocaleDateString(undefined, {
     weekday: 'long',
@@ -193,13 +302,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
             </div>
 
             <div>
-              <button
-                onClick={() => downloadICS(meeting)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors shadow-md text-sm cursor-pointer"
-              >
-                <Calendar className="w-4 h-4" />
-                Add to My Calendar
-              </button>
+              <CalendarButton meeting={meeting} variant="primary" />
               <p className="text-xs text-gray-400 mt-2">Works with Google, Outlook, Apple Calendar, and more</p>
             </div>
           </>
@@ -228,13 +331,7 @@ function CloserFinalCTA({ meeting, firstName }: { meeting: MeetingInfo | null; f
 
         {meeting && (
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
-            <button
-              onClick={() => downloadICS(meeting)}
-              className="inline-flex items-center gap-2 px-8 py-3.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-orange-500/30 cursor-pointer text-sm"
-            >
-              <Calendar className="w-4 h-4" />
-              Add to My Calendar
-            </button>
+            <CalendarButton meeting={meeting} variant="cta" />
           </div>
         )}
 
