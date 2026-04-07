@@ -93,7 +93,7 @@ export function YouTubeLazyEmbed({ videoId, title }: { videoId: string; title: s
 
 export function ResearchVideo() {
   return (
-    <div className="max-w-4xl mx-auto px-4 pt-8 pb-14 md:pt-10 md:pb-16">
+    <div className="max-w-4xl mx-auto px-4 pt-8 pb-10 md:pt-10 md:pb-12">
       <div className="text-center mb-7">
         <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
           Most Important Step
@@ -113,6 +113,16 @@ export function ResearchVideo() {
             referrerPolicy="no-referrer-when-downgrade"
             title="Watch this before your call"
           />
+        </div>
+      </div>
+
+      {/* Scroll-down indicator */}
+      <div className="text-center mt-10 md:mt-12">
+        <p className="text-sm md:text-base text-gray-600 font-medium mb-3">
+          Have questions? Keep scrolling — <span className="text-orange-600 font-bold">we've answered them below</span>
+        </p>
+        <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 animate-bounce">
+          <ChevronDown className="w-5 h-5 text-orange-600" />
         </div>
       </div>
     </div>
