@@ -38,16 +38,36 @@ export interface Personalization {
   raw: Record<string, string>;
 }
 
+/* Read raw answers — URL params take precedence over localStorage so
+   you can preview personalization by just appending query params to
+   any confirmation page URL. */
 function readStorage(): Record<string, string> {
   if (typeof window === 'undefined') return {};
+
+  let stored: Record<string, string> = {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return typeof parsed === 'object' && parsed ? parsed : {};
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') stored = parsed;
+    }
   } catch {
-    return {};
+    /* no-op */
   }
+
+  // Layer URL params on top so they override stored values
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fields = ['firstname', 'lastname', 'phone', 'email', 'location', 'reason', 'tried', 'travis', 'value', 'money'];
+    for (const f of fields) {
+      const v = params.get(f);
+      if (v) stored[f] = v;
+    }
+  } catch {
+    /* no-op */
+  }
+
+  return stored;
 }
 
 /* Normalize a string for matching: lowercase, strip smart quotes,
