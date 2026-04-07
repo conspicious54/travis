@@ -13,7 +13,7 @@ import { Live } from './pages/Live';
 import { VA } from './pages/VA';
 import { PPC } from './pages/PPC';
 import { Router } from './pages/Router';
-import { BookingRelay } from './pages/BookingRelay';
+import { Book } from './pages/Book';
 import { Terms } from './pages/Terms';
 import { OptIn } from './pages/OptIn';
 import { FreeCourse } from './pages/FreeCourse';
@@ -48,7 +48,7 @@ function AppWrapper() {
                 <Route path="/va" element={<VA />} />
                 <Route path="/ppc" element={<PPC />} />
                 <Route path="/router" element={<Router />} />
-                <Route path="/booking-relay" element={<BookingRelay />} />
+                <Route path="/book" element={<Book />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/optin" element={<OptIn />} />
                 <Route path="/freecourse" element={<FreeCourse />} />

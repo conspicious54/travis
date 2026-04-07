@@ -1,15 +1,21 @@
 import { useEffect, useRef } from 'react';
 
-/* ───── /bookacall — embedded HubSpot setter scheduler ─────────────
-   Same flow as /book but for the setter team. Captures the booking
-   payload in localStorage and redirects to /trainingnew/setter.
+/* ───── /book — embedded HubSpot closer scheduler ─────────────────
+   Embeds the HubSpot meeting scheduler in an iframe and listens
+   for the postMessage event HubSpot fires when a meeting is booked.
+
+   On booking success, stores the full meeting payload in localStorage
+   then redirects to /trainingnew/closer which reads it and personalizes
+   the calendar button.
+
+   Also reads any Typeform answers from the URL on load and persists
+   them so the closer page can use them too.
 ────────────────────────────────────────────────────────────────── */
 
-// TODO: Replace with the actual setter HubSpot scheduler URL
-const HUBSPOT_EMBED_URL = 'https://meetings-na2.hubspot.com/passionproduct/setter?embed=true';
+const HUBSPOT_EMBED_URL = 'https://meetings-na2.hubspot.com/passionproduct/closer?embed=true';
 const STORAGE_KEY = 'pp_booking_data';
 const MEETING_KEY = 'pp_meeting_data';
-const REDIRECT_TO = '/trainingnew/setter';
+const REDIRECT_TO = '/trainingnew/closer';
 
 const TYPEFORM_FIELDS = [
   'firstname',
@@ -34,6 +40,8 @@ function persistTypeformAnswers() {
     const val = params.get(field);
     if (val) data[field] = val;
   }
+  // Only write if we actually have something to write — avoids
+  // wiping previously persisted data on a refresh
   if (Object.keys(data).length > 1) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -47,6 +55,7 @@ function buildEmbedUrl(): string {
   if (typeof window === 'undefined') return HUBSPOT_EMBED_URL;
   const params = new URLSearchParams(window.location.search);
   const forward = new URLSearchParams();
+  // Forward only the short identity fields to pre-fill HubSpot's form
   for (const field of ['firstname', 'lastname', 'phone', 'email']) {
     const val = params.get(field);
     if (val) forward.set(field, val);
@@ -55,13 +64,15 @@ function buildEmbedUrl(): string {
   return `${HUBSPOT_EMBED_URL}&${forward.toString()}`;
 }
 
-export function BookCall() {
+export function Book() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     persistTypeformAnswers();
 
+    // Listen for HubSpot's meeting booked postMessage
     const handleMessage = (event: MessageEvent) => {
+      // HubSpot meeting events come from hubspot.com / hsforms.com / meetings.hubspot.com
       const origin = event.origin || '';
       if (
         !origin.includes('hubspot.com') &&
@@ -74,6 +85,7 @@ export function BookCall() {
       const data = event.data;
       if (!data || typeof data !== 'object') return;
 
+      // HubSpot fires events with meetingBookSucceeded
       if (data.meetingBookSucceeded || data.eventName === 'meetingBookSucceeded') {
         try {
           const payload = data.meetingsPayload || data.payload || data;
@@ -84,6 +96,7 @@ export function BookCall() {
         } catch {
           /* no-op */
         }
+        // Small delay so the user briefly sees HubSpot's success state
         setTimeout(() => {
           window.location.href = REDIRECT_TO;
         }, 800);
@@ -92,6 +105,7 @@ export function BookCall() {
 
     window.addEventListener('message', handleMessage);
 
+    // Inject HubSpot's embed loader script (idempotent)
     const existing = document.querySelector(
       'script[src*="MeetingsEmbedCode.js"]'
     );

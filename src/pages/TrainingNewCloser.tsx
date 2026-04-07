@@ -118,6 +118,70 @@ function getRelayData(): BookingRelayData {
   }
 }
 
+/* Meeting data captured from HubSpot's postMessage on /book */
+function getMeetingFromStorage(): MeetingInfo | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('pp_meeting_data');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+
+    // HubSpot's payload contains nested objects — pull what we need
+    const startMs =
+      parsed.bookingResponse?.event?.dateString ||
+      parsed.bookingResponse?.event?.start ||
+      parsed.event?.start ||
+      parsed.start ||
+      parsed.startTime;
+    const endMs =
+      parsed.bookingResponse?.event?.end ||
+      parsed.event?.end ||
+      parsed.end ||
+      parsed.endTime;
+
+    const start = startMs ? parseDate(typeof startMs === 'number' ? String(startMs) : startMs) : null;
+    if (!start) return null;
+    const end = endMs ? parseDate(typeof endMs === 'number' ? String(endMs) : endMs) : new Date(start.getTime() + 30 * 60 * 1000);
+    if (!end) return null;
+
+    const relay = getRelayData();
+
+    return {
+      start,
+      end,
+      title: parsed.bookingResponse?.event?.title || parsed.title || 'Amazon Strategy Call with Passion Product',
+      joinUrl:
+        parsed.bookingResponse?.event?.videoConferenceUrl ||
+        parsed.bookingResponse?.event?.location ||
+        parsed.videoConferenceUrl ||
+        parsed.joinUrl ||
+        parsed.join ||
+        '',
+      organizer:
+        parsed.bookingResponse?.event?.owner?.fullName ||
+        parsed.organizer ||
+        'Passion Product Team',
+      firstName:
+        parsed.bookingResponse?.contact?.firstName ||
+        parsed.firstName ||
+        relay.firstname ||
+        '',
+      lastName:
+        parsed.bookingResponse?.contact?.lastName ||
+        parsed.lastName ||
+        relay.lastname ||
+        '',
+      email:
+        parsed.bookingResponse?.contact?.email ||
+        parsed.email ||
+        relay.email ||
+        '',
+    };
+  } catch {
+    return null;
+  }
+}
+
 function getFirstName(): string {
   if (typeof window === 'undefined') return '';
   const p = new URLSearchParams(window.location.search);
@@ -385,7 +449,8 @@ export function TrainingNewCloser() {
   const [firstName, setFirstName] = useState('');
 
   useEffect(() => {
-    const m = parseMeetingInfo();
+    // Prefer URL params (manual links), fall back to localStorage (from /book)
+    const m = parseMeetingInfo() || getMeetingFromStorage();
     setMeeting(m);
     setFirstName(m?.firstName || getFirstName());
   }, []);

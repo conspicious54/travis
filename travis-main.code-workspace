@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"name": "travis-main",
+			"path": "."
+		},
+		{
+			"name": "Router",
+			"path": "../Router"
+		},
+		{
+			"name": "business-context copy",
+			"path": "../../Documents/Dev Projects/Passion Product/Email Brain/business-context copy"
+		}
+	],
+	"settings": {}
+}
