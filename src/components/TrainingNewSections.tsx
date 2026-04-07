@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap } from 'lucide-react';
+import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users } from 'lucide-react';
+import type { Personalization, Reason, Situation, ValuedFeature, Capital, TravisHistory, Region } from '../lib/personalization';
 
 /* ───────────────────────────── helpers ───────────────────────────── */
 
@@ -91,6 +92,171 @@ export function YouTubeLazyEmbed({ videoId, title }: { videoId: string; title: s
 
 /* ───────────────────────── shared sections ────────────────────────── */
 
+/* ───────────── personalized "we hear you" intro ──────────────────── */
+
+const REASON_COPY: Record<Reason, { eyebrow: string; headline: string; body: string; icon: React.ReactNode }> = {
+  asset: {
+    eyebrow: 'You Want a Real Asset',
+    headline: "Building something that pays you whether you're working or not",
+    body: 'You don\'t want another job — you want an asset. The Amazon brands our students build keep generating sales while they sleep, travel, and spend time with family. That\'s exactly what you\'re about to map out on your call.',
+    icon: <Award className="w-5 h-5" />,
+  },
+  freedom: {
+    eyebrow: 'You Want Your Time Back',
+    headline: 'Built so you never have to ask permission again',
+    body: 'The 9-to-5 isn\'t the goal — freedom is. Most of our students started exactly where you are: tired of the schedule, the commute, the cap on what they could earn. On your call, we\'ll build the path that gets you out.',
+    icon: <Heart className="w-5 h-5" />,
+  },
+  exploring: {
+    eyebrow: "You're Doing Your Research",
+    headline: "Smart — most people skip this part and regret it",
+    body: 'Looking before you leap is the right move. The video below walks you through exactly what we do, who it\'s for, and why it works — so by the time you\'re on the call, you\'ll know if this is the right path for you.',
+    icon: <Compass className="w-5 h-5" />,
+  },
+  unknown: {
+    eyebrow: 'You Took the First Step',
+    headline: "Most people don't even get this far",
+    body: 'Booking the call puts you in a tiny minority of people who actually take action. Watch the video below before your call so you show up ready, and we can spend the time on what matters most for you.',
+    icon: <Sparkles className="w-5 h-5" />,
+  },
+};
+
+const SITUATION_NOTE: Record<Situation, string | null> = {
+  never_started: 'Since this is your first business, the call will focus on the structure and accountability you need to do this right from day one.',
+  tried_failed: 'Since you\'ve tried entrepreneurship before, the call will focus on what was missing the first time — the actual roadmap.',
+  amazon_stuck: 'Since you\'re already on Amazon and stuck, the call will focus on the specific lever that\'s holding you back and how to break through.',
+  researching: 'Since you\'re still evaluating your options, the call will give you a clear, honest read on whether Amazon FBA is the right fit for you.',
+  unknown: null,
+};
+
+const CAPITAL_NOTE: Record<Capital, string | null> = {
+  have: "Since you have capital ready, we'll focus on getting you launched fast — the way our top students moved.",
+  access: "Since you can access capital when you need it, we'll map out the smart way to deploy it.",
+  save: "Since you're still building up your capital, we'll talk about how students like Mina ($900 → $4M) started small and scaled.",
+  none: "Since launch capital is tight, we'll focus on the Kickstarter route — how AJ raised $100K+ before manufacturing a single unit.",
+  unknown: null,
+};
+
+const TRAVIS_GREETING: Record<TravisHistory, string | null> = {
+  over_year: "Welcome, longtime follower — you've been around for a while, so you already know how this works.",
+  months: "You've been following Travis for a few months now. This is the same approach you've been hearing about.",
+  recent: "Glad you found Travis recently — you're going to learn a lot before this call.",
+  never: "If you're new to Travis's work, the video below is the best place to start — it covers everything in 5 minutes.",
+  unknown: null,
+};
+
+export function PersonalizedIntro({ p }: { p: Personalization | null }) {
+  if (!p) return null;
+
+  const reasonCopy = REASON_COPY[p.reason] || REASON_COPY.unknown;
+  const situationNote = SITUATION_NOTE[p.situation];
+  const capitalNote = CAPITAL_NOTE[p.capital];
+  const travisGreeting = TRAVIS_GREETING[p.travisHistory];
+
+  // If we have literally no useful data, render nothing
+  const hasAnything =
+    p.reason !== 'unknown' ||
+    p.situation !== 'unknown' ||
+    p.capital !== 'unknown' ||
+    p.travisHistory !== 'unknown';
+  if (!hasAnything) return null;
+
+  return (
+    <div className="bg-white border-b border-orange-100/60">
+      <div className="max-w-3xl mx-auto px-4 py-8 md:py-10">
+        <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50/40 border border-orange-200/60 rounded-2xl p-6 md:p-8 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 w-11 h-11 rounded-full bg-orange-600 text-white flex items-center justify-center shadow-md">
+              {reasonCopy.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-orange-700 text-xs font-bold uppercase tracking-[0.12em] mb-1">
+                {reasonCopy.eyebrow}
+              </p>
+              <h3 className="text-lg md:text-2xl font-black text-gray-900 leading-tight mb-2">
+                {p.firstName ? `${p.firstName}, ` : ''}{reasonCopy.headline}
+              </h3>
+              <p className="text-sm md:text-base text-gray-700 leading-relaxed">
+                {reasonCopy.body}
+              </p>
+
+              {(situationNote || capitalNote || travisGreeting) && (
+                <div className="mt-4 pt-4 border-t border-orange-200/60 space-y-2">
+                  {situationNote && (
+                    <p className="text-xs md:text-sm text-gray-600 flex items-start gap-2">
+                      <span className="text-orange-500 mt-0.5">→</span>
+                      <span>{situationNote}</span>
+                    </p>
+                  )}
+                  {capitalNote && (
+                    <p className="text-xs md:text-sm text-gray-600 flex items-start gap-2">
+                      <span className="text-orange-500 mt-0.5">→</span>
+                      <span>{capitalNote}</span>
+                    </p>
+                  )}
+                  {travisGreeting && (
+                    <p className="text-xs md:text-sm text-gray-600 flex items-start gap-2">
+                      <span className="text-orange-500 mt-0.5">→</span>
+                      <span>{travisGreeting}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────── what to expect on the call (personalized) ─────────── */
+
+const VALUE_COPY: Record<ValuedFeature, { title: string; body: string }> = {
+  group_calls: {
+    title: 'Weekly group coaching is a core part of what we do',
+    body: "On your call, we'll show you exactly how the group calls work, what gets discussed, and why students say it's the thing that keeps them moving forward.",
+  },
+  one_on_one: {
+    title: '1-on-1 strategy calls are how students get unstuck fastest',
+    body: "On your call, we'll show you how the personalized 1-on-1 sessions work and the kinds of breakthroughs students get from them.",
+  },
+  curriculum: {
+    title: 'The structured curriculum is the spine of the program',
+    body: "On your call, we'll walk you through the roadmap — every step, in order, with worksheets — so you know exactly what you'd be working on each week.",
+  },
+  community: {
+    title: 'The community keeps people moving when motivation dips',
+    body: "On your call, we'll show you what the community looks like, who's in it, and how accountability with people who get it changes the game.",
+  },
+  unknown: {
+    title: "Here's what we'll cover on your call",
+    body: "We'll walk through your goals, what's been getting in your way, and exactly what the next step looks like for you.",
+  },
+};
+
+export function WhatToExpect({ p }: { p: Personalization | null }) {
+  if (!p || p.valuedFeature === 'unknown') return null;
+  const copy = VALUE_COPY[p.valuedFeature];
+
+  return (
+    <div className="max-w-3xl mx-auto px-4 pt-4 pb-2">
+      <div className="bg-gray-900 text-white rounded-2xl p-6 md:p-8 shadow-lg">
+        <div className="flex items-start gap-4">
+          <div className="shrink-0 w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center">
+            <Users className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="text-orange-400 text-xs font-bold uppercase tracking-[0.12em] mb-1">What to Expect on Your Call</p>
+            <h3 className="text-lg md:text-xl font-bold mb-2">{copy.title}</h3>
+            <p className="text-sm text-slate-300 leading-relaxed">{copy.body}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ResearchVideo() {
   return (
     <div className="max-w-4xl mx-auto px-4 pt-8 pb-10 md:pt-10 md:pb-12">
@@ -129,40 +295,70 @@ export function ResearchVideo() {
   );
 }
 
-export function BreakoutVideos() {
+export function BreakoutVideos({ p }: { p?: Personalization | null }) {
   const breakouts = [
     {
+      key: 'saturated',
       headline: 'Is It Actually Too Late to Start on Amazon?',
       embed: 'https://videos.sproutvideo.com/embed/dc9adbb31513e1c056/9a833984ebbbd62f',
     },
     {
+      key: 'capital',
       headline: 'Think You Need Tens of Thousands to Get Started?',
       embed: 'https://videos.sproutvideo.com/embed/8c9adbb31511eec506/80d1f8e8fb8fd47b',
     },
     {
+      key: 'time',
       headline: 'Working Full-Time? Here\'s How Students Do Both.',
       embed: 'https://videos.sproutvideo.com/embed/8c9adbb31510e7cd06/6d5e29c2559707a4',
     },
     {
+      key: 'idea',
       headline: 'No Product Idea or Experience? That\'s Actually Ideal.',
       embed: 'https://videos.sproutvideo.com/embed/8c9adbb3181ee2cb06/c87808d62d097bd1',
     },
     {
+      key: 'trust',
       headline: 'Skeptical of Online Courses? Good — You Should Be.',
       embed: 'https://videos.sproutvideo.com/embed/ee9adbb31513e7c164/0e0d27cd2ae31e59',
     },
     {
+      key: 'wrong',
       headline: 'What If You Pick the Wrong Product?',
       embed: 'https://videos.sproutvideo.com/embed/aa9adbb3181ee0c020/edb75f1300af4b4d',
     },
   ];
+
+  // Reorder so the most relevant breakout for this person comes first
+  if (p) {
+    const priority: string[] = [];
+    if (p.capital === 'none' || p.capital === 'save') priority.push('capital');
+    if (p.situation === 'never_started') priority.push('idea');
+    if (p.situation === 'tried_failed') priority.push('trust', 'wrong');
+    if (p.situation === 'amazon_stuck') priority.push('wrong', 'saturated');
+    if (p.situation === 'researching') priority.push('saturated', 'trust');
+    if (p.travisHistory === 'never') priority.push('trust');
+    // Move priority items to the front, preserving relative order
+    breakouts.sort((a, b) => {
+      const ai = priority.indexOf(a.key);
+      const bi = priority.indexOf(b.key);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }
+
+  const personalEyebrow = p && p.firstName
+    ? `${p.firstName}, watch the ones that apply to you`
+    : 'Common Questions';
 
   return (
     <div className="bg-gradient-to-b from-gray-50 to-white py-14 md:py-20 border-t border-gray-100">
       <div className="max-w-5xl mx-auto px-4">
         <div className="text-center mb-10">
           <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
-            Common Questions
+            {personalEyebrow}
           </span>
           <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1]">
             Every Question You Have — <span className="text-orange-600">Answered</span>
@@ -247,7 +443,7 @@ export function OpportunitySection() {
   );
 }
 
-export function TestimonialHighlights() {
+export function TestimonialHighlights({ p }: { p?: Personalization | null }) {
   const [showAll, setShowAll] = useState(false);
 
   const youtubeTestimonials = [
@@ -318,7 +514,33 @@ export function TestimonialHighlights() {
     { id: '7jyiqoK7YwQ', name: 'AJ Rantz', revenue: '$54K', time: '1 month' },
   ];
 
-  const visible = showAll ? youtubeTestimonials : youtubeTestimonials.slice(0, 6);
+  // For low/no-capital users, lead with stories that started small
+  const SMALL_START_NAMES = ['Mina', 'AJ Rantz', 'Calvin', 'Brandy', 'Travis & Willem', 'Justin & Karyna', 'Connor', 'Cynthia', 'Kammel', 'Fred', 'Jeff'];
+  const ordered = [...youtubeTestimonials];
+  if (p && (p.capital === 'none' || p.capital === 'save')) {
+    ordered.sort((a, b) => {
+      const ai = SMALL_START_NAMES.indexOf(a.name);
+      const bi = SMALL_START_NAMES.indexOf(b.name);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }
+
+  const visible = showAll ? ordered : ordered.slice(0, 6);
+
+  // Personalized intro line for testimonials
+  let testimonialSubhead = `${ordered.length} real student stories. Watch any of them.`;
+  if (p) {
+    if (p.capital === 'none' || p.capital === 'save') {
+      testimonialSubhead = `Watch students who started small and built real businesses.`;
+    } else if (p.situation === 'amazon_stuck') {
+      testimonialSubhead = `Watch how these students broke through the same plateau you're hitting.`;
+    } else if (p.situation === 'never_started') {
+      testimonialSubhead = `Watch students who, like you, had never started a business before.`;
+    }
+  }
 
   return (
     <div className="bg-white py-14 md:py-20 border-t border-gray-100">
@@ -331,7 +553,7 @@ export function TestimonialHighlights() {
             People Just Like You<br className="md:hidden" /> Who <span className="text-orange-600">Took Action</span>
           </h2>
           <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto">
-            {youtubeTestimonials.length} real student stories. Watch any of them.
+            {testimonialSubhead}
           </p>
         </div>
 
@@ -356,7 +578,7 @@ export function TestimonialHighlights() {
               onClick={() => setShowAll(true)}
               className="px-8 py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer shadow-lg"
             >
-              Show All {youtubeTestimonials.length} Student Stories →
+              Show All {ordered.length} Student Stories →
             </button>
           </div>
         )}

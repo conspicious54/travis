@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ResearchVideo,
   BreakoutVideos,
@@ -6,8 +6,11 @@ import {
   TestimonialHighlights,
   ResourceSection,
   SharedFooter,
+  PersonalizedIntro,
+  WhatToExpect,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Star, Shield } from 'lucide-react';
+import { getPersonalization, type Personalization } from '../lib/personalization';
 
 /* ───────────────── shared step progress bar ───────────────────────── */
 
@@ -79,14 +82,22 @@ function FinalCTA() {
 /* ─────────────────────────── main export ─────────────────────────── */
 
 export function Training() {
+  const [p, setP] = useState<Personalization | null>(null);
+
+  useEffect(() => {
+    setP(getPersonalization());
+  }, []);
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <StepProgressBar />
       <ConfirmationBanner />
+      <PersonalizedIntro p={p} />
       <ResearchVideo />
-      <BreakoutVideos />
+      <WhatToExpect p={p} />
+      <BreakoutVideos p={p} />
       <OpportunitySection />
-      <TestimonialHighlights />
+      <TestimonialHighlights p={p} />
       <ResourceSection />
       <FinalCTA />
       <SharedFooter />

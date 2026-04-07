@@ -6,8 +6,11 @@ import {
   TestimonialHighlights,
   ResourceSection,
   SharedFooter,
+  PersonalizedIntro,
+  WhatToExpect,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Phone, UserPlus, Star, Shield } from 'lucide-react';
+import { getPersonalization, type Personalization } from '../lib/personalization';
 
 /* ─────────────────── region & platform detection ─────────────────── */
 
@@ -174,14 +177,22 @@ function SetterFinalCTA() {
 /* ─────────────────────────── main export ─────────────────────────── */
 
 export function TrainingNewSetter() {
+  const [p, setP] = useState<Personalization | null>(null);
+
+  useEffect(() => {
+    setP(getPersonalization());
+  }, []);
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <StepProgressBar />
       <SetterConfirmationBanner />
+      <PersonalizedIntro p={p} />
       <ResearchVideo />
-      <BreakoutVideos />
+      <WhatToExpect p={p} />
+      <BreakoutVideos p={p} />
       <OpportunitySection />
-      <TestimonialHighlights />
+      <TestimonialHighlights p={p} />
       <ResourceSection />
       <SetterFinalCTA />
       <SharedFooter />

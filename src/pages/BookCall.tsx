@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { CheckCircle, Sparkles, Users, Phone, Shield } from 'lucide-react';
+import { CheckCircle, Sparkles } from 'lucide-react';
 
 /* ───── /bookacall — embedded HubSpot setter scheduler ─────────────
    Same flow as /book but for the setter team. Captures the booking
@@ -143,24 +143,9 @@ export function BookCall() {
             <span className="text-orange-600">Now Pick Your Time.</span>
           </h1>
 
-          <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto mb-3">
-            You're about to get on a call with someone from Travis's team. This is the same call our top students took before they built their Amazon businesses.
+          <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto">
+            You're about to get on a call with Travis or one of his top coaches.
           </p>
-
-          <div className="inline-flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-3 text-xs md:text-sm text-gray-500">
-            <span className="flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-orange-500" />
-              Quick intro call
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-orange-500" />
-              1-on-1 with our team
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5 text-orange-500" />
-              No pressure, no obligation
-            </span>
-          </div>
         </div>
 
         {/* Embedded scheduler with framing */}

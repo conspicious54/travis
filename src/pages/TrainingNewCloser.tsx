@@ -6,8 +6,11 @@ import {
   TestimonialHighlights,
   ResourceSection,
   SharedFooter,
+  PersonalizedIntro,
+  WhatToExpect,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Clock, Star, Shield, ChevronDown } from 'lucide-react';
+import { getPersonalization, type Personalization } from '../lib/personalization';
 
 /* ───────────────────── closer-specific sections ──────────────────── */
 
@@ -447,22 +450,27 @@ function CloserFinalCTA({ meeting, firstName }: { meeting: MeetingInfo | null; f
 export function TrainingNewCloser() {
   const [meeting, setMeeting] = useState<MeetingInfo | null>(null);
   const [firstName, setFirstName] = useState('');
+  const [p, setP] = useState<Personalization | null>(null);
 
   useEffect(() => {
     // Prefer URL params (manual links), fall back to localStorage (from /book)
     const m = parseMeetingInfo() || getMeetingFromStorage();
     setMeeting(m);
-    setFirstName(m?.firstName || getFirstName());
+    const personalization = getPersonalization();
+    setP(personalization);
+    setFirstName(personalization.firstName || m?.firstName || getFirstName());
   }, []);
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <StepProgressBar />
       <CloserConfirmationBanner meeting={meeting} firstName={firstName} />
+      <PersonalizedIntro p={p} />
       <ResearchVideo />
-      <BreakoutVideos />
+      <WhatToExpect p={p} />
+      <BreakoutVideos p={p} />
       <OpportunitySection />
-      <TestimonialHighlights />
+      <TestimonialHighlights p={p} />
       <ResourceSection />
       <CloserFinalCTA meeting={meeting} firstName={firstName} />
       <SharedFooter />
