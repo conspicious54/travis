@@ -1,57 +1,33 @@
 import React from 'react';
-import { HeaderLight } from '../components/HeaderLight';
-import { CustomVideoPlayer } from '../components/CustomVideoPlayer';
-import { useEmailCapture } from '../context/EmailCaptureContext';
-import { ExitIntentPopup } from '../components/ExitIntentPopup';
+import {
+  ResearchVideo,
+  BreakoutVideos,
+  OpportunitySection,
+  TestimonialHighlights,
+  ResourceSection,
+  SharedFooter,
+} from '../components/TrainingNewSections';
+import { CheckCircle, Star, Shield } from 'lucide-react';
 
-function TrainingHeadline() {
+/* ───────────────── shared step progress bar ───────────────────────── */
+
+function StepProgressBar() {
   return (
-    <div className="w-full max-w-[1200px] mx-auto px-4 text-center py-12">
-      <p className="text-blue-600 text-lg font-medium mb-2">Just one more step...</p>
-      <h1 className="text-[2rem] sm:text-[2.5rem] md:text-[3rem] lg:text-[3.5rem] tracking-tight leading-none text-gray-900">
-        <div className="mb-1">Watch This Video</div>
-        <div className="font-bold flex items-center justify-center gap-2">
-          Before Your Call ⬇️
-        </div>
-      </h1>
-    </div>
-  );
-}
-
-function MainContent() {
-  const { isUnlocked } = useEmailCapture();
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 text-gray-900 relative overflow-hidden">
-      {/* Background Patterns */}
-      <div className="absolute inset-0 bg-grid-pattern-light opacity-100"></div>
-      <div className="absolute inset-0 bg-dot-pattern opacity-50"></div>
-      
-      {/* Background Gradients */}
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-50/80 via-transparent to-transparent pointer-events-none"></div>
-      <div className="absolute top-0 right-0 w-[60vw] h-[60vw] bg-gradient-radial from-blue-100/40 to-transparent pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[40vw] h-[40vw] bg-gradient-radial from-purple-100/30 to-transparent pointer-events-none"></div>
-      
-      <div className="relative">
-        <HeaderLight />
-        <TrainingHeadline />
-
-        <div className="relative max-w-4xl mx-auto px-4 mb-4">
-          <div className="rounded-2xl overflow-hidden border-4 border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
-            <CustomVideoPlayer
-              src="https://pub-cda2548da4a2411a995b49fb5416f4ca.r2.dev/Draft%204%201080-1.m4v"
-              poster="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1200&q=80"
-              showEndState={true}
-              theme="light"
-            />
+    <div className="bg-white border-b border-gray-100">
+      <div className="max-w-4xl mx-auto px-4 py-3">
+        <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+              <CheckCircle className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Booked</span>
           </div>
-          <div className="mt-8 text-center">
-            <p className="text-xl font-semibold text-blue-600 max-w-2xl mx-auto mb-4">
-              📌 Bookmark this page now so you can easily come back to it!
-            </p>
-            <p className="text-lg text-gray-700 max-w-2xl mx-auto">
-              This training contains the exact blueprint that has helped thousands of students build 6-figure Amazon businesses. Watch every minute to maximize your success on our upcoming call.
-            </p>
+          <div className="w-12 h-0.5 bg-gradient-to-r from-green-500 to-orange-500" />
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold ring-4 ring-orange-100">
+              2
+            </div>
+            <span className="text-xs font-bold text-orange-600 uppercase tracking-wider">Prepare</span>
           </div>
         </div>
       </div>
@@ -59,11 +35,61 @@ function MainContent() {
   );
 }
 
+/* ───────────────── generic confirmation banner ────────────────────── */
+
+function ConfirmationBanner() {
+  return (
+    <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
+      <div className="max-w-4xl mx-auto px-4 pt-6 pb-7 md:pt-8 md:pb-9 text-center">
+        <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight mb-2">
+          You're In — Now Complete <span className="text-orange-600">Step 2</span>
+        </h1>
+        <p className="text-sm md:text-base text-gray-600 max-w-xl mx-auto">
+          Watch the video below and explore the resources before your call. The more prepared you are, the more value you'll get.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────── final CTA ──────────────────────────────── */
+
+function FinalCTA() {
+  return (
+    <div className="bg-gradient-to-br from-gray-950 via-slate-900 to-orange-950 py-14 md:py-20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-orange-900/30 via-transparent to-transparent" />
+      <div className="relative max-w-3xl mx-auto px-4 text-center">
+        <h2 className="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight">
+          You've Already Taken the <span className="text-orange-400">Hardest Step</span>
+        </h2>
+        <p className="text-slate-300 text-lg md:text-xl mb-10 max-w-xl mx-auto leading-relaxed">
+          Most people think about starting for months — or years. You actually took action. Show up ready, and let's build your plan together.
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-6 text-slate-400 text-sm">
+          <span className="flex items-center gap-2"><Star className="w-4 h-4 text-orange-400" /> 14,000+ students taught</span>
+          <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-400" /> Personalized strategy session</span>
+          <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-slate-400" /> No pressure, no obligation</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────── main export ─────────────────────────── */
+
 export function Training() {
   return (
-    <>
-      <MainContent />
-      <ExitIntentPopup theme="light" />
-    </>
+    <div className="min-h-screen bg-white text-gray-900">
+      <StepProgressBar />
+      <ConfirmationBanner />
+      <ResearchVideo />
+      <BreakoutVideos />
+      <OpportunitySection />
+      <TestimonialHighlights />
+      <ResourceSection />
+      <FinalCTA />
+      <SharedFooter />
+    </div>
   );
 }
