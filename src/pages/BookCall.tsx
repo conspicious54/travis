@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
+import { identifyUser, trackBookingPageViewed, trackBookingCompleted } from '../lib/posthog';
 
 /* ───── /bookacall — embedded HubSpot setter scheduler ─────────────
    Same flow as /book but for the setter team. Captures the booking
@@ -60,6 +61,17 @@ export function BookCall() {
 
   useEffect(() => {
     persistTypeformAnswers();
+    trackBookingPageViewed('setter');
+
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get('email');
+    if (email) {
+      identifyUser(email, {
+        first_name: params.get('firstname') || undefined,
+        last_name: params.get('lastname') || undefined,
+        phone: params.get('phone') || undefined,
+      });
+    }
 
     const handleMessage = (event: MessageEvent) => {
       const origin = event.origin || '';
@@ -84,6 +96,7 @@ export function BookCall() {
         } catch {
           /* no-op */
         }
+        trackBookingCompleted('setter');
         setTimeout(() => {
           window.location.href = REDIRECT_TO;
         }, 800);

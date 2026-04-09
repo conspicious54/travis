@@ -13,6 +13,7 @@ import {
 } from '../components/TrainingNewSections';
 import { CheckCircle, Star, Shield } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
+import { identifyUser, setPersonProperties, trackConfirmationPageViewed } from '../lib/posthog';
 
 /* ───────────────── shared step progress bar ───────────────────────── */
 
@@ -87,7 +88,29 @@ export function Training() {
   const [p, setP] = useState<Personalization | null>(null);
 
   useEffect(() => {
-    setP(getPersonalization());
+    const personalization = getPersonalization();
+    setP(personalization);
+
+    if (personalization.email) {
+      identifyUser(personalization.email, {
+        first_name: personalization.firstName,
+        last_name: personalization.lastName,
+      });
+    }
+    setPersonProperties({
+      region: personalization.region,
+      reason: personalization.reason,
+      situation: personalization.situation,
+      travis_history: personalization.travisHistory,
+      valued_feature: personalization.valuedFeature,
+      capital: personalization.capital,
+    });
+    trackConfirmationPageViewed('generic', {
+      region: personalization.region,
+      reason: personalization.reason,
+      situation: personalization.situation,
+      capital: personalization.capital,
+    });
   }, []);
 
   return (

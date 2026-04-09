@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users, CheckCircle } from 'lucide-react';
 import type { Personalization, Reason, Situation, ValuedFeature, Capital, TravisHistory, Region } from '../lib/personalization';
+import { trackTestimonialsExpanded, trackCreditQuizStarted, trackCreditQuizCompleted, trackCreditCardApplyClicked } from '../lib/posthog';
 
 /* ───────────────────────────── helpers ───────────────────────────── */
 
@@ -573,7 +574,7 @@ export function TestimonialHighlights({ p }: { p?: Personalization | null }) {
         {!showAll && (
           <div className="text-center mt-10">
             <button
-              onClick={() => setShowAll(true)}
+              onClick={() => { setShowAll(true); trackTestimonialsExpanded(ordered.length); }}
               className="px-8 py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer shadow-lg"
             >
               Show All {ordered.length} Student Stories →
@@ -793,7 +794,7 @@ export function CreditCardQuiz({ p }: { p?: Personalization | null }) {
               Two quick questions. We'll match you with the best card based on your situation — including options with up to <span className="font-bold text-white">21 months of 0% APR</span>.
             </p>
             <button
-              onClick={() => setStarted(true)}
+              onClick={() => { setStarted(true); trackCreditQuizStarted(); }}
               className="inline-flex items-center gap-2 px-8 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-orange-500/30 cursor-pointer text-sm"
             >
               Start the Quiz →
@@ -858,7 +859,7 @@ export function CreditCardQuiz({ p }: { p?: Personalization | null }) {
                   ]).map((opt) => (
                     <button
                       key={opt.tier}
-                      onClick={() => setTier(opt.tier)}
+                      onClick={() => { setTier(opt.tier); trackCreditQuizCompleted(opt.tier, CARD_BY_TIER[opt.tier].name); }}
                       className="w-full text-left px-5 py-4 rounded-xl border-2 border-gray-200 bg-white hover:border-orange-300 hover:bg-orange-50/50 transition-all cursor-pointer group"
                     >
                       <div className="flex items-center justify-between">
@@ -911,6 +912,7 @@ export function CreditCardQuiz({ p }: { p?: Personalization | null }) {
                 href={recommendation.applyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackCreditCardApplyClicked(recommendation.name, tier!)}
                 className="block w-full text-center px-6 py-4 bg-white text-orange-700 font-black rounded-xl hover:bg-orange-50 transition-colors shadow-lg cursor-pointer text-sm md:text-base"
               >
                 Apply for {recommendation.name} →

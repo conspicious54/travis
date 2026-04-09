@@ -13,6 +13,7 @@ import {
 } from '../components/TrainingNewSections';
 import { CheckCircle, Phone, UserPlus, Star, Shield } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
+import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackContactSaved } from '../lib/posthog';
 
 /* ─────────────────── region & platform detection ─────────────────── */
 
@@ -123,7 +124,7 @@ function SetterConfirmationBanner() {
 
         {isMobile ? (
           <button
-            onClick={() => downloadVCard(phone.raw)}
+            onClick={() => { downloadVCard(phone.raw); trackContactSaved(region, platform); }}
             className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors shadow-md text-sm cursor-pointer"
           >
             <Phone className="w-4 h-4" />
@@ -182,7 +183,29 @@ export function TrainingNewSetter() {
   const [p, setP] = useState<Personalization | null>(null);
 
   useEffect(() => {
-    setP(getPersonalization());
+    const personalization = getPersonalization();
+    setP(personalization);
+
+    if (personalization.email) {
+      identifyUser(personalization.email, {
+        first_name: personalization.firstName,
+        last_name: personalization.lastName,
+      });
+    }
+    setPersonProperties({
+      region: personalization.region,
+      reason: personalization.reason,
+      situation: personalization.situation,
+      travis_history: personalization.travisHistory,
+      valued_feature: personalization.valuedFeature,
+      capital: personalization.capital,
+    });
+    trackConfirmationPageViewed('setter', {
+      region: personalization.region,
+      reason: personalization.reason,
+      situation: personalization.situation,
+      capital: personalization.capital,
+    });
   }, []);
 
   return (

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
+import { identifyUser, trackBookingPageViewed, trackBookingCompleted } from '../lib/posthog';
 
 /* ───── /book — embedded HubSpot closer scheduler ─────────────────
    Embeds the HubSpot meeting scheduler in an iframe and listens
@@ -70,6 +71,18 @@ export function Book() {
 
   useEffect(() => {
     persistTypeformAnswers();
+    trackBookingPageViewed('closer');
+
+    // Identify user if we have their email
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get('email');
+    if (email) {
+      identifyUser(email, {
+        first_name: params.get('firstname') || undefined,
+        last_name: params.get('lastname') || undefined,
+        phone: params.get('phone') || undefined,
+      });
+    }
 
     // Listen for HubSpot's meeting booked postMessage
     const handleMessage = (event: MessageEvent) => {
@@ -97,6 +110,7 @@ export function Book() {
         } catch {
           /* no-op */
         }
+        trackBookingCompleted('closer');
         // Small delay so the user briefly sees HubSpot's success state
         setTimeout(() => {
           window.location.href = REDIRECT_TO;

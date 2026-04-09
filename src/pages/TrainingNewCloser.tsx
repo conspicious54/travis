@@ -13,6 +13,7 @@ import {
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Clock, Star, Shield, ChevronDown } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
+import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackCalendarAdded } from '../lib/posthog';
 
 /* ───────────────────── closer-specific sections ──────────────────── */
 
@@ -352,6 +353,7 @@ function CalendarButton({ meeting, variant = 'primary' }: { meeting: MeetingInfo
               key={opt.label}
               onClick={() => {
                 opt.action();
+                trackCalendarAdded(opt.label);
                 setIsOpen(false);
               }}
               className="w-full text-left px-4 py-3 text-sm text-gray-700 font-medium hover:bg-orange-50 hover:text-orange-700 transition-colors cursor-pointer border-b border-gray-100 last:border-b-0"
@@ -455,12 +457,34 @@ export function TrainingNewCloser() {
   const [p, setP] = useState<Personalization | null>(null);
 
   useEffect(() => {
-    // Prefer URL params (manual links), fall back to localStorage (from /book)
     const m = parseMeetingInfo() || getMeetingFromStorage();
     setMeeting(m);
     const personalization = getPersonalization();
     setP(personalization);
     setFirstName(personalization.firstName || m?.firstName || getFirstName());
+
+    // PostHog: identify + track
+    if (personalization.email) {
+      identifyUser(personalization.email, {
+        first_name: personalization.firstName,
+        last_name: personalization.lastName,
+      });
+    }
+    setPersonProperties({
+      region: personalization.region,
+      reason: personalization.reason,
+      situation: personalization.situation,
+      travis_history: personalization.travisHistory,
+      valued_feature: personalization.valuedFeature,
+      capital: personalization.capital,
+    });
+    trackConfirmationPageViewed('closer', {
+      region: personalization.region,
+      reason: personalization.reason,
+      situation: personalization.situation,
+      capital: personalization.capital,
+      has_meeting: !!m,
+    });
   }, []);
 
   return (
