@@ -300,32 +300,32 @@ export function BreakoutVideos({ p }: { p?: Personalization | null }) {
   const breakouts = [
     {
       key: 'saturated',
-      headline: 'Is It Too Late to Start on Amazon?',
+      headline: "But isn't Amazon too saturated at this point?",
       embed: 'https://videos.sproutvideo.com/embed/dc9adbb31513e1c056/9a833984ebbbd62f',
     },
     {
       key: 'capital',
-      headline: 'Do I Need a Lot of Money to Start?',
+      headline: "But what if I don't have a lot of money to start?",
       embed: 'https://videos.sproutvideo.com/embed/8c9adbb31511eec506/80d1f8e8fb8fd47b',
     },
     {
       key: 'time',
-      headline: 'What If I Work Full-Time?',
+      headline: "What if I'm already working full-time?",
       embed: 'https://videos.sproutvideo.com/embed/8c9adbb31510e7cd06/6d5e29c2559707a4',
     },
     {
       key: 'idea',
-      headline: "What If I Don't Have a Product Idea?",
+      headline: "I don't even have a product idea yet. Is that okay?",
       embed: 'https://videos.sproutvideo.com/embed/8c9adbb3181ee2cb06/c87808d62d097bd1',
     },
     {
       key: 'trust',
-      headline: 'Can I Actually Trust This?',
+      headline: "How do I know I can actually trust this?",
       embed: 'https://videos.sproutvideo.com/embed/ee9adbb31513e7c164/0e0d27cd2ae31e59',
     },
     {
       key: 'wrong',
-      headline: 'What If I Pick the Wrong Product?',
+      headline: "What if I pick the wrong product and lose my money?",
       embed: 'https://videos.sproutvideo.com/embed/aa9adbb3181ee0c020/edb75f1300af4b4d',
     },
   ];
