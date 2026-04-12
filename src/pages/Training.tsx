@@ -48,7 +48,7 @@ function ConfirmationBanner() {
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
       <div className="max-w-4xl mx-auto px-4 pt-6 pb-7 md:pt-8 md:pb-9 text-center">
         <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight mb-2">
-          You're In — Now Complete <span className="text-orange-600">Step 2</span>
+          You're In. Now Complete <span className="text-orange-600">Step 2</span>
         </h1>
         <p className="text-sm md:text-base text-gray-600 max-w-xl mx-auto">
           Watch the video below and explore the resources before your call. The more prepared you are, the more value you'll get.
@@ -69,7 +69,7 @@ function FinalCTA() {
           You've Already Taken the <span className="text-orange-400">Hardest Step</span>
         </h2>
         <p className="text-slate-300 text-lg md:text-xl mb-10 max-w-xl mx-auto leading-relaxed">
-          Most people think about starting for months — or years. You actually took action. Show up ready, and let's build your plan together.
+          Most people think about starting for months. Or years. You actually took action. Show up ready, and let's build your plan together.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-6 text-slate-400 text-sm">

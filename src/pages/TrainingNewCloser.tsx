@@ -389,7 +389,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
       <div className="max-w-4xl mx-auto px-4 pt-6 pb-7 md:pt-8 md:pb-9 text-center">
         <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight mb-2">
-          {firstName ? `${firstName}, You're Booked` : "Your Call is Booked"} — Now Complete <span className="text-orange-600">Step 2</span>
+          {firstName ? `${firstName}, You're Booked` : "Your Call is Booked"}. Now Complete <span className="text-orange-600">Step 2</span>
         </h1>
 
         {meeting ? (

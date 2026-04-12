@@ -99,19 +99,19 @@ const REASON_COPY: Record<Reason, { eyebrow: string; headline: string; body: str
   asset: {
     eyebrow: 'You Want a Real Asset',
     headline: "Building something that pays you whether you're working or not",
-    body: "You don't want another job — you want an asset. An Amazon brand keeps generating sales while you sleep, travel, and spend time with family. That's exactly what you're about to map out on your call.",
+    body: "You don't want another job. You want an asset. An Amazon brand keeps generating sales while you sleep, travel, and spend time with family. That's exactly what you're about to map out on your call.",
     icon: <Award className="w-5 h-5" />,
   },
   freedom: {
     eyebrow: 'You Want Your Time Back',
     headline: 'Built so you never have to ask permission again',
-    body: "The 9-to-5 isn't the goal — freedom is. The path out is real, and it's been walked by thousands of people who started exactly where you are: tired of the schedule, tired of the commute, tired of the cap on what they could earn. On your call, we'll build the path that gets you out.",
+    body: "The 9-to-5 isn't the goal. Freedom is. The path out is real, and it's been walked by thousands of people who started exactly where you are. Tired of the schedule, tired of the commute, tired of the cap on what they could earn. On your call, we'll build the path that gets you out.",
     icon: <Heart className="w-5 h-5" />,
   },
   exploring: {
     eyebrow: "You're Doing Your Research",
-    headline: "Smart — most people skip this part and regret it",
-    body: "Looking before you leap is the right move. The video above walks you through exactly what we do, who it's for, and why it works — so by the time you're on the call, you'll know if this is the right path for you.",
+    headline: "Smart. Most people skip this part and regret it.",
+    body: "Looking before you leap is the right move. The video above walks you through exactly what we do, who it's for, and why it works. By the time you're on the call, you'll know if this is the right path for you.",
     icon: <Compass className="w-5 h-5" />,
   },
   unknown: {
@@ -124,7 +124,7 @@ const REASON_COPY: Record<Reason, { eyebrow: string; headline: string; body: str
 
 const SITUATION_NOTE: Record<Situation, string | null> = {
   never_started: "Since this is your first business, the call will focus on the structure and accountability you need to do this right from day one.",
-  tried_failed: "Since you've tried entrepreneurship before, the call will focus on what was missing the first time — the actual roadmap.",
+  tried_failed: "Since you've tried entrepreneurship before, the call will focus on what was missing the first time. The actual roadmap.",
   amazon_stuck: "Since you're already on Amazon and stuck, the call will focus on the specific lever that's holding you back and how to break through.",
   researching: "Since you're still evaluating your options, the call will give you a clear, honest read on whether Amazon FBA is the right fit for you.",
   unknown: null,
@@ -133,16 +133,16 @@ const SITUATION_NOTE: Record<Situation, string | null> = {
 const CAPITAL_NOTE: Record<Capital, string | null> = {
   have: "Since you have capital ready, we'll focus on getting you launched fast.",
   access: "Since you can access capital when you need it, we'll map out the smart way to deploy it.",
-  save: "Since you're still building up your capital, we'll cover the strategies for launching on Amazon with less than $1,000 — see the section below.",
-  none: "Since launch capital is tight, we'll cover the strategies for launching on Amazon with less than $1,000 — see the section below.",
+  save: "Since you're still building up your capital, we'll cover the strategies for launching on Amazon with less than $1,000. See the section below.",
+  none: "Since launch capital is tight, we'll cover the strategies for launching on Amazon with less than $1,000. See the section below.",
   unknown: null,
 };
 
 const TRAVIS_GREETING: Record<TravisHistory, string | null> = {
-  over_year: "Welcome, longtime follower — you've been around for a while, so you already know how this works.",
+  over_year: "Welcome, longtime follower. You've been around for a while, so you already know how this works.",
   months: "You've been following Travis for a few months now. This is the same approach you've been hearing about.",
-  recent: "Glad you found Travis recently — you're going to learn a lot before this call.",
-  never: "If you're new to Travis's work, the video below is the best place to start — it covers everything in 5 minutes.",
+  recent: "Glad you found Travis recently. You're going to learn a lot before this call.",
+  never: "If you're new to Travis's work, the video below is the best place to start. It covers everything in 5 minutes.",
   unknown: null,
 };
 
@@ -224,7 +224,7 @@ const VALUE_COPY: Record<ValuedFeature, { title: string; body: string }> = {
   },
   curriculum: {
     title: 'A structured roadmap is the spine of how we work together',
-    body: "On your call, we'll walk you through the roadmap — every step, in order, with worksheets — so you know exactly what you'd be working on each week.",
+    body: "On your call, we'll walk you through the roadmap. Every step, in order, with worksheets. So you know exactly what you'd be working on each week.",
   },
   community: {
     title: 'The community keeps people moving when motivation dips',
@@ -286,7 +286,7 @@ export function ResearchVideo() {
       {/* Scroll-down indicator */}
       <div className="text-center mt-10 md:mt-12">
         <p className="text-sm md:text-base text-gray-600 font-medium mb-3">
-          Have questions? Keep scrolling — <span className="text-orange-600 font-bold">we've answered them below</span>
+          Have questions? Keep scrolling. <span className="text-orange-600 font-bold">We've answered them below.</span>
         </p>
         <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 animate-bounce">
           <ChevronDown className="w-5 h-5 text-orange-600" />
@@ -300,32 +300,32 @@ export function BreakoutVideos({ p }: { p?: Personalization | null }) {
   const breakouts = [
     {
       key: 'saturated',
-      headline: 'Is It Actually Too Late to Start on Amazon?',
+      headline: 'Is It Too Late to Start on Amazon?',
       embed: 'https://videos.sproutvideo.com/embed/dc9adbb31513e1c056/9a833984ebbbd62f',
     },
     {
       key: 'capital',
-      headline: 'Think You Need Tens of Thousands to Get Started?',
+      headline: 'Do I Need a Lot of Money to Start?',
       embed: 'https://videos.sproutvideo.com/embed/8c9adbb31511eec506/80d1f8e8fb8fd47b',
     },
     {
       key: 'time',
-      headline: 'Working Full-Time? Here\'s How Students Do Both.',
+      headline: 'What If I Work Full-Time?',
       embed: 'https://videos.sproutvideo.com/embed/8c9adbb31510e7cd06/6d5e29c2559707a4',
     },
     {
       key: 'idea',
-      headline: 'No Product Idea or Experience? That\'s Actually Ideal.',
+      headline: "What If I Don't Have a Product Idea?",
       embed: 'https://videos.sproutvideo.com/embed/8c9adbb3181ee2cb06/c87808d62d097bd1',
     },
     {
       key: 'trust',
-      headline: 'Skeptical of Online Courses? Good — You Should Be.',
+      headline: 'Can I Actually Trust This?',
       embed: 'https://videos.sproutvideo.com/embed/ee9adbb31513e7c164/0e0d27cd2ae31e59',
     },
     {
       key: 'wrong',
-      headline: 'What If You Pick the Wrong Product?',
+      headline: 'What If I Pick the Wrong Product?',
       embed: 'https://videos.sproutvideo.com/embed/aa9adbb3181ee0c020/edb75f1300af4b4d',
     },
   ];
@@ -362,7 +362,7 @@ export function BreakoutVideos({ p }: { p?: Personalization | null }) {
             {personalEyebrow}
           </span>
           <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1]">
-            Every Question You Have — <span className="text-orange-600">Answered</span>
+            Every Question You Have, <span className="text-orange-600">Answered</span>
           </h2>
         </div>
 
@@ -395,7 +395,7 @@ export function OpportunitySection() {
         <div className="text-center mb-12">
           <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">Why Now Matters</span>
           <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight leading-[1.1]">
-            The Window Is Wide Open — <span className="text-orange-600">Right Now</span>
+            The Window Is Wide Open <span className="text-orange-600">Right Now</span>
           </h2>
           <p className="text-gray-600 text-base md:text-lg max-w-2xl mx-auto">
             While most people get scared off by headlines, the data tells a different story.
@@ -419,7 +419,7 @@ export function OpportunitySection() {
             </div>
             <h3 className="font-bold text-gray-900 mb-2 text-sm">Niche Branding Is Just Getting Started</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
-              Generic products are saturated — and should be. But customer expectations have shifted. People want products tailored to them. That shift has created thousands of new niches that didn't exist five years ago. Those niches are waiting to be claimed.
+              Generic products are saturated, and they should be. But customer expectations have shifted. People want products tailored to them. That shift has created thousands of new niches that didn't exist five years ago. Those niches are waiting to be claimed.
             </p>
           </div>
 
@@ -427,16 +427,16 @@ export function OpportunitySection() {
             <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mb-3">
               <Zap className="w-5 h-5 text-amber-600" />
             </div>
-            <h3 className="font-bold text-gray-900 mb-2 text-sm">Travis Proved It Again — This Year</h3>
+            <h3 className="font-bold text-gray-900 mb-2 text-sm">Travis Proved It Again This Year</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
-              Travis launched 5 products this past year across completely different niches. Every single one recouped its investment in the first month. Carnivore Electrolytes crossed $1M and was sold for nearly $1M. Not theory — proof.
+              Travis launched 5 products this past year across completely different niches. Every single one recouped its investment in the first month. Carnivore Electrolytes crossed $1M and was sold for nearly $1M. Not theory. Proof.
             </p>
           </div>
         </div>
 
         <div className="bg-white border border-amber-200 rounded-xl p-6 text-center">
           <p className="text-gray-700 text-sm leading-relaxed max-w-2xl mx-auto">
-            <span className="font-semibold">The people who make the most money are the ones who take action first</span> — not the ones who wait until everyone else has already proven it works and there's less opportunity left. Every month spent in analysis paralysis is a month of real money left on the table.
+            <span className="font-semibold">The people who make the most money are the ones who take action first.</span> Not the ones who wait until everyone else has already proven it works and there's less opportunity left. Every month spent in analysis paralysis is a month of real money left on the table.
           </p>
         </div>
       </div>
@@ -625,7 +625,7 @@ export function LowCapitalStrategies({ p }: { p?: Personalization | null }) {
             </div>
             <h3 className="font-black text-gray-900 text-lg mb-2 leading-tight">Use Kickstarter to Fund It</h3>
             <p className="text-sm text-gray-600 leading-relaxed mb-3">
-              Real customers paying real money for your product <em>before</em> you manufacture a single unit. You validate the demand and raise the launch capital at the same time — no risk, no out-of-pocket inventory.
+              Real customers paying real money for your product <em>before</em> you manufacture a single unit. You validate the demand and raise the launch capital at the same time. No risk, no out-of-pocket inventory.
             </p>
             <p className="text-xs text-gray-500 italic">
               On your call, we'll walk you through how to set up a Kickstarter campaign that actually funds.
@@ -639,7 +639,7 @@ export function LowCapitalStrategies({ p }: { p?: Personalization | null }) {
             </div>
             <h3 className="font-black text-gray-900 text-lg mb-2 leading-tight">Launch a Low-Cost Product</h3>
             <p className="text-sm text-gray-600 leading-relaxed mb-3">
-              Not every product needs a huge inventory order. There are entire categories where you can launch profitably for under $1,000. Travis encourages this — it's far less risky and lets you prove the model before scaling up.
+              Not every product needs a huge inventory order. There are entire categories where you can launch profitably for under $1,000. Travis encourages this. It's far less risky and lets you prove the model before scaling up.
             </p>
             <p className="text-xs text-gray-500 italic">
               On your call, we'll help you identify the right kind of product to start with.
@@ -653,7 +653,7 @@ export function LowCapitalStrategies({ p }: { p?: Personalization | null }) {
             </div>
             <h3 className="font-black text-gray-900 text-lg mb-2 leading-tight">Use the Power of Financing</h3>
             <p className="text-sm text-gray-600 leading-relaxed mb-3">
-              The richest people in the world use financing to fund their businesses. Every skyscraper you walk past was financed — not paid for outright. That's how rich people buy leverage. A 0% APR business credit card for 18 months is one of the easiest ways to get started.
+              The richest people in the world use financing to fund their businesses. Every skyscraper you walk past was financed, not paid for outright. That's how rich people buy leverage. A 0% APR business credit card for 18 months is one of the easiest ways to get started.
             </p>
             <p className="text-xs text-gray-500 italic">
               On your call, we'll discuss the financing strategies that actually make sense.
@@ -696,13 +696,13 @@ interface CardRecommendation {
 const CARD_BY_TIER: Record<CreditTier, CardRecommendation> = {
   tier1: {
     name: 'Wells Fargo Reflect Card',
-    tagline: '21 months 0% APR — the gold standard for funding a launch',
+    tagline: '21 months 0% APR. The gold standard for funding a launch.',
     apr: '0% APR for 21 months on purchases and balance transfers',
     fee: '$0 annual fee',
     highlights: [
-      '21 months of 0% APR — nearly 2 years to fund and pay down',
+      '21 months of 0% APR. Nearly 2 years to fund and pay down.',
       'Average approved limit around $10,831',
-      'No annual fee — keeps it open after the intro period',
+      'No annual fee. Keeps it open after the intro period.',
       'Use it to fund inventory, manufacturing, marketing, and tools',
     ],
     applyUrl: 'https://creditcards.wellsfargo.com/reflect-visa-credit-card/',
@@ -711,7 +711,7 @@ const CARD_BY_TIER: Record<CreditTier, CardRecommendation> = {
   tier2: {
     name: 'Capital One QuicksilverOne',
     tagline: 'The realistic best card for fair credit',
-    apr: 'No 0% intro period — but the best card you can realistically get at this tier',
+    apr: 'No 0% intro period, but the best card you can realistically get at this tier',
     fee: '$39 annual fee',
     highlights: [
       '1.5% unlimited cash back on every purchase',
@@ -725,27 +725,27 @@ const CARD_BY_TIER: Record<CreditTier, CardRecommendation> = {
   tier3: {
     name: 'Capital One Quicksilver Secured',
     tagline: 'Build credit fast and graduate to unsecured',
-    apr: 'No 0% intro — focus is on building credit',
+    apr: 'No 0% intro. Focus is on building credit.',
     fee: '$0 annual fee',
     highlights: [
       '1.5% cash back on every purchase',
       '$200 minimum refundable deposit to start',
       'Credit limits from $1,000 to $3,000 based on creditworthiness',
-      'Reports to all three bureaus — graduate to unsecured over time',
+      'Reports to all three bureaus. Graduate to unsecured over time.',
     ],
     applyUrl: 'https://www.capitalone.com/credit-cards/quicksilver-secured/',
     bestFor: '500–600 credit (Bad)',
   },
   tier4: {
     name: 'Capital One Platinum Secured',
-    tagline: 'No credit score required — start here',
-    apr: 'No 0% intro — focus is on establishing credit',
+    tagline: 'No credit score required. Start here.',
+    apr: 'No 0% intro. Focus is on establishing credit.',
     fee: '$0 annual fee',
     highlights: [
-      'No credit score required to apply — only income and debt info',
+      'No credit score required to apply. Just income and debt info.',
       'Deposit as low as $49 for at least a $200 starting line',
-      'Automatic credit line review in as little as 6 months — no extra deposit needed',
-      'Reports to all three bureaus — graduate to unsecured over time',
+      'Automatic credit line review in as little as 6 months. No extra deposit needed.',
+      'Reports to all three bureaus. Graduate to unsecured over time.',
     ],
     applyUrl: 'https://www.capitalone.com/credit-cards/platinum-secured/',
     bestFor: 'Below 500 (Very Bad / No Credit)',
@@ -780,7 +780,7 @@ export function CreditCardQuiz({ p }: { p?: Personalization | null }) {
             Hear us out. There's <span className="font-bold text-gray-900">bad debt</span>, and there's <span className="font-bold text-gray-900">good debt</span>.
           </p>
           <p className="text-gray-600 text-base max-w-2xl mx-auto">
-            Bad debt is borrowing to buy things that lose value. Good debt is borrowing to build something that <em>generates</em> value. If you're using a 0% APR card to fund a business that can make you $100,000 a year, that's good debt — it's exactly how the wealthiest people fund everything they build.
+            Bad debt is borrowing to buy things that lose value. Good debt is borrowing to build something that <em>generates</em> value. If you're using a 0% APR card to fund a business that can make you $100,000 a year, that's good debt. It's exactly how the wealthiest people fund everything they build.
           </p>
         </div>
 
@@ -791,7 +791,7 @@ export function CreditCardQuiz({ p }: { p?: Personalization | null }) {
               See Which Card You Could Qualify For
             </h3>
             <p className="text-sm md:text-base text-slate-300 mb-6 max-w-md mx-auto">
-              Two quick questions. We'll match you with the best card based on your situation — including options with up to <span className="font-bold text-white">21 months of 0% APR</span>.
+              Two quick questions. We'll match you with the best card based on your situation, including options with up to <span className="font-bold text-white">21 months of 0% APR</span>.
             </p>
             <button
               onClick={() => { setStarted(true); trackCreditQuizStarted(); }}
@@ -957,7 +957,7 @@ export function ResourceSection() {
         { name: 'Amazon FBA Revenue Calculator', desc: 'Calculate fees, margins, and profit per unit for any product', link: 'https://sellercentral.amazon.com/hz/fba/profitabilitycalculator/index' },
         { name: 'Helium 10 Free Tier', desc: 'Product research, keyword tracking, and listing optimization (limited free access)', link: 'https://www.helium10.com' },
         { name: 'Jungle Scout Estimator', desc: 'Free Chrome extension to estimate monthly sales for any Amazon listing', link: 'https://www.junglescout.com/estimator/' },
-        { name: 'Our Product Scorecard Tool', desc: 'Rate any product idea across 16 key factors — built by Passion Product', link: '/productscorecard' },
+        { name: 'Our Product Scorecard Tool', desc: 'Rate any product idea across 16 key factors. Built by Passion Product.', link: '/productscorecard' },
         { name: 'Our Profit Estimator', desc: 'Estimate your monthly revenue based on search volume and rank position', link: '/productestimator' },
       ],
     },
@@ -967,18 +967,18 @@ export function ResourceSection() {
       description: 'Watch these to get a head start on the concepts we\'ll discuss on your call',
       resources: [
         { name: 'How to Find Your First Product (Full Walkthrough)', desc: 'The complete product research process from start to finish', link: 'https://www.youtube.com/c/TravisMarziani', isYoutube: true },
-        { name: 'Amazon FBA for Beginners — Everything You Need to Know', desc: 'A beginner-friendly overview of the entire Amazon FBA process', link: 'https://www.youtube.com/c/TravisMarziani', isYoutube: true },
+        { name: 'Amazon FBA for Beginners: Everything You Need to Know', desc: 'A beginner-friendly overview of the entire Amazon FBA process', link: 'https://www.youtube.com/c/TravisMarziani', isYoutube: true },
         { name: 'How I Built a $1M Amazon Brand', desc: 'Travis\'s personal story and the method behind it', link: 'https://www.youtube.com/c/TravisMarziani', isYoutube: true },
-        { name: 'Free 12-Hour Amazon Masterclass', desc: 'Our complete free training — everything from product research to launch', link: '/freecourse' },
+        { name: 'Free 12-Hour Amazon Masterclass', desc: 'Our complete free training. Everything from product research to launch.', link: '/freecourse' },
       ],
     },
     {
       icon: <BookOpen className="w-5 h-5" />,
       title: 'Beginner Checklist: What You\'ll Need',
-      description: 'A quick overview so you feel prepared — not overwhelmed',
+      description: 'A quick overview so you feel prepared, not overwhelmed',
       resources: [
-        { name: 'Amazon Seller Account', desc: 'Professional plan is $39.99/mo — you can sign up anytime (no rush before your call)', link: 'https://sell.amazon.com' },
-        { name: 'A Product Idea (or the willingness to find one)', desc: 'We\'ll help you with this — most students don\'t have one when they start' },
+        { name: 'Amazon Seller Account', desc: 'Professional plan is $39.99/mo. You can sign up anytime, no rush before your call.', link: 'https://sell.amazon.com' },
+        { name: 'A Product Idea (or the willingness to find one)', desc: 'We\'ll help you with this. Most students don\'t have one when they start.' },
         { name: '$1,000–$2,500 in Startup Capital', desc: 'For your first product order, packaging, and initial marketing. Less than most people think.' },
         { name: '5–10 Hours Per Week', desc: 'That\'s all it takes to build your business alongside a full-time job' },
         { name: 'Canva (Free)', desc: 'Create product images, listing graphics, and brand assets', link: 'https://www.canva.com' },
@@ -989,11 +989,11 @@ export function ResourceSection() {
       title: 'Software & Tools Our Students Use',
       description: 'The toolkit behind our most successful Amazon businesses',
       resources: [
-        { name: 'Helium 10', desc: 'All-in-one Amazon seller toolkit — product research, keyword tracking, listing optimization', link: 'https://www.helium10.com' },
-        { name: 'Canva', desc: 'Design product images, A+ Content, and brand assets — free plan available', link: 'https://www.canva.com' },
-        { name: 'Alibaba', desc: 'Find manufacturers and suppliers for your product — where most students source', link: 'https://www.alibaba.com' },
-        { name: 'Photoshop / Lightroom', desc: 'Professional product photography editing (optional — Canva works great too)' },
-        { name: 'Google Sheets / Excel', desc: 'Track inventory, costs, and profit margins — we provide templates in the program' },
+        { name: 'Helium 10', desc: 'All-in-one Amazon seller toolkit. Product research, keyword tracking, listing optimization.', link: 'https://www.helium10.com' },
+        { name: 'Canva', desc: 'Design product images, A+ Content, and brand assets. Free plan available.', link: 'https://www.canva.com' },
+        { name: 'Alibaba', desc: 'Find manufacturers and suppliers for your product. Where most students source.', link: 'https://www.alibaba.com' },
+        { name: 'Photoshop / Lightroom', desc: 'Professional product photography editing. Optional, Canva works great too.' },
+        { name: 'Google Sheets / Excel', desc: 'Track inventory, costs, and profit margins. We provide templates when you work with us.' },
       ],
     },
   ];
@@ -1007,7 +1007,7 @@ export function ResourceSection() {
             Get a Head Start <span className="text-orange-600">Before Your Call</span>
           </h2>
           <p className="text-gray-600 text-base md:text-lg max-w-2xl mx-auto">
-            Tools and resources our most successful students use. No homework — just a head start.
+            Tools and resources our most successful students use. No homework, just a head start.
           </p>
         </div>
 
