@@ -262,12 +262,16 @@ export function ResearchVideo() {
   return (
     <div className="max-w-4xl mx-auto px-4 pt-8 pb-10 md:pt-10 md:pb-12">
       <div className="text-center mb-7">
-        <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
-          Most Important Step
-        </span>
+        <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-red-700 mb-4">
+          <Play className="w-3 h-3" />
+          Required before your call
+        </div>
         <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1]">
-          Watch This Before<br className="md:hidden" /> Your Call
+          You Need to Watch This<br className="md:hidden" /> Before Your Call
         </h2>
+        <p className="text-gray-600 text-sm md:text-base mt-3 max-w-lg mx-auto">
+          This is a short video from Travis that will make your call 10x more valuable. Don't skip it.
+        </p>
       </div>
       <div className="relative">
         <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
@@ -1061,6 +1065,105 @@ export function ResourceSection() {
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────── exit intent popup for confirmation pages ───────────
+   Triggers when the user's mouse leaves the viewport toward the top
+   (desktop) or when they switch tabs / press back (mobile via
+   visibilitychange). Only fires once per session.
+──────────────────────────────────────────────────────────────────── */
+
+export function ConfirmationExitPopup() {
+  const [show, setShow] = useState(false);
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    const STORAGE_FLAG = 'pp_exit_popup_shown';
+
+    // Don't show again if already shown this session
+    if (sessionStorage.getItem(STORAGE_FLAG)) return;
+
+    const trigger = () => {
+      if (firedRef.current) return;
+      firedRef.current = true;
+      sessionStorage.setItem(STORAGE_FLAG, '1');
+      setShow(true);
+    };
+
+    // Desktop: mouse leaves toward top of viewport
+    const handleMouseLeave = (e: MouseEvent) => {
+      if (e.clientY <= 5) trigger();
+    };
+
+    // Mobile: tab switch or back button
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') trigger();
+    };
+
+    document.addEventListener('mouseleave', handleMouseLeave);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      {/* Overlay */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={() => setShow(false)}
+      />
+
+      {/* Popup */}
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-7 md:p-9 text-center">
+        <button
+          onClick={() => setShow(false)}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 cursor-pointer text-xl leading-none"
+          aria-label="Close"
+        >
+          &times;
+        </button>
+
+        <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-5">
+          <Play className="w-6 h-6 text-orange-600" />
+        </div>
+
+        <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-3 leading-tight">
+          Wait. Did you watch the video?
+        </h3>
+
+        <p className="text-sm md:text-base text-gray-600 mb-4 leading-relaxed">
+          The people who show up to their call prepared get way more out of it. The video at the top of this page covers everything you need to know about the Passion Product method, how it works, and what to expect.
+        </p>
+
+        <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+          Take a few minutes with it. You'll walk into your call knowing exactly what questions to ask, and you'll be able to make a clear decision without second-guessing yourself.
+        </p>
+
+        <button
+          onClick={() => {
+            setShow(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className="w-full py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors cursor-pointer text-sm shadow-md"
+        >
+          Take me back to the video
+        </button>
+
+        <button
+          onClick={() => setShow(false)}
+          className="mt-3 text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
+        >
+          I've already watched it
+        </button>
       </div>
     </div>
   );

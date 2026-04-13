@@ -10,6 +10,7 @@ import {
   WhatToExpect,
   LowCapitalStrategies,
   CreditCardQuiz,
+  ConfirmationExitPopup,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Phone, UserPlus, Star, Shield } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -223,6 +224,7 @@ export function TrainingNewSetter() {
       <ResourceSection />
       <SetterFinalCTA />
       <SharedFooter />
+      <ConfirmationExitPopup />
     </div>
   );
 }

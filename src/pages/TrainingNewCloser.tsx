@@ -10,6 +10,7 @@ import {
   WhatToExpect,
   LowCapitalStrategies,
   CreditCardQuiz,
+  ConfirmationExitPopup,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Clock, Star, Shield, ChevronDown } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -502,6 +503,7 @@ export function TrainingNewCloser() {
       <ResourceSection />
       <CloserFinalCTA meeting={meeting} firstName={firstName} />
       <SharedFooter />
+      <ConfirmationExitPopup />
     </div>
   );
 }
