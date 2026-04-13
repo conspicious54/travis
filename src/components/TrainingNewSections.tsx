@@ -1126,9 +1126,11 @@ export function ConfirmationExitPopup() {
           &times;
         </button>
 
-        <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-5">
-          <Play className="w-6 h-6 text-orange-600" />
-        </div>
+        <img
+          src="https://media.giphy.com/media/l1KVaj5UcbHwrBMqI/giphy.gif"
+          alt="Wait, come back!"
+          className="w-40 h-auto mx-auto mb-4 rounded-xl"
+        />
 
         <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-3 leading-tight">
           Wait. Did you watch the video?
