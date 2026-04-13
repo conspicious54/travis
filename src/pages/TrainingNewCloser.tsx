@@ -387,35 +387,16 @@ function formatHumanTime(d: Date): string {
 
 function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo | null; firstName: string }) {
   return (
-    <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
-      <div className="max-w-4xl mx-auto px-4 pt-6 pb-7 md:pt-8 md:pb-9 text-center">
-        <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight mb-2">
-          {firstName ? `${firstName}, You're Booked` : "Your Call is Booked"}. Now Complete <span className="text-orange-600">Step 2</span>
+    <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white">
+      <div className="max-w-4xl mx-auto px-4 pt-5 pb-3 md:pt-6 md:pb-4 text-center">
+        <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight mb-1">
+          {firstName ? `${firstName}, you're booked.` : "You're booked."} <span className="text-orange-600">Now watch this.</span>
         </h1>
-
-        {meeting ? (
-          <>
-            <div className="inline-flex flex-col items-center gap-1 bg-white border border-orange-200 rounded-xl px-5 py-3 shadow-sm mt-3 mb-5">
-              <div className="flex items-center gap-2 text-gray-900 font-bold text-sm md:text-base">
-                <Calendar className="w-4 h-4 text-orange-600" />
-                {formatHumanDate(meeting.start)}
-              </div>
-              <div className="flex items-center gap-2 text-gray-600 text-xs md:text-sm">
-                <Clock className="w-3.5 h-3.5 text-orange-500" />
-                {formatHumanTime(meeting.start)}
-              </div>
-            </div>
-
-            <div>
-              <CalendarButton meeting={meeting} variant="primary" />
-              <p className="text-xs text-gray-400 mt-2">Works with Google, Outlook, Apple Calendar, and more</p>
-            </div>
-          </>
-        ) : (
-          <p className="text-sm md:text-base text-gray-600 max-w-xl mx-auto">
-            Check your email for the calendar invite and join link.
-          </p>
-        )}
+        <p className="text-sm text-gray-500">
+          {meeting
+            ? `Check your email for the calendar invite. Your call is on ${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}.`
+            : 'Check your email for the calendar invite and join link.'}
+        </p>
       </div>
     </div>
   );

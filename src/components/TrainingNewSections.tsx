@@ -261,17 +261,11 @@ export function WhatToExpect({ p }: { p: Personalization | null }) {
 export function ResearchVideo() {
   return (
     <div className="max-w-4xl mx-auto px-4 pt-8 pb-10 md:pt-10 md:pb-12">
-      <div className="text-center mb-7">
-        <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-red-700 mb-4">
+      <div className="text-center mb-5">
+        <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-red-700">
           <Play className="w-3 h-3" />
           Required before your call
         </div>
-        <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1]">
-          You Need to Watch This<br className="md:hidden" /> Before Your Call
-        </h2>
-        <p className="text-gray-600 text-sm md:text-base mt-3 max-w-lg mx-auto">
-          This is a short video from Travis that will make your call 10x more valuable. Don't skip it.
-        </p>
       </div>
       <div className="relative">
         <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />

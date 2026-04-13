@@ -114,37 +114,25 @@ function SetterConfirmationBanner() {
   const isMobile = platform === 'ios' || platform === 'android';
 
   return (
-    <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
-      <div className="max-w-4xl mx-auto px-4 pt-6 pb-7 md:pt-8 md:pb-9 text-center">
-        <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight mb-2">
-          You're In. Now Complete <span className="text-orange-600">Step 2</span>
+    <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white">
+      <div className="max-w-4xl mx-auto px-4 pt-5 pb-3 md:pt-6 md:pb-4 text-center">
+        <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight mb-1">
+          You're in. <span className="text-orange-600">Now watch this.</span>
         </h1>
-        <p className="text-sm md:text-base text-gray-600 max-w-xl mx-auto mb-5">
-          Save <span className="font-bold text-gray-900">{phone.display}</span> as <span className="font-bold text-gray-900">"Travis Marziani"</span> so you pick up when we call.
+        <p className="text-sm text-gray-500">
+          We'll call you from <span className="font-semibold text-gray-700">{phone.display}</span>.
+          {isMobile ? (
+            <> <button onClick={() => { downloadVCard(phone.raw); trackContactSaved(region, platform); }} className="text-orange-600 font-semibold underline underline-offset-2 cursor-pointer">Save the contact</button> so you pick up.</>
+          ) : (
+            <> Save it as "Travis Marziani" so you pick up.</>
+          )}
+          {' '}
+          <span className="text-gray-400">
+            Wrong region? {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map((r, i) => (
+              <span key={r}>{i > 0 && ' / '}<button onClick={() => setRegion(r)} className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer">{PHONE_NUMBERS[r].label}</button></span>
+            ))}
+          </span>
         </p>
-
-        {isMobile ? (
-          <button
-            onClick={() => { downloadVCard(phone.raw); trackContactSaved(region, platform); }}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors shadow-md text-sm cursor-pointer"
-          >
-            <Phone className="w-4 h-4" />
-            Tap to Save Contact
-          </button>
-        ) : null}
-
-        <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mt-4">
-          <span>Wrong region?</span>
-          {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map(r => (
-            <button
-              key={r}
-              onClick={() => setRegion(r)}
-              className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
-            >
-              {PHONE_NUMBERS[r].label}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );
