@@ -680,10 +680,70 @@ function FinalCTA() {
 
 function Footer() {
   return (
-    <div className="bg-black py-6 text-center">
-      <p className={`${MONO} text-[10px] uppercase tracking-widest text-white/40`}>
-        &copy; {new Date().getFullYear()} PASSION PRODUCT LLC &nbsp;│&nbsp; ALL ESTIMATES. NOT A GUARANTEE OF RESULTS.
-      </p>
+    <div className="bg-black text-white/70">
+      {/* Full disclosure block */}
+      <div className="max-w-4xl mx-auto px-4 py-10 md:py-14">
+        <p className={`${IMPACT} uppercase text-xs md:text-sm tracking-[0.25em] text-white/80 mb-5 text-center`}>
+          ── Full Disclosure ──
+        </p>
+
+        <div className="space-y-4 text-[11px] md:text-xs leading-relaxed text-white/60 max-w-3xl mx-auto">
+          <p>
+            <span className="text-white/90 font-bold uppercase">Not financial, legal, tax, or business advice.</span> The information on this page is provided for general educational and illustrative purposes only. It is not intended as, and should not be relied upon as, financial, legal, tax, investment, or business advice. Before making any business, financial, investment, credit, tax, or legal decision, you should consult a qualified licensed professional in your jurisdiction.
+          </p>
+
+          <p>
+            <span className="text-white/90 font-bold uppercase">No earnings or results guarantees.</span> Any revenue, profit, cost, timeline, or outcome figures referenced on this page (including, without limitation, any stage-by-stage cost estimates, six-month projections, first-year revenue ranges, Kickstarter fundraise amounts, or any comparison between "doing it alone" and "working with us") are estimates based on anecdotal outcomes, illustrative scenarios, or individual student experiences. They are not typical. They are not promises. They are not guarantees, representations, or assurances of any kind regarding the results you may personally achieve. Your results will be different, and may be materially lower, including no result at all or a complete loss of capital.
+          </p>
+
+          <p>
+            <span className="text-white/90 font-bold uppercase">Student stories are not typical.</span> Any individuals referenced on this page (including AJ, Brent, Travis, Jeremy, Connor, and others) are actual past or present students or associates of Passion Product LLC whose outcomes are highlighted for illustrative purposes. Their results are atypical. The U.S. Bureau of Labor Statistics and multiple independent studies report that a significant percentage of new small businesses fail within their first few years. Most people who attempt to sell on Amazon, start a Kickstarter, or launch a product do not achieve the outcomes described above. The fact that someone is shown on this page is not a promise that you will achieve comparable results.
+          </p>
+
+          <p>
+            <span className="text-white/90 font-bold uppercase">Kickstarter references.</span> Kickstarter and Indiegogo are independent third-party crowdfunding platforms with their own terms, policies, and platform fees. Passion Product LLC is not affiliated with, endorsed by, or a sponsor of Kickstarter, PBC or Indiegogo, Inc. Links to specific campaigns are provided for informational purposes only. Not every Kickstarter or Indiegogo campaign succeeds. A campaign can fail to reach its funding goal, fail to deliver, or fail to produce a profitable product even after successful funding. Running a successful crowdfunding campaign requires significant work and carries real risk.
+          </p>
+
+          <p>
+            <span className="text-white/90 font-bold uppercase">Business and financial risk.</span> Selling on Amazon, starting an e-commerce brand, launching a product, sourcing inventory, and using credit or financing involve material risk, including the risk of losing some or all of the money you invest. Outcomes depend on many factors outside of our control, including but not limited to your effort, skill, experience, market conditions, competition, platform policy changes, supplier reliability, advertising performance, macroeconomic conditions, regulatory changes, and tariffs. No one, including Passion Product LLC, can guarantee the performance or success of any business venture.
+          </p>
+
+          <p>
+            <span className="text-white/90 font-bold uppercase">Credit and debt disclaimer.</span> Where we reference credit cards, 0% APR promotional periods, business financing, or the concept of "good debt" versus "bad debt," we are making a general educational commentary, not a specific recommendation to you. Credit products have terms, fees, interest rates, and conditions that can change. Approval depends solely on the lender. Misusing credit, carrying balances past a promotional period, or taking on more debt than you can responsibly manage can cause serious financial harm, including damaged credit, default, collections, and bankruptcy. Do not take on any debt without first consulting a qualified financial advisor.
+          </p>
+
+          <p>
+            <span className="text-white/90 font-bold uppercase">Third-party tools and links.</span> This site may contain references, links, or affiliate links to third-party products, services, or websites. Passion Product LLC may receive compensation when you interact with these links. We only recommend tools we believe may be useful, but we make no representations about them. You are responsible for reviewing the terms, privacy policies, and fees of any third party before engaging with them.
+          </p>
+
+          <p>
+            <span className="text-white/90 font-bold uppercase">No professional relationship.</span> Viewing this page, clicking a link, or speaking with our team does not create a client, fiduciary, or advisory relationship of any kind. Any coaching, community, or program relationship is governed solely by the written agreement you sign when you enroll.
+          </p>
+
+          <p>
+            <span className="text-white/90 font-bold uppercase">No liability.</span> To the fullest extent permitted by law, Passion Product LLC, its officers, employees, contractors, affiliates, and associated parties disclaim any and all liability for losses, damages, or costs arising out of or related to your reliance on the information on this page, any actions you take or fail to take as a result, or any business decision you make. By continuing to use this page, you agree that you are solely responsible for your decisions and their outcomes.
+          </p>
+
+          <p>
+            <span className="text-white/90 font-bold uppercase">Forward-looking statements.</span> Certain statements on this page may be considered "forward-looking." These statements are based on assumptions that may or may not prove accurate, and actual results may differ materially. We undertake no obligation to update such statements.
+          </p>
+
+          <p>
+            <span className="text-white/90 font-bold uppercase">Applicable terms.</span> Your use of this site is governed by our full <a href="/terms" className="underline underline-offset-2 hover:text-white">Terms of Service</a> and any other agreements you sign with Passion Product LLC. If there is any conflict between the summary disclosures above and those agreements, those agreements control.
+          </p>
+        </div>
+
+        <p className={`${SERIF} italic text-white/50 text-xs text-center mt-8 max-w-2xl mx-auto`}>
+          Passion Product LLC believes in honest education and full transparency. These disclosures exist to make sure you have a realistic understanding of what's involved before you act on anything you read here.
+        </p>
+      </div>
+
+      {/* Bottom bar */}
+      <div className="border-t border-white/10 py-5 text-center">
+        <p className={`${MONO} text-[10px] uppercase tracking-widest text-white/40`}>
+          &copy; {new Date().getFullYear()} PASSION PRODUCT LLC &nbsp;│&nbsp; ALL RIGHTS RESERVED &nbsp;│&nbsp; <a href="/terms" className="hover:text-white underline-offset-2 hover:underline">TERMS</a>
+        </p>
+      </div>
     </div>
   );
 }
