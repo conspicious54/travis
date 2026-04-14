@@ -414,6 +414,8 @@ export function NextStepsList({
                         </span>
                         <a
                           href={p.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="shrink-0 text-xs font-bold text-orange-600 hover:text-orange-800 underline underline-offset-2 cursor-pointer whitespace-nowrap"
                         >
                           Learn more →
