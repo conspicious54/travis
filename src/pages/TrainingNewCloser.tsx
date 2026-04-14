@@ -9,9 +9,10 @@ import {
   MethodCheckIn,
   NextStepsList,
 } from '../components/TrainingNewSections';
-import { CheckCircle, Calendar, Star, Shield, ChevronDown } from 'lucide-react';
+import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
-import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackCalendarAdded } from '../lib/posthog';
+import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackCalendarAdded, trackEvent } from '../lib/posthog';
+import { detectRegion, PHONE_NUMBERS, type Region } from '../lib/regionPhone';
 
 /* ───────────────────── closer-specific sections ──────────────────── */
 
@@ -383,6 +384,15 @@ function formatHumanTime(d: Date): string {
 }
 
 function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo | null; firstName: string }) {
+  const [region, setRegion] = useState<Region>('us');
+
+  useEffect(() => {
+    setRegion(detectRegion());
+  }, []);
+
+  const phone = PHONE_NUMBERS[region];
+  const smsBody = encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
+
   return (
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
       <div className="max-w-3xl mx-auto px-4 pt-6 pb-8 md:pt-8 md:pb-10 text-center">
@@ -406,15 +416,36 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
           )}
         </p>
 
-        {/* Micro-ask: one-click calendar add, above the fold */}
-        {meeting && (
-          <div>
-            <CalendarButton meeting={meeting} variant="primary" />
-            <p className="text-xs text-gray-400 mt-2">
-              Takes 10 seconds. So you don't miss it.
-            </p>
-          </div>
-        )}
+        {/* Micro-ask row: calendar + text confirm */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          {meeting && <CalendarButton meeting={meeting} variant="primary" />}
+          <a
+            href={`sms:${phone.raw}?&body=${smsBody}`}
+            onClick={() => trackEvent('closer_confirm_text_clicked', { region })}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm transition-colors shadow-md cursor-pointer"
+          >
+            <Phone className="w-4 h-4" />
+            Text "YES" to Confirm
+          </a>
+        </div>
+
+        <p className="text-xs text-gray-400 mt-3">
+          Takes 10 seconds.{' '}
+          <span className="text-gray-500">
+            Wrong region?{' '}
+            {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map((r, i) => (
+              <span key={r}>
+                {i > 0 && <span className="text-gray-300">/</span>}{' '}
+                <button
+                  onClick={() => setRegion(r)}
+                  className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
+                >
+                  {PHONE_NUMBERS[r].label}
+                </button>
+              </span>
+            ))}
+          </span>
+        </p>
       </div>
     </div>
   );
