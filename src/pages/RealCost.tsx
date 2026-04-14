@@ -1,19 +1,27 @@
 import { useEffect } from 'react';
 import {
   AlertTriangle,
-  X,
-  Check,
-  Search,
-  Palette,
-  Package,
-  Rocket,
-  TrendingUp,
-  DollarSign,
-  Users,
-  ArrowRight,
   Skull,
+  ArrowRight,
 } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
+
+/* ───── design system ─────────────────────────────────────────────
+   Anti-smoking PSA aesthetic:
+   - System serif + Impact-style condensed sans for headlines
+   - Monospace for numbers (receipt / invoice vibe)
+   - Hard edges, minimal radius
+   - Hazard tape dividers (SVG-like CSS stripes)
+   - Red INK STAMPS with rotation
+   - Newspaper column dividers
+─────────────────────────────────────────────────────────────────── */
+
+const SERIF = "font-serif";
+const IMPACT = "font-['Impact','Haettenschweiler','Arial_Narrow_Bold',sans-serif]";
+const MONO = "font-mono";
+
+const HAZARD_STRIPES = "bg-[repeating-linear-gradient(45deg,#facc15_0,#facc15_20px,#000_20px,#000_40px)]";
+const DANGER_STRIPES = "bg-[repeating-linear-gradient(45deg,#dc2626_0,#dc2626_20px,#000_20px,#000_40px)]";
 
 /* ──────────────────────────── page ──────────────────────────────── */
 
@@ -23,277 +31,194 @@ export function RealCost() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-[#faf7f2] text-black selection:bg-yellow-300 selection:text-black">
       <Hero />
-      <Disclaimer />
-      <StageSection
-        num={1}
-        icon={<Search className="w-5 h-5" />}
-        stage="Product Validation"
-        diy={{
-          title: 'Watch a few YouTube videos. Guess.',
-          bullets: [
-            'You pick a product based on a hunch',
-            'No one tells you if the data actually supports it',
-            'You find out the market is dead after you spend $3,000 on inventory',
-            'Or worse, you never find out at all and just blame yourself',
-          ],
-          cost: 'First product fails',
-          costSub: '$3,000–$10,000 gone before you sell a single unit',
-        }}
-        withUs={{
-          title: 'A coach validates your idea before you spend a dollar',
-          bullets: [
-            'We look at the real Amazon data with you',
-            'A coach reviews your idea and tells you if it will actually sell',
-            'We show you how to see the opportunity yourself',
-            'You only commit money when the data says go',
-          ],
-          cost: '$0 in wasted validation',
-          costSub: 'You know before you buy',
-        }}
-      />
-
-      <StageSection
-        num={2}
-        icon={<Palette className="w-5 h-5" />}
-        stage="Branding & Design"
-        flipped
-        diy={{
-          title: 'Fiverr gig for $50. Looks like a Fiverr gig for $50.',
-          bullets: [
-            'Cheap logo that undersells your product',
-            'Packaging design that looks generic',
-            'Main image that gets skipped on the Amazon grid',
-            'Costs you sales every single day it\'s live',
-          ],
-          cost: 'Silent revenue leak',
-          costSub: 'Bad branding steals money from you every single month',
-        }}
-        withUs={{
-          title: 'Real designers and a branding framework that converts',
-          bullets: [
-            'Work with designers who understand Amazon shoppers',
-            'Branding built around your niche, not a generic template',
-            'Main image, packaging, and logo designed to stand out',
-            'Higher click-through, higher conversion, higher rank',
-          ],
-          cost: 'Your brand earns its money back',
-          costSub: 'Branding that actually converts pays for itself fast',
-        }}
-      />
-
-      <StageSection
-        num={3}
-        icon={<Package className="w-5 h-5" />}
-        stage="Manufacturing & Sourcing"
-        diy={{
-          title: 'Find a random supplier on Alibaba. Hope for the best.',
-          bullets: [
-            'No idea if the manufacturer is legit until the shipment arrives',
-            'You overpay because you don\'t know what to negotiate',
-            'Quality issues on 10–30% of your units',
-            'Delays that push your launch back 2–3 months',
-            'In the worst case, you get scammed and lose it all',
-          ],
-          cost: 'Easily $5,000–$20,000 in losses',
-          costSub: 'Bad inventory. Worse, lost time.',
-        }}
-        withUs={{
-          title: 'Verified manufacturers and a coach in your corner',
-          bullets: [
-            'We point you to manufacturers other students have used',
-            'Negotiation scripts that get you a better unit cost',
-            'Quality checks built into the process',
-            'Launch on schedule, not 3 months late',
-          ],
-          cost: 'Lower cost per unit',
-          costSub: 'And no horror stories',
-        }}
-        flipped
-      />
-
-      <KickstarterSection />
-
-      <StageSection
-        num={4}
-        icon={<Rocket className="w-5 h-5" />}
-        stage="The Launch"
-        diy={{
-          title: 'Post the listing. Hope it ranks.',
-          bullets: [
-            'A listing cobbled together from free YouTube videos',
-            'Keywords you guessed at',
-            'No one to review it before it goes live',
-            'Zero reviews on day one, nobody buying, Amazon ignores you',
-            'You miss the honeymoon period entirely',
-          ],
-          cost: 'Dead listing',
-          costSub: 'The biggest Amazon mistake there is',
-        }}
-        withUs={{
-          title: 'A coach approves your listing before it goes live',
-          bullets: [
-            'Optimized listing with the right keywords from day one',
-            'Your listing reviewed and approved by a coach',
-            'The Passion Product community supports your first orders and reviews',
-            'You catch Amazon\'s honeymoon period and rank fast',
-          ],
-          cost: 'A launch that actually launches',
-          costSub: 'Momentum on day one',
-        }}
-        flipped
-      />
-
-      <BigCostSection />
+      <IntroStatement />
+      <Stage1 />
+      <Stage2 />
+      <Stage3 />
+      <KickstarterInterlude />
+      <Stage4 />
+      <TheBill />
       <FinalCTA />
       <Footer />
     </div>
   );
 }
 
-/* ──────────────────────────── sections ──────────────────────────── */
+/* ──────────────────────── warning label hero ────────────────────── */
 
 function Hero() {
   return (
-    <div className="bg-gray-950 text-white relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-red-950/40 via-gray-950 to-gray-950" />
+    <>
+      <div className={`h-3 ${HAZARD_STRIPES}`} />
 
-      {/* Warning stripes */}
-      <div className="relative h-2 bg-yellow-400 overflow-hidden">
-        <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_15px,#000_15px,#000_30px)] opacity-40" />
+      <div className="bg-black text-white">
+        <div className="max-w-4xl mx-auto px-4 py-14 md:py-20">
+          {/* Warning label */}
+          <div className="border-4 border-white p-4 md:p-6 mb-10 max-w-xl mx-auto">
+            <div className="flex items-center gap-3 mb-1">
+              <AlertTriangle className="w-6 h-6 shrink-0" strokeWidth={2.5} />
+              <p className={`${IMPACT} uppercase text-sm md:text-base tracking-[0.2em]`}>
+                Public Awareness Notice
+              </p>
+            </div>
+            <p className="text-xs md:text-sm leading-snug text-white/80">
+              The following document contains cost disclosures regarding
+              unsupervised Amazon FBA launches. Viewer discretion is advised.
+            </p>
+          </div>
+
+          <h1 className={`${IMPACT} uppercase text-center leading-[0.85] tracking-tight`}>
+            <span className="block text-[14vw] md:text-[10rem] text-white">
+              THE REAL
+            </span>
+            <span className="block text-[18vw] md:text-[13rem] text-red-500" style={{ textShadow: '4px 4px 0 #000' }}>
+              COST
+            </span>
+            <span className="block text-[6vw] md:text-5xl text-white/90 mt-2">
+              of launching on Amazon alone.
+            </span>
+          </h1>
+
+          <p className={`${SERIF} italic text-center text-white/70 text-base md:text-lg mt-10 max-w-xl mx-auto`}>
+            "Nobody ever tells you the bill until it's already due."
+          </p>
+        </div>
       </div>
 
-      <div className="relative max-w-4xl mx-auto px-4 py-16 md:py-24 text-center">
-        <div className="inline-flex items-center gap-2 bg-red-900/40 border border-red-500/50 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider text-red-200 mb-6">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          Warning: This is what nobody tells you
+      <div className={`h-3 ${HAZARD_STRIPES}`} />
+    </>
+  );
+}
+
+/* ──────────────────────── intro statement ───────────────────────── */
+
+function IntroStatement() {
+  return (
+    <div className="bg-[#faf7f2] border-b-4 border-black">
+      <div className="max-w-3xl mx-auto px-4 py-10 md:py-14">
+        <div className="flex items-start gap-4 md:gap-6">
+          <div className="shrink-0 w-14 h-14 md:w-16 md:h-16 bg-red-600 text-white flex items-center justify-center">
+            <span className={`${IMPACT} text-4xl md:text-5xl leading-none`}>!</span>
+          </div>
+          <div>
+            <p className={`${SERIF} text-xl md:text-3xl leading-tight text-black font-bold`}>
+              Every stage of an Amazon launch comes with a price.
+            </p>
+            <p className={`${SERIF} text-lg md:text-2xl leading-tight text-black/70 mt-2 italic`}>
+              Most people pay it twice. Once in dollars, again in lost time.
+            </p>
+          </div>
         </div>
 
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight mb-5 leading-[0.95]">
-          The Real Cost of<br />
-          Launching on Amazon<br />
-          <span className="text-red-400">By Yourself.</span>
-        </h1>
-
-        <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto mb-3">
-          Most people don't see the bill until it's too late.
-        </p>
-        <p className="text-sm text-slate-500 max-w-xl mx-auto">
-          Here's what DIY Amazon FBA actually costs, stage by stage, compared to doing it with a team behind you.
-        </p>
-      </div>
-
-      <div className="relative h-2 bg-yellow-400 overflow-hidden">
-        <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_15px,#000_15px,#000_30px)] opacity-40" />
-      </div>
-    </div>
-  );
-}
-
-function Disclaimer() {
-  return (
-    <div className="bg-yellow-50 border-b border-yellow-200">
-      <div className="max-w-3xl mx-auto px-4 py-3 text-center">
-        <p className="text-xs text-yellow-900">
-          <span className="font-bold">Estimates, not guarantees.</span> These numbers are based on common outcomes we see. Your results will vary. What's consistent is the pattern.
+        <p className="text-xs text-black/60 mt-8 uppercase tracking-wider border-t border-black/20 pt-4">
+          Disclosure: The following figures are estimates based on common outcomes.
+          Individual results vary. Past performance does not guarantee future results.
         </p>
       </div>
     </div>
   );
 }
 
-interface StageData {
+/* ──────────────────────── stage component ───────────────────────── */
+
+interface Side {
   title: string;
   bullets: string[];
-  cost: string;
-  costSub: string;
+  verdict: string;
+  verdictSub: string;
 }
 
-function StageSection({
+function Stage({
   num,
-  icon,
-  stage,
+  name,
   diy,
   withUs,
-  flipped = false,
 }: {
-  num: number;
-  icon: React.ReactNode;
-  stage: string;
-  diy: StageData;
-  withUs: StageData;
-  flipped?: boolean;
+  num: string;
+  name: string;
+  diy: Side;
+  withUs: Side;
 }) {
   return (
-    <div className={`py-14 md:py-20 ${flipped ? 'bg-gray-50' : 'bg-white'}`}>
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 bg-gray-900 text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
-            {icon}
-            Stage {num}
+    <div className="bg-[#faf7f2] border-b-4 border-black">
+      <div className="max-w-6xl mx-auto">
+        {/* Stage header — newspaper style */}
+        <div className="border-b-2 border-black px-4 py-5 md:py-7 flex items-baseline gap-4 md:gap-6">
+          <span className={`${IMPACT} text-5xl md:text-7xl leading-none text-black/20`}>
+            {num}
+          </span>
+          <div className="border-l-2 border-black pl-4 md:pl-6">
+            <p className="text-[10px] md:text-xs uppercase tracking-[0.25em] text-black/60 mb-1">
+              Stage {num}
+            </p>
+            <h2 className={`${IMPACT} uppercase text-3xl md:text-6xl leading-[0.9] tracking-tight`}>
+              {name}
+            </h2>
           </div>
-          <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.05]">
-            {stage}
-          </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* DIY side */}
-          <div className="bg-gradient-to-br from-red-50 to-red-100/50 border-2 border-red-200 rounded-2xl p-6 md:p-7 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center">
-                <X className="w-4 h-4 text-white" strokeWidth={3} />
-              </div>
-              <span className="text-red-800 text-xs font-black uppercase tracking-wider">Doing it alone</span>
-            </div>
-
-            <h3 className="text-lg md:text-xl font-black text-gray-900 mb-4 leading-tight">
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          {/* DIY */}
+          <div className="border-b md:border-b-0 md:border-r-2 border-black p-5 md:p-8 bg-white relative">
+            <StampDIY />
+            <p className={`${IMPACT} uppercase text-xs tracking-[0.2em] text-red-600 mb-3`}>
+              If you do this alone
+            </p>
+            <h3 className={`${SERIF} text-xl md:text-2xl font-bold leading-tight mb-5`}>
               {diy.title}
             </h3>
-
-            <ul className="space-y-2 mb-6">
+            <ul className="space-y-3 mb-6">
               {diy.bullets.map((b, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed">
-                  <span className="text-red-500 mt-1 shrink-0">&bull;</span>
-                  <span>{b}</span>
+                <li key={i} className="flex gap-3 text-sm md:text-[15px] leading-relaxed">
+                  <span className="text-red-600 shrink-0 font-bold">✗</span>
+                  <span className="text-black/80">{b}</span>
                 </li>
               ))}
             </ul>
 
-            <div className="bg-red-600 text-white rounded-xl p-4 text-center">
-              <p className="text-xs uppercase tracking-wider text-red-100 mb-1">True cost</p>
-              <p className="font-black text-lg md:text-xl leading-tight">{diy.cost}</p>
-              <p className="text-xs text-red-100 mt-1">{diy.costSub}</p>
+            {/* Receipt-style verdict */}
+            <div className="bg-black text-white p-4 md:p-5 border-l-4 border-red-600">
+              <p className={`${MONO} text-[10px] uppercase tracking-wider text-white/60 mb-1`}>
+                &gt; true cost
+              </p>
+              <p className={`${IMPACT} uppercase text-xl md:text-2xl leading-tight text-red-400`}>
+                {diy.verdict}
+              </p>
+              <p className={`${MONO} text-xs text-white/70 mt-2`}>
+                {diy.verdictSub}
+              </p>
             </div>
           </div>
 
-          {/* With us side */}
-          <div className="bg-gradient-to-br from-green-50 to-emerald-100/40 border-2 border-green-200 rounded-2xl p-6 md:p-7 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
-                <Check className="w-4 h-4 text-white" strokeWidth={3} />
-              </div>
-              <span className="text-green-800 text-xs font-black uppercase tracking-wider">Working with us</span>
-            </div>
-
-            <h3 className="text-lg md:text-xl font-black text-gray-900 mb-4 leading-tight">
+          {/* With us */}
+          <div className="p-5 md:p-8 bg-[#faf7f2] relative">
+            <p className={`${IMPACT} uppercase text-xs tracking-[0.2em] text-green-700 mb-3`}>
+              If you work with us
+            </p>
+            <h3 className={`${SERIF} text-xl md:text-2xl font-bold leading-tight mb-5`}>
               {withUs.title}
             </h3>
-
-            <ul className="space-y-2 mb-6">
+            <ul className="space-y-3 mb-6">
               {withUs.bullets.map((b, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed">
-                  <span className="text-green-600 mt-1 shrink-0">&bull;</span>
-                  <span>{b}</span>
+                <li key={i} className="flex gap-3 text-sm md:text-[15px] leading-relaxed">
+                  <span className="text-green-700 shrink-0 font-bold">✓</span>
+                  <span className="text-black/80">{b}</span>
                 </li>
               ))}
             </ul>
 
-            <div className="bg-green-700 text-white rounded-xl p-4 text-center">
-              <p className="text-xs uppercase tracking-wider text-green-100 mb-1">True cost</p>
-              <p className="font-black text-lg md:text-xl leading-tight">{withUs.cost}</p>
-              <p className="text-xs text-green-100 mt-1">{withUs.costSub}</p>
+            <div className="bg-white border-2 border-black p-4 md:p-5 border-l-4 border-l-green-700">
+              <p className={`${MONO} text-[10px] uppercase tracking-wider text-black/50 mb-1`}>
+                &gt; true cost
+              </p>
+              <p className={`${IMPACT} uppercase text-xl md:text-2xl leading-tight text-green-800`}>
+                {withUs.verdict}
+              </p>
+              <p className={`${MONO} text-xs text-black/60 mt-2`}>
+                {withUs.verdictSub}
+              </p>
             </div>
           </div>
         </div>
@@ -302,139 +227,347 @@ function StageSection({
   );
 }
 
-function KickstarterSection() {
+function StampDIY() {
   return (
-    <div className="bg-gradient-to-br from-gray-950 via-slate-900 to-orange-950 text-white py-14 md:py-20 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-orange-900/30 via-transparent to-transparent" />
-      <div className="relative max-w-4xl mx-auto px-4 text-center">
-        <div className="inline-flex items-center gap-2 bg-orange-500/20 border border-orange-400/40 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-orange-300 mb-4">
-          <DollarSign className="w-3.5 h-3.5" />
-          Bonus stage
-        </div>
-        <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-[1.05] mb-4">
-          The Kickstarter Route<br />
-          <span className="text-orange-400">Launch With Someone Else's Money</span>
-        </h2>
-        <p className="text-slate-300 text-base md:text-lg max-w-2xl mx-auto mb-10">
-          We guide students through Kickstarter launches where real customers pay for your product before you manufacture a single unit.
-        </p>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <KickstarterStat name="AJ" amount="$120K+" />
-          <KickstarterStat name="Travis" amount="$15K+" />
-          <KickstarterStat name="Jeremy" amount="$10K+" />
-          <KickstarterStat name="Brent" amount="Multi-$10Ks" />
-        </div>
-
-        <p className="text-sm text-slate-400 max-w-xl mx-auto">
-          Dozens of students have funded their entire launch this way. Zero out-of-pocket inventory risk. Demand validated before you spend a dollar.
-        </p>
+    <div className="absolute top-3 right-3 md:top-5 md:right-5 pointer-events-none">
+      <div className={`${IMPACT} uppercase border-[3px] border-red-600 text-red-600 px-2.5 py-1 text-[10px] md:text-xs tracking-[0.2em] rotate-[-8deg] opacity-80`}>
+        High risk
       </div>
     </div>
   );
 }
 
-function KickstarterStat({ name, amount }: { name: string; amount: string }) {
+/* ──────────────────────── individual stages ─────────────────────── */
+
+function Stage1() {
   return (
-    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-      <p className="text-xs uppercase tracking-wider text-slate-400 mb-1">{name}</p>
-      <p className="text-lg md:text-2xl font-black text-orange-400">{amount}</p>
-      <p className="text-xs text-slate-500">raised</p>
-    </div>
+    <Stage
+      num="01"
+      name="Product Validation"
+      diy={{
+        title: 'Watch some YouTube videos. Pick a product. Hope.',
+        bullets: [
+          'You base the decision on a hunch',
+          'Nobody tells you if real Amazon data supports it',
+          'You find out the market is dead after spending $3,000 on inventory',
+          'Or worse, you never find out at all',
+        ],
+        verdict: 'First product fails',
+        verdictSub: '$3,000 – $10,000 gone before you sell one unit',
+      }}
+      withUs={{
+        title: 'A real coach validates the idea before you spend a dollar.',
+        bullets: [
+          'We look at the actual Amazon data together',
+          'A coach reviews your idea and tells you if it will sell',
+          'We teach you how to read the data yourself',
+          'You commit capital only when the numbers say yes',
+        ],
+        verdict: 'Zero in wasted money',
+        verdictSub: 'You know before you buy',
+      }}
+    />
   );
 }
 
-function BigCostSection() {
+function Stage2() {
   return (
-    <div className="bg-gray-950 text-white py-16 md:py-24 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-red-950/30 via-gray-950 to-gray-950" />
+    <Stage
+      num="02"
+      name="Branding & Design"
+      diy={{
+        title: 'A $50 Fiverr gig that looks like a $50 Fiverr gig.',
+        bullets: [
+          'Cheap logo that undersells the product',
+          'Packaging design that looks generic',
+          'Main image that gets skipped on the Amazon grid',
+          'Bad branding costs you sales every single day',
+        ],
+        verdict: 'Silent revenue leak',
+        verdictSub: 'You bleed money and never see where',
+      }}
+      withUs={{
+        title: 'Real designers. A framework built to convert on Amazon.',
+        bullets: [
+          'Designers who understand Amazon shoppers',
+          'Branding built around your niche, not a template',
+          'Listing images, packaging, logo: all designed to stand out',
+          'Higher click-through. Higher conversion. Higher rank.',
+        ],
+        verdict: 'Pays itself back',
+        verdictSub: 'Good branding compounds every month',
+      }}
+    />
+  );
+}
 
-      <div className="relative h-2 bg-red-600 overflow-hidden mb-12 md:mb-16">
-        <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_15px,#000_15px,#000_30px)] opacity-50" />
-      </div>
+function Stage3() {
+  return (
+    <Stage
+      num="03"
+      name="Manufacturing & Sourcing"
+      diy={{
+        title: 'A random supplier on Alibaba. A prayer.',
+        bullets: [
+          'No idea if the manufacturer is legit until the shipment arrives',
+          'You overpay because you don\'t know what to negotiate',
+          'Quality issues on 10-30% of your units',
+          '2-3 month delays push your launch back',
+          'In the worst case, you get scammed and lose it all',
+        ],
+        verdict: '$5,000 - $20,000',
+        verdictSub: 'In losses. And lost time you will never get back.',
+      }}
+      withUs={{
+        title: 'Verified manufacturers. Real negotiation help. Quality checks.',
+        bullets: [
+          'Manufacturers other students have vetted and used',
+          'Negotiation scripts that lower your unit cost',
+          'Quality control built into the process',
+          'Launch on schedule, not three months late',
+        ],
+        verdict: 'Lower cost per unit',
+        verdictSub: 'No horror stories',
+      }}
+    />
+  );
+}
 
-      <div className="relative max-w-5xl mx-auto px-4">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-red-900/40 border border-red-500/50 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider text-red-200 mb-5">
-            <Skull className="w-3.5 h-3.5" />
-            The real bill
-          </div>
-          <h2 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05] mb-5">
-            The Biggest Cost Isn't<br />
-            <span className="text-red-400">The One You See.</span>
+/* ──────────────────────── Kickstarter interlude ─────────────────── */
+
+function KickstarterInterlude() {
+  return (
+    <div className="bg-black text-white border-b-4 border-black">
+      <div className={`h-3 ${DANGER_STRIPES}`} />
+      <div className="max-w-5xl mx-auto px-4 py-14 md:py-20">
+        <div className="text-center mb-10">
+          <p className={`${IMPACT} uppercase text-[10px] md:text-xs tracking-[0.3em] text-yellow-400 mb-3`}>
+            ── A brief interruption ──
+          </p>
+          <h2 className={`${IMPACT} uppercase leading-[0.88] tracking-tight`}>
+            <span className="block text-4xl md:text-7xl">or, you could launch</span>
+            <span className="block text-5xl md:text-8xl text-yellow-400 mt-1">with someone else's money.</span>
           </h2>
-          <p className="text-slate-300 text-base md:text-lg max-w-2xl mx-auto">
-            Six months after launch, here's the difference between doing it alone and doing it with a team behind you.
+          <p className={`${SERIF} italic text-white/70 text-base md:text-lg mt-6 max-w-xl mx-auto`}>
+            We guide students through Kickstarter launches. Real customers pay for your product before you make a single unit.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* DIY big cost */}
-          <div className="bg-red-950/30 border-2 border-red-500/40 rounded-2xl p-6 md:p-8">
-            <div className="flex items-center gap-2 mb-5">
-              <X className="w-5 h-5 text-red-400" strokeWidth={3} />
-              <span className="text-red-300 text-xs font-black uppercase tracking-wider">DIY, 6 months in</span>
-            </div>
-            <p className="text-sm text-slate-300 mb-3">Your product is live. It's doing maybe</p>
-            <p className="text-3xl md:text-4xl font-black text-red-400 mb-4">$25K/month</p>
-            <p className="text-sm text-slate-300 leading-relaxed mb-4">
-              But because you cut corners on validation, branding, and launch, you're <span className="font-bold text-white">barely breaking even on ads</span>. Margins are thin. Rank is unstable.
-            </p>
-            <div className="bg-black/40 border border-red-500/30 rounded-xl p-4 mt-5">
-              <p className="text-xs uppercase tracking-wider text-red-300 mb-2">The hidden yearly cost</p>
-              <p className="text-2xl md:text-3xl font-black text-red-400 leading-tight">$200K–$300K+</p>
-              <p className="text-xs text-slate-400 mt-2">
-                in lost profit over the next 12 months compared to what your product could have been doing.
-              </p>
-            </div>
-          </div>
-
-          {/* With us big cost */}
-          <div className="bg-green-950/20 border-2 border-green-500/40 rounded-2xl p-6 md:p-8">
-            <div className="flex items-center gap-2 mb-5">
-              <Check className="w-5 h-5 text-green-400" strokeWidth={3} />
-              <span className="text-green-300 text-xs font-black uppercase tracking-wider">With us, 6 months in</span>
-            </div>
-            <p className="text-sm text-slate-300 mb-3">Your product is live. It's doing</p>
-            <p className="text-3xl md:text-4xl font-black text-green-400 mb-4">$25K/month+</p>
-            <p className="text-sm text-slate-300 leading-relaxed mb-4">
-              But because the fundamentals were right from day one, you're <span className="font-bold text-white">profitable</span>, you have room to scale ads, and rank is sticky.
-            </p>
-            <div className="bg-black/40 border border-green-500/30 rounded-xl p-4 mt-5">
-              <p className="text-xs uppercase tracking-wider text-green-300 mb-2">The real ceiling</p>
-              <p className="text-2xl md:text-3xl font-black text-green-400 leading-tight">$300K–$1M+</p>
-              <p className="text-xs text-slate-400 mt-2">
-                in year 1 revenue. A real business that can be scaled, sold, or lived off.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-10 text-center">
-          <p className="text-xs text-slate-500 max-w-xl mx-auto">
-            Again, estimates. Individual results vary. But the gap between doing it right and doing it alone compounds every single month.
+        {/* Receipt of raises */}
+        <div className="max-w-2xl mx-auto bg-[#faf7f2] text-black p-5 md:p-7 border-2 border-yellow-400">
+          <p className={`${MONO} text-[10px] uppercase tracking-widest text-black/60 border-b border-black/20 pb-2 mb-3`}>
+            STUDENT LAUNCH FUND RECEIPTS
+          </p>
+          <ul className={`${MONO} text-sm md:text-base space-y-2`}>
+            <ReceiptRow name="AJ" amount="$120,000+" />
+            <ReceiptRow name="Travis" amount="$15,000+" />
+            <ReceiptRow name="Jeremy" amount="$10,000+" />
+            <ReceiptRow name="Brent" amount="multi $10,000s" />
+          </ul>
+          <p className={`${MONO} text-xs text-black/60 border-t border-black/20 pt-3 mt-4`}>
+            ── dozens of others have done the same ──
           </p>
         </div>
+
+        <p className="text-center text-white/60 text-sm mt-8 max-w-xl mx-auto">
+          Zero out-of-pocket inventory risk. Demand validated before you spend a dollar. It's the opposite of the Alibaba horror story above.
+        </p>
+      </div>
+      <div className={`h-3 ${DANGER_STRIPES}`} />
+    </div>
+  );
+}
+
+function ReceiptRow({ name, amount }: { name: string; amount: string }) {
+  return (
+    <li className="flex items-center gap-2">
+      <span className="font-bold">{name}</span>
+      <span className="flex-1 border-b border-dotted border-black/40" />
+      <span className="font-bold text-green-800">{amount}</span>
+    </li>
+  );
+}
+
+function Stage4() {
+  return (
+    <Stage
+      num="04"
+      name="The Launch"
+      diy={{
+        title: 'Post the listing. Hope Amazon ranks it. It won\'t.',
+        bullets: [
+          'Listing cobbled together from free YouTube videos',
+          'Keywords you guessed at',
+          'No one to review it before it goes live',
+          'Zero reviews day one. Amazon ignores dead listings.',
+          'You miss the honeymoon period entirely',
+        ],
+        verdict: 'Dead on arrival',
+        verdictSub: 'The most expensive mistake on Amazon',
+      }}
+      withUs={{
+        title: 'Coach-approved listing. Community ready for day one.',
+        bullets: [
+          'Optimized listing with the right keywords from day one',
+          'Listing reviewed and approved by a coach before launch',
+          'The Passion Product community supports your first orders and reviews',
+          'You catch Amazon\'s honeymoon period and rank fast',
+        ],
+        verdict: 'Momentum on day one',
+        verdictSub: 'The launch that actually launches',
+      }}
+    />
+  );
+}
+
+/* ──────────────────────── the bill ──────────────────────────────── */
+
+function TheBill() {
+  return (
+    <div className="bg-black text-white">
+      <div className={`h-4 ${DANGER_STRIPES}`} />
+
+      <div className="max-w-5xl mx-auto px-4 py-16 md:py-24">
+        {/* Warning badge */}
+        <div className="flex justify-center mb-10">
+          <div className="border-4 border-red-500 px-5 py-3 flex items-center gap-3">
+            <Skull className="w-5 h-5 text-red-500" />
+            <p className={`${IMPACT} uppercase tracking-[0.25em] text-red-500 text-sm md:text-base`}>
+              FINAL BILL ENCLOSED
+            </p>
+          </div>
+        </div>
+
+        <h2 className={`${IMPACT} uppercase text-center leading-[0.88] tracking-tight mb-6`}>
+          <span className="block text-5xl md:text-8xl">THE BIGGEST COST</span>
+          <span className="block text-3xl md:text-5xl text-white/70 mt-2">isn't the one you see.</span>
+        </h2>
+
+        <p className={`${SERIF} italic text-white/70 text-center max-w-xl mx-auto text-base md:text-lg mb-14`}>
+          Six months after launch. Same $25,000/month in revenue. Two very different bills.
+        </p>
+
+        {/* Two invoices */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Invoice
+            kind="diy"
+            title="Invoice: Doing it alone"
+            lines={[
+              ['Revenue per month', '$25,000'],
+              ['Ad spend (untuned PPC)', '-$8,000'],
+              ['Cost of goods (no negotiation)', '-$12,500'],
+              ['Amazon fees', '-$4,000'],
+              ['Net margin', '~break-even'],
+            ]}
+            total="$200,000 – $300,000+"
+            totalSub="LOST PROFIT in year 1 compared to what your product could have done."
+          />
+
+          <Invoice
+            kind="withus"
+            title="Invoice: Working with us"
+            lines={[
+              ['Revenue per month', '$25,000+'],
+              ['Ad spend (optimized PPC)', '-$3,500'],
+              ['Cost of goods (negotiated)', '-$9,000'],
+              ['Amazon fees', '-$4,000'],
+              ['Net margin', 'profitable'],
+            ]}
+            total="$300,000 – $1,000,000+"
+            totalSub="REAL YEAR 1 REVENUE. A business you can scale, sell, or live off of."
+          />
+        </div>
+
+        <p className="text-center text-white/40 text-xs mt-10 max-w-xl mx-auto">
+          Estimates based on common outcomes. Not a guarantee. Individual results vary widely.
+        </p>
       </div>
 
-      <div className="relative h-2 bg-red-600 overflow-hidden mt-12 md:mt-16">
-        <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_15px,#000_15px,#000_30px)] opacity-50" />
+      <div className={`h-4 ${DANGER_STRIPES}`} />
+    </div>
+  );
+}
+
+function Invoice({
+  kind,
+  title,
+  lines,
+  total,
+  totalSub,
+}: {
+  kind: 'diy' | 'withus';
+  title: string;
+  lines: [string, string][];
+  total: string;
+  totalSub: string;
+}) {
+  const isDIY = kind === 'diy';
+  return (
+    <div className="bg-[#faf7f2] text-black p-5 md:p-7 relative">
+      {/* Torn edge top */}
+      <div className="absolute top-0 left-0 right-0 h-2 bg-[radial-gradient(circle_at_10px_0,transparent_6px,#faf7f2_6px)] bg-[length:20px_10px] -translate-y-[8px]" />
+
+      <p className={`${MONO} text-[10px] uppercase tracking-widest text-black/60 mb-1`}>
+        &gt;&gt; {isDIY ? 'UNAUDITED' : 'VERIFIED'}
+      </p>
+      <h3 className={`${IMPACT} uppercase text-xl md:text-2xl leading-tight mb-5`}>
+        {title}
+      </h3>
+
+      <ul className={`${MONO} text-sm space-y-2 mb-5`}>
+        {lines.map(([k, v], i) => (
+          <li key={i} className="flex items-center gap-2">
+            <span className="text-black/70">{k}</span>
+            <span className="flex-1 border-b border-dotted border-black/30" />
+            <span className="font-bold">{v}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className={`border-t-2 border-black pt-4 mt-4 ${isDIY ? 'border-red-700' : 'border-green-800'}`}>
+        <p className={`${MONO} text-[10px] uppercase tracking-widest ${isDIY ? 'text-red-700' : 'text-green-800'} mb-1`}>
+          {isDIY ? 'TOTAL OPPORTUNITY LOST' : 'TOTAL POTENTIAL'}
+        </p>
+        <p className={`${IMPACT} uppercase text-2xl md:text-3xl leading-tight ${isDIY ? 'text-red-700' : 'text-green-800'}`}>
+          {total}
+        </p>
+        <p className="text-xs text-black/70 mt-2 leading-relaxed">
+          {totalSub}
+        </p>
+      </div>
+
+      {/* Stamp */}
+      <div className="absolute bottom-4 right-4 pointer-events-none">
+        <div className={`${IMPACT} uppercase border-[3px] px-2.5 py-1 text-[10px] tracking-[0.2em] rotate-[-12deg] ${isDIY ? 'border-red-700 text-red-700' : 'border-green-800 text-green-800'}`}>
+          {isDIY ? 'DECLINED' : 'APPROVED'}
+        </div>
       </div>
     </div>
   );
 }
+
+/* ──────────────────────── final CTA ─────────────────────────────── */
 
 function FinalCTA() {
   return (
-    <div className="bg-white py-16 md:py-20">
-      <div className="max-w-3xl mx-auto px-4 text-center">
-        <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.05] mb-4">
-          Now Do You See<br />
-          <span className="text-orange-600">Why the Video Matters?</span>
-        </h2>
-        <p className="text-gray-600 text-base md:text-lg mb-8 max-w-xl mx-auto">
-          The cost of skipping your prep isn't the 5 minutes you save. It's everything you don't know walking into your call.
+    <div className="bg-[#faf7f2] border-b-4 border-black">
+      <div className="max-w-3xl mx-auto px-4 py-16 md:py-24 text-center">
+        <p className={`${IMPACT} uppercase text-xs md:text-sm tracking-[0.3em] text-black/60 mb-5`}>
+          ── This has been a public service announcement ──
         </p>
+
+        <h2 className={`${IMPACT} uppercase leading-[0.88] tracking-tight mb-6`}>
+          <span className="block text-4xl md:text-7xl">NOW DO YOU SEE</span>
+          <span className="block text-5xl md:text-8xl text-red-600 mt-1" style={{ textShadow: '3px 3px 0 #000' }}>
+            WHY THE VIDEO
+          </span>
+          <span className="block text-4xl md:text-7xl">MATTERS?</span>
+        </h2>
+
+        <p className={`${SERIF} italic text-black/70 text-base md:text-lg mb-10 max-w-xl mx-auto`}>
+          The cost of skipping your prep isn't the 5 minutes you save. It's every expensive mistake above.
+        </p>
+
         <button
           onClick={() => {
             if (typeof window !== 'undefined' && window.history.length > 1) {
@@ -443,24 +576,24 @@ function FinalCTA() {
               window.location.href = '/trainingnew/closer';
             }
           }}
-          className="inline-flex items-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors shadow-lg cursor-pointer text-sm md:text-base"
+          className={`${IMPACT} inline-flex items-center gap-3 px-10 py-5 bg-black text-white hover:bg-red-700 uppercase tracking-[0.1em] text-base md:text-lg transition-colors cursor-pointer border-4 border-black`}
         >
-          Take Me Back to the Video
-          <ArrowRight className="w-4 h-4" />
+          Take me back to the video
+          <ArrowRight className="w-5 h-5" />
         </button>
       </div>
     </div>
   );
 }
 
+/* ──────────────────────── footer ────────────────────────────────── */
+
 function Footer() {
   return (
-    <div className="bg-gray-950 border-t border-gray-800 py-6">
-      <div className="max-w-4xl mx-auto px-4 text-center">
-        <p className="text-gray-600 text-xs">
-          &copy; {new Date().getFullYear()} Passion Product LLC. All Rights Reserved. Estimates shown are not guarantees of results.
-        </p>
-      </div>
+    <div className="bg-black py-6 text-center">
+      <p className={`${MONO} text-[10px] uppercase tracking-widest text-white/40`}>
+        &copy; {new Date().getFullYear()} PASSION PRODUCT LLC &nbsp;│&nbsp; ALL ESTIMATES. NOT A GUARANTEE OF RESULTS.
+      </p>
     </div>
   );
 }
