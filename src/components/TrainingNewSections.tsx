@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users, CheckCircle } from 'lucide-react';
 import type { Personalization, Reason, Situation, ValuedFeature, Capital, TravisHistory, Region } from '../lib/personalization';
-import { trackTestimonialsExpanded, trackCreditQuizStarted, trackCreditQuizCompleted, trackCreditCardApplyClicked } from '../lib/posthog';
+import { trackTestimonialsExpanded, trackCreditQuizStarted, trackCreditQuizCompleted, trackCreditCardApplyClicked, trackEvent } from '../lib/posthog';
 
 /* ───────────────────────────── helpers ───────────────────────────── */
 
@@ -595,6 +595,79 @@ export function TestimonialHighlights({ p }: { p?: Personalization | null }) {
    no launch capital. Shows three concrete strategies for launching
    on Amazon with less than $1,000.
 ──────────────────────────────────────────────────────────────────── */
+
+/* ───────────── method check-in ────────────────────────────────────
+   Sits below the testimonials. Asks if they understand how the
+   Passion Product Method works. "Kind of" or "No" routes them to
+   the /method explainer page.
+──────────────────────────────────────────────────────────────────── */
+
+export function MethodCheckIn() {
+  const [answer, setAnswer] = useState<'yes' | 'kinda' | 'no' | null>(null);
+
+  const handleYes = () => {
+    setAnswer('yes');
+    trackEvent('method_checkin_answered', { answer: 'yes' });
+  };
+
+  const handleKinda = () => {
+    trackEvent('method_checkin_answered', { answer: 'kinda' });
+    window.location.href = '/method';
+  };
+
+  const handleNo = () => {
+    trackEvent('method_checkin_answered', { answer: 'no' });
+    window.location.href = '/method';
+  };
+
+  return (
+    <div className="bg-gradient-to-b from-white via-orange-50/40 to-white border-t border-gray-100 py-14 md:py-20">
+      <div className="max-w-3xl mx-auto px-4 text-center">
+        <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
+          Quick check-in
+        </span>
+        <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1] mb-4">
+          Do you understand how the<br />
+          <span className="text-orange-600">Passion Product Method</span> works?
+        </h2>
+        <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto mb-10">
+          Knowing the method going into your call means you can skip the basics and spend the time on what matters for you.
+        </p>
+
+        {answer === 'yes' ? (
+          <div className="inline-flex items-center gap-2 bg-green-50 border-2 border-green-300 rounded-2xl px-6 py-4 text-green-800 font-bold">
+            <CheckCircle className="w-5 h-5" />
+            Great. You're ready for your call.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto">
+            <button
+              onClick={handleYes}
+              className="group px-5 py-5 bg-white border-2 border-gray-200 hover:border-green-400 hover:bg-green-50/50 rounded-2xl font-bold text-sm transition-all cursor-pointer shadow-sm"
+            >
+              <div className="text-2xl mb-1">✅</div>
+              <div className="text-gray-900 group-hover:text-green-700">Yes, I totally get it</div>
+            </button>
+            <button
+              onClick={handleKinda}
+              className="group px-5 py-5 bg-white border-2 border-gray-200 hover:border-orange-400 hover:bg-orange-50/50 rounded-2xl font-bold text-sm transition-all cursor-pointer shadow-sm"
+            >
+              <div className="text-2xl mb-1">🤔</div>
+              <div className="text-gray-900 group-hover:text-orange-700">Kind of</div>
+            </button>
+            <button
+              onClick={handleNo}
+              className="group px-5 py-5 bg-white border-2 border-gray-200 hover:border-orange-400 hover:bg-orange-50/50 rounded-2xl font-bold text-sm transition-all cursor-pointer shadow-sm"
+            >
+              <div className="text-2xl mb-1">🙋</div>
+              <div className="text-gray-900 group-hover:text-orange-700">No, show me</div>
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function LowCapitalStrategies({ p }: { p?: Personalization | null }) {
   if (!p || (p.capital !== 'none' && p.capital !== 'save')) return null;

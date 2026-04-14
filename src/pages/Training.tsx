@@ -11,6 +11,7 @@ import {
   LowCapitalStrategies,
   CreditCardQuiz,
   ConfirmationExitPopup,
+  MethodCheckIn,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Star, Shield } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -124,6 +125,7 @@ export function Training() {
       <BreakoutVideos p={p} />
       <OpportunitySection />
       <TestimonialHighlights p={p} />
+      <MethodCheckIn />
       <LowCapitalStrategies p={p} />
       <CreditCardQuiz p={p} />
       <ResourceSection />

@@ -11,6 +11,7 @@ import {
   LowCapitalStrategies,
   CreditCardQuiz,
   ConfirmationExitPopup,
+  MethodCheckIn,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Clock, Star, Shield, ChevronDown } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -479,6 +480,7 @@ export function TrainingNewCloser() {
       <BreakoutVideos p={p} />
       <OpportunitySection />
       <TestimonialHighlights p={p} />
+      <MethodCheckIn />
       <LowCapitalStrategies p={p} />
       <CreditCardQuiz p={p} />
       <ResourceSection />

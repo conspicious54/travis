@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Skull,
@@ -42,6 +42,96 @@ export function RealCost() {
       <TheBill />
       <FinalCTA />
       <Footer />
+      <RealCostExitPopup />
+    </div>
+  );
+}
+
+/* ───── exit popup ───────────────────────────────────────────────── */
+
+function RealCostExitPopup() {
+  const [show, setShow] = useState(false);
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    const FLAG = 'pp_realcost_exit_shown';
+    if (sessionStorage.getItem(FLAG)) return;
+
+    const trigger = () => {
+      if (firedRef.current) return;
+      firedRef.current = true;
+      sessionStorage.setItem(FLAG, '1');
+      setShow(true);
+    };
+
+    const onMouseLeave = (e: MouseEvent) => {
+      if (e.clientY <= 5) trigger();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') trigger();
+    };
+
+    document.addEventListener('mouseleave', onMouseLeave);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('mouseleave', onMouseLeave);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={() => setShow(false)}
+      />
+
+      <div className="relative bg-[#faf7f2] max-w-lg w-full p-7 md:p-9 text-center border-4 border-black">
+        <button
+          onClick={() => setShow(false)}
+          className={`${MONO} absolute top-3 right-3 text-black/40 hover:text-black cursor-pointer text-sm leading-none`}
+          aria-label="Close"
+        >
+          &times; CLOSE
+        </button>
+
+        <div className={`h-2 ${HAZARD_STRIPES} -mx-7 md:-mx-9 mb-6 -mt-7 md:-mt-9`} />
+
+        <p className={`${IMPACT} uppercase text-[10px] md:text-xs tracking-[0.25em] text-red-600 mb-3`}>
+          ── Before you go ──
+        </p>
+
+        <h3 className={`${IMPACT} uppercase text-3xl md:text-4xl leading-[0.9] tracking-tight mb-4`}>
+          Okay but<br />
+          <span className="text-red-600">HOW does it work?</span>
+        </h3>
+
+        <p className="text-sm md:text-base text-black/80 leading-relaxed mb-3">
+          You just saw the cost of doing it wrong. But what does doing it <em>right</em> actually look like?
+        </p>
+
+        <p className="text-sm md:text-base text-black/80 leading-relaxed mb-6">
+          We break down the entire Passion Product Method step by step. How we find winning products, build premium brands, and make money without fighting a race to the bottom.
+        </p>
+
+        <a
+          href="/method"
+          onClick={() => trackEvent('realcost_exit_method_clicked')}
+          className={`${IMPACT} inline-flex items-center gap-3 w-full justify-center px-8 py-4 bg-black text-white hover:bg-red-700 uppercase tracking-[0.1em] text-sm md:text-base transition-colors cursor-pointer border-2 border-black`}
+        >
+          Show me the method
+          <ArrowRight className="w-4 h-4" />
+        </a>
+
+        <button
+          onClick={() => setShow(false)}
+          className={`${MONO} mt-4 text-[11px] uppercase tracking-widest text-black/50 hover:text-black cursor-pointer`}
+        >
+          No thanks, I'll figure it out myself
+        </button>
+      </div>
     </div>
   );
 }
