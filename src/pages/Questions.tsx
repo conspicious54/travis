@@ -9,26 +9,32 @@ import { trackEvent } from '../lib/posthog';
 
 const BREAKOUTS = [
   {
+    id: 'saturated',
     headline: "But isn't Amazon too saturated at this point?",
     embed: 'https://videos.sproutvideo.com/embed/dc9adbb31513e1c056/9a833984ebbbd62f',
   },
   {
+    id: 'capital',
     headline: "But what if I don't have a lot of money to start?",
     embed: 'https://videos.sproutvideo.com/embed/8c9adbb31511eec506/80d1f8e8fb8fd47b',
   },
   {
+    id: 'time',
     headline: "What if I'm already working full-time?",
     embed: 'https://videos.sproutvideo.com/embed/8c9adbb31510e7cd06/6d5e29c2559707a4',
   },
   {
+    id: 'idea',
     headline: "I don't even have a product idea yet. Is that okay?",
     embed: 'https://videos.sproutvideo.com/embed/8c9adbb3181ee2cb06/c87808d62d097bd1',
   },
   {
+    id: 'trust',
     headline: "How do I know I can actually trust this?",
     embed: 'https://videos.sproutvideo.com/embed/ee9adbb31513e7c164/0e0d27cd2ae31e59',
   },
   {
+    id: 'wrong',
     headline: "What if I pick the wrong product and lose my money?",
     embed: 'https://videos.sproutvideo.com/embed/aa9adbb3181ee0c020/edb75f1300af4b4d',
   },
@@ -37,6 +43,19 @@ const BREAKOUTS = [
 export function Questions() {
   useEffect(() => {
     trackEvent('questions_page_viewed');
+    // Deep-link: scroll to anchor if present
+    const hash = window.location.hash.replace('#', '');
+    if (hash) {
+      setTimeout(() => {
+        const el = document.getElementById(hash);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Highlight briefly
+          el.classList.add('ring-4', 'ring-orange-400');
+          setTimeout(() => el.classList.remove('ring-4', 'ring-orange-400'), 2400);
+        }
+      }, 100);
+    }
   }, []);
 
   const handleBack = () => {
@@ -89,7 +108,8 @@ export function Questions() {
             {BREAKOUTS.map((b, i) => (
               <div
                 key={i}
-                className="group bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-orange-200 transition-all"
+                id={b.id}
+                className="group bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-orange-200 transition-all scroll-mt-20"
               >
                 <div className="aspect-video bg-gray-900">
                   <iframe

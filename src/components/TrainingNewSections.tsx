@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users, CheckCircle } from 'lucide-react';
+import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users, CheckCircle, Check, Mail } from 'lucide-react';
 import type { Personalization, Reason, Situation, ValuedFeature, Capital, TravisHistory, Region } from '../lib/personalization';
 import { trackTestimonialsExpanded, trackCreditQuizStarted, trackCreditQuizCompleted, trackCreditCardApplyClicked, trackEvent } from '../lib/posthog';
 
@@ -291,6 +291,29 @@ export function ResearchVideo() {
 
 /* ───────────── how to show up prepared (clarity) ────────────────── */
 
+const KEY_PRINCIPLES = [
+  {
+    id: 'method',
+    title: 'What the Passion Product Method is and how it works',
+    href: '/method',
+  },
+  {
+    id: 'travis',
+    title: "Who Travis is and what his story is",
+    href: '/questions#trust',
+  },
+  {
+    id: 'low-capital',
+    title: 'How to start even if you have limited capital',
+    href: '/questions#capital',
+  },
+  {
+    id: 'product',
+    title: 'How we make sure you pick the right product',
+    href: '/questions#wrong',
+  },
+];
+
 export function NextStepsList({
   microAskLabel,
   microAskDone = false,
@@ -298,6 +321,22 @@ export function NextStepsList({
   microAskLabel: string;
   microAskDone?: boolean;
 }) {
+  const [checkedPrinciples, setCheckedPrinciples] = useState<Set<string>>(new Set());
+  const allChecked = checkedPrinciples.size === KEY_PRINCIPLES.length;
+
+  const toggle = (id: string) => {
+    setCheckedPrinciples(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        trackEvent('principle_checked', { principle: id });
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="bg-gradient-to-b from-white to-orange-50/40 border-t border-gray-100 py-10 md:py-14">
       <div className="max-w-2xl mx-auto px-4">
@@ -322,11 +361,70 @@ export function NextStepsList({
             label="Watch the 4-minute video above"
             sub="So you know exactly what to expect and don't waste time on your call."
           />
-          <StepRow
-            num={3}
-            label="Have your goals and numbers ready"
-            sub="Your revenue target, starting budget, and what you've tried already. The more specific you are, the more specific your plan will be."
-          />
+
+          {/* Step 3: Key principles with check-offs */}
+          <div className="flex items-start gap-4">
+            <div
+              className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-black ${
+                allChecked
+                  ? 'bg-green-500 text-white'
+                  : 'bg-orange-100 text-orange-700 border-2 border-orange-200'
+              }`}
+            >
+              {allChecked ? <CheckCircle className="w-5 h-5" /> : 3}
+            </div>
+            <div className="flex-1 pt-1">
+              <p className={`font-bold text-gray-900 ${allChecked ? 'line-through text-gray-400' : ''}`}>
+                Understand the key principles
+              </p>
+              <p className="text-xs md:text-sm text-gray-500 mt-1 leading-relaxed">
+                Check each one off as you understand it. Tap "Learn more" if you need a quick video.
+              </p>
+
+              {allChecked ? (
+                <div className="mt-4 bg-green-50 border-2 border-green-300 rounded-xl p-4 text-center">
+                  <p className="font-bold text-green-800 text-sm md:text-base">
+                    🎉 You're good to go. See you on the call.
+                  </p>
+                </div>
+              ) : (
+                <ul className="mt-4 space-y-2">
+                  {KEY_PRINCIPLES.map((p) => {
+                    const isChecked = checkedPrinciples.has(p.id);
+                    return (
+                      <li
+                        key={p.id}
+                        className={`flex items-center gap-3 bg-gray-50 rounded-lg p-3 border transition-colors ${
+                          isChecked ? 'border-green-300 bg-green-50' : 'border-gray-200'
+                        }`}
+                      >
+                        <button
+                          onClick={() => toggle(p.id)}
+                          className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center cursor-pointer transition-colors ${
+                            isChecked
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : 'bg-white border-gray-300 hover:border-orange-400'
+                          }`}
+                          aria-label={isChecked ? 'Uncheck' : 'Check'}
+                        >
+                          {isChecked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+                        </button>
+                        <span className={`flex-1 text-sm font-medium leading-snug ${isChecked ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                          {p.title}
+                        </span>
+                        <a
+                          href={p.href}
+                          className="shrink-0 text-xs font-bold text-orange-600 hover:text-orange-800 underline underline-offset-2 cursor-pointer whitespace-nowrap"
+                        >
+                          Learn more →
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

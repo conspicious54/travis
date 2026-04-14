@@ -498,6 +498,26 @@ function CloserFinalCTA({ meeting, firstName }: { meeting: MeetingInfo | null; f
           You booked the call. Now show up ready, and let's build your plan together.
         </p>
 
+        {/* Email check-in callout */}
+        <div className="bg-white/5 backdrop-blur-sm border border-orange-400/40 rounded-2xl p-5 md:p-6 max-w-xl mx-auto mb-10 text-left">
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+              <span className="text-orange-300 text-lg">📩</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-orange-300 text-xs font-bold uppercase tracking-wider mb-1">
+                Check your email
+              </p>
+              <p className="text-white font-bold text-base md:text-lg leading-snug mb-2">
+                Look for an email titled <span className="text-orange-300">"I need to tell you something before your call"</span>
+              </p>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                It has important info for your call. Open it, read it, and you'll be ready to go.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {meeting && (
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
             <CalendarButton meeting={meeting} variant="cta" />
