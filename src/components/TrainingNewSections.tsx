@@ -1476,8 +1476,6 @@ export function ConfirmationExitPopup() {
 
     const trigger = () => {
       if (firedRef.current) return;
-      // If they've completed everything, don't bug them
-      if (isAllComplete()) return;
       firedRef.current = true;
       sessionStorage.setItem(STORAGE_FLAG, '1');
       setSnapshot({ ...completed });
@@ -1486,6 +1484,7 @@ export function ConfirmationExitPopup() {
         microAsk: completed.microAsk,
         video: completed.video,
         principles: completed.principles,
+        all_complete: isAllComplete(),
       });
     };
 
@@ -1506,65 +1505,115 @@ export function ConfirmationExitPopup() {
 
   if (!show || !snapshot) return null;
 
-  // Determine what to say based on what's undone
+  const allDone = snapshot.microAsk && snapshot.video && snapshot.principles;
+
+  const dismiss = () => setShow(false);
+  const dismissToRealCost = () => {
+    setShow(false);
+    window.location.href = '/realcost';
+  };
+
+  /* ───── ALL DONE VARIANT ───── */
+  if (allDone) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          onClick={dismiss}
+        />
+
+        <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-7 md:p-9 text-center">
+          <button
+            onClick={dismiss}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 cursor-pointer text-xl leading-none"
+            aria-label="Close"
+          >
+            &times;
+          </button>
+
+          {/* Email icon */}
+          <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-orange-100 border-2 border-orange-200 mb-5">
+            <Mail className="w-8 h-8 md:w-9 md:h-9 text-orange-600" strokeWidth={2.25} />
+          </div>
+
+          <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-2">
+            One last thing
+          </p>
+          <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-4 leading-tight">
+            Check your email before you go.
+          </h3>
+
+          <p className="text-sm md:text-base text-gray-600 mb-5 leading-relaxed">
+            You've done everything right here. The last piece of the puzzle is in your inbox.
+          </p>
+
+          {/* Subject line callout */}
+          <div className="bg-gray-50 border-2 border-orange-200 rounded-xl p-4 mb-5 text-left">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">Look for this subject line:</p>
+            <p className="font-bold text-gray-900 text-sm md:text-base leading-snug">
+              "I need to tell you something before your call"
+            </p>
+          </div>
+
+          <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+            It has important information to help you keep getting ready. Open it before your call.
+          </p>
+
+          <button
+            onClick={dismiss}
+            className="w-full py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors cursor-pointer text-sm shadow-md"
+          >
+            Got it, I'll check my email
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ───── INCOMPLETE VARIANT — prioritize biggest gap ───── */
   const undone = {
     microAsk: !snapshot.microAsk,
     video: !snapshot.video,
     principles: !snapshot.principles,
   };
 
-  // Prioritize the biggest value: video > principles > microAsk
   let headline: string;
   let body: string;
   let ctaLabel: string;
-  let ctaScrollTarget: 'video' | 'top' = 'top';
 
   if (undone.video) {
     headline = 'Wait. Did you watch the video?';
     body = "The people who show up prepared get way more out of their call. The video at the top covers exactly what to expect, who we are, and how this works. It's only 4 minutes.";
     ctaLabel = 'Take me back to the video';
-    ctaScrollTarget = 'top';
   } else if (undone.principles) {
     headline = 'One more step before you go.';
     body = "You've watched the video — nice. Now just check off the key principles so you walk into your call with the full picture. Takes a minute.";
     ctaLabel = 'Show me the principles';
-    ctaScrollTarget = 'top';
   } else if (undone.microAsk) {
     headline = "Don't forget to confirm.";
     body = "You've done the work to prepare — now just tap Text or WhatsApp at the top so our team knows you'll be there. Takes 10 seconds.";
     ctaLabel = 'Back to confirm';
-    ctaScrollTarget = 'top';
   } else {
-    // Shouldn't happen since we gate on isAllComplete, but fallback
     headline = 'Before you go.';
     body = "Want to see exactly what doing this alone actually costs? It's not what most people think.";
     ctaLabel = 'Show me';
   }
 
-  const dismissToRealCost = () => {
-    setShow(false);
-    window.location.href = '/realcost';
-  };
-
   const backToPage = () => {
     setShow(false);
-    if (ctaScrollTarget === 'top') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={() => setShow(false)}
+        onClick={dismiss}
       />
 
-      {/* Popup */}
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-7 md:p-9 text-center">
         <button
-          onClick={() => setShow(false)}
+          onClick={dismiss}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 cursor-pointer text-xl leading-none"
           aria-label="Close"
         >
@@ -1585,7 +1634,6 @@ export function ConfirmationExitPopup() {
           {body}
         </p>
 
-        {/* Progress snapshot */}
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-6 text-left">
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">Your progress</p>
           <ul className="space-y-1.5">
