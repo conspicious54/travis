@@ -1155,8 +1155,11 @@ export function ConfirmationExitPopup() {
         </button>
 
         <button
-          onClick={() => setShow(false)}
-          className="mt-3 text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
+          onClick={() => {
+            setShow(false);
+            window.location.href = '/realcost';
+          }}
+          className="mt-3 text-xs text-gray-400 hover:text-gray-600 cursor-pointer underline underline-offset-2"
         >
           I've already watched it
         </button>
