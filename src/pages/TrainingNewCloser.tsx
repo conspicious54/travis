@@ -9,7 +9,7 @@ import {
   MethodCheckIn,
   NextStepsList,
 } from '../components/TrainingNewSections';
-import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown } from 'lucide-react';
+import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackCalendarAdded, trackEvent } from '../lib/posthog';
 import { detectRegion, PHONE_NUMBERS, type Region } from '../lib/regionPhone';
@@ -392,60 +392,94 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
 
   const phone = PHONE_NUMBERS[region];
   const smsBody = encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
+  const whatsappBody = encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
+  const whatsappNumber = phone.raw.replace(/[^\d]/g, '');
 
   return (
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
-      <div className="max-w-3xl mx-auto px-4 pt-6 pb-8 md:pt-8 md:pb-10 text-center">
-        <div className="inline-flex items-center gap-2 bg-green-100 border border-green-200 px-3 py-1 rounded-full text-[11px] md:text-xs font-bold uppercase tracking-wider text-green-700 mb-4">
-          <CheckCircle className="w-3 h-3" />
-          Your call is booked
+      <div className="max-w-3xl mx-auto px-4 pt-10 pb-10 md:pt-14 md:pb-14 text-center">
+        {/* Checkmark badge */}
+        <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-green-100 border-2 border-green-300 mb-6">
+          <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-green-600" strokeWidth={2.5} />
         </div>
-        <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.05] mb-2">
-          {firstName ? `You're in, ${firstName}.` : "You're in."}
+
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-gray-900 tracking-tight leading-[1] mb-4">
+          {firstName ? `You're Booked, ${firstName}.` : "You're Booked."}
         </h1>
-        <p className="text-base md:text-lg text-gray-600 mb-6">
+
+        <p className="text-lg md:text-2xl text-gray-700 max-w-2xl mx-auto mb-3 leading-snug">
           {meeting ? (
             <>
-              Your call is on{' '}
+              Your strategy call is on{' '}
               <span className="font-bold text-gray-900">{formatHumanDate(meeting.start)}</span>
               {' at '}
               <span className="font-bold text-gray-900">{formatHumanTime(meeting.start)}</span>.
             </>
           ) : (
-            'Check your email for the calendar invite and join link.'
+            'Your strategy call with Travis or one of his top coaches is scheduled.'
           )}
         </p>
+        <p className="text-sm md:text-base text-gray-500 mb-10">
+          Check your email for the calendar invite. It has your exact date, time, and Zoom link.
+        </p>
 
-        {/* Micro-ask row: calendar + text confirm */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          {meeting && <CalendarButton meeting={meeting} variant="primary" />}
-          <a
-            href={`sms:${phone.raw}?&body=${smsBody}`}
-            onClick={() => trackEvent('closer_confirm_text_clicked', { region })}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm transition-colors shadow-md cursor-pointer"
-          >
-            <Phone className="w-4 h-4" />
-            Text "YES" to Confirm
-          </a>
+        {/* Micro-ask: confirm via text or WhatsApp */}
+        <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
+          <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
+            To confirm you'll attend, tap one of the buttons below and hit send:
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 max-w-lg mx-auto">
+            <a
+              href={`sms:${phone.raw}?&body=${smsBody}`}
+              onClick={() => trackEvent('closer_confirm_text_clicked', { region })}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Confirm via Text
+            </a>
+            <a
+              href={`https://wa.me/${whatsappNumber}?text=${whatsappBody}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent('closer_confirm_whatsapp_clicked', { region })}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Confirm via WhatsApp
+            </a>
+          </div>
+
+          <p className="text-xs text-gray-400 mt-4">
+            Takes 10 seconds.{' '}
+            <span className="text-gray-500">
+              Wrong region?{' '}
+              {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map((r, i) => (
+                <span key={r}>
+                  {i > 0 && <span className="text-gray-300">/</span>}{' '}
+                  <button
+                    onClick={() => setRegion(r)}
+                    className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
+                  >
+                    {PHONE_NUMBERS[r].label}
+                  </button>
+                </span>
+              ))}
+            </span>
+          </p>
         </div>
 
-        <p className="text-xs text-gray-400 mt-3">
-          Takes 10 seconds.{' '}
-          <span className="text-gray-500">
-            Wrong region?{' '}
-            {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map((r, i) => (
-              <span key={r}>
-                {i > 0 && <span className="text-gray-300">/</span>}{' '}
-                <button
-                  onClick={() => setRegion(r)}
-                  className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
-                >
-                  {PHONE_NUMBERS[r].label}
-                </button>
-              </span>
-            ))}
-          </span>
+        {/* Transition to next section */}
+        <p className="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-[0.15em] mt-10">
+          Then do these two things before your call ↓
         </p>
+
+        {/* Calendar add below — secondary micro-ask */}
+        {meeting && (
+          <div className="mt-5">
+            <CalendarButton meeting={meeting} variant="primary" />
+          </div>
+        )}
       </div>
     </div>
   );

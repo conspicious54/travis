@@ -9,7 +9,7 @@ import {
   MethodCheckIn,
   NextStepsList,
 } from '../components/TrainingNewSections';
-import { CheckCircle, Phone, Star, Shield } from 'lucide-react';
+import { CheckCircle, Phone, Star, Shield, MessageSquare, MessageCircle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackContactSaved, trackEvent } from '../lib/posthog';
 
@@ -124,79 +124,109 @@ function SetterConfirmationBanner({
     onSaved();
   };
 
+  const smsBody = encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
+  const whatsappNumber = phone.raw.replace(/[^\d]/g, '');
+
   return (
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
-      <div className="max-w-3xl mx-auto px-4 pt-6 pb-8 md:pt-8 md:pb-10 text-center">
-        <div className="inline-flex items-center gap-2 bg-green-100 border border-green-200 px-3 py-1 rounded-full text-[11px] md:text-xs font-bold uppercase tracking-wider text-green-700 mb-4">
-          <CheckCircle className="w-3 h-3" />
-          You're in
+      <div className="max-w-3xl mx-auto px-4 pt-10 pb-10 md:pt-14 md:pb-14 text-center">
+        {/* Checkmark badge */}
+        <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-green-100 border-2 border-green-300 mb-6">
+          <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-green-600" strokeWidth={2.5} />
         </div>
-        <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.05] mb-2">
-          {firstName ? `We'll be in touch, ${firstName}.` : "We'll be in touch."}
+
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-gray-900 tracking-tight leading-[1] mb-4">
+          {firstName ? `You're In, ${firstName}.` : "You're In."}
         </h1>
-        <p className="text-base md:text-lg text-gray-600 mb-6">
-          We'll be calling you from <span className="font-bold text-gray-900">{phone.display}</span>. Save it as <span className="font-bold text-gray-900">"Travis Marziani"</span> so you know it's us.
+
+        <p className="text-lg md:text-2xl text-gray-700 max-w-2xl mx-auto mb-3 leading-snug">
+          We'll be calling you from{' '}
+          <span className="font-bold text-gray-900">{phone.display}</span>.
+        </p>
+        <p className="text-sm md:text-base text-gray-500 mb-10">
+          Save it as <span className="font-bold text-gray-700">"Travis Marziani"</span> so you know it's us when we call.
         </p>
 
-        {isMobile ? (
-          saved ? (
-            <div className="flex flex-col items-center gap-4">
+        {/* Micro-ask: confirm via text or WhatsApp */}
+        <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
+          <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
+            To confirm you'll be available for the call, tap one of the buttons below and hit send:
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 max-w-lg mx-auto">
+            <a
+              href={`sms:${phone.raw}?&body=${smsBody}`}
+              onClick={() => trackEvent('setter_confirm_text_clicked', { region })}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Confirm via Text
+            </a>
+            <a
+              href={`https://wa.me/${whatsappNumber}?text=${smsBody}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent('setter_confirm_whatsapp_clicked', { region })}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Confirm via WhatsApp
+            </a>
+          </div>
+
+          <p className="text-xs text-gray-400 mt-4">
+            Takes 10 seconds.{' '}
+            <span className="text-gray-500">
+              Wrong region?{' '}
+              {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map((r, i) => (
+                <span key={r}>
+                  {i > 0 && <span className="text-gray-300">/</span>}{' '}
+                  <button
+                    onClick={() => setRegion(r)}
+                    className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
+                  >
+                    {PHONE_NUMBERS[r].label}
+                  </button>
+                </span>
+              ))}
+            </span>
+          </p>
+        </div>
+
+        {/* Transition */}
+        <p className="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-[0.15em] mt-10 mb-5">
+          Then do these two things before your call ↓
+        </p>
+
+        {/* Secondary micro-ask: save contact (mobile only) */}
+        {isMobile && (
+          <div>
+            {saved ? (
               <div className="inline-flex items-center gap-2 bg-green-50 border-2 border-green-300 rounded-xl px-5 py-3 text-green-800 font-bold text-sm">
                 <CheckCircle className="w-5 h-5" />
-                Saved. You're all set.
+                Travis saved to your contacts.
               </div>
-              <a
-                href={`sms:${phone.raw}?&body=${encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`)}`}
-                onClick={() => trackEvent('setter_confirm_text_clicked', { region })}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm transition-colors shadow-md cursor-pointer"
-              >
-                <Phone className="w-4 h-4" />
-                Text "YES" to Confirm
-              </a>
-              <p className="text-xs text-gray-400">
-                Opens your messages. Tap send. Done.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-3">
+            ) : (
               <button
                 onClick={handleSave}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl transition-colors shadow-md text-base cursor-pointer"
+                className="inline-flex items-center gap-2 px-7 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors shadow-md text-sm md:text-base cursor-pointer"
               >
-                <Phone className="w-5 h-5" />
+                <Phone className="w-4 h-4" />
                 Save Travis to Contacts
               </button>
-              <p className="text-xs text-gray-400">
-                Takes 10 seconds. So you pick up when we call.
-              </p>
-            </div>
-          )
-        ) : (
+            )}
+          </div>
+        )}
+        {!isMobile && (
           <div className="bg-white border border-orange-200 rounded-xl px-5 py-4 text-left max-w-md mx-auto">
             <p className="text-xs font-bold uppercase tracking-wider text-orange-700 mb-2">On your phone:</p>
             <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
               <li>Open Contacts</li>
               <li>Add <span className="font-mono font-bold">{phone.display}</span></li>
               <li>Save as <span className="font-bold">"Travis Marziani"</span></li>
-              <li>Text <span className="font-bold">"YES"</span> to confirm your call</li>
             </ol>
           </div>
         )}
-
-        <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mt-5">
-          <span>Wrong region?</span>
-          {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map((r, i) => (
-            <span key={r}>
-              {i > 0 && <span className="text-gray-300">/</span>}{' '}
-              <button
-                onClick={() => setRegion(r)}
-                className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
-              >
-                {PHONE_NUMBERS[r].label}
-              </button>
-            </span>
-          ))}
-        </div>
       </div>
     </div>
   );
