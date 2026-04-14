@@ -1,21 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
   ResearchVideo,
-  BreakoutVideos,
-  OpportunitySection,
   TestimonialHighlights,
-  ResourceSection,
   SharedFooter,
-  PersonalizedIntro,
-  WhatToExpect,
   LowCapitalStrategies,
   CreditCardQuiz,
   ConfirmationExitPopup,
   MethodCheckIn,
+  NextStepsList,
 } from '../components/TrainingNewSections';
-import { CheckCircle, Phone, UserPlus, Star, Shield } from 'lucide-react';
+import { CheckCircle, Phone, Star, Shield } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
-import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackContactSaved } from '../lib/posthog';
+import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackContactSaved, trackEvent } from '../lib/posthog';
 
 /* ─────────────────── region & platform detection ─────────────────── */
 
@@ -102,9 +98,16 @@ function StepProgressBar() {
   );
 }
 
-function SetterConfirmationBanner() {
+function SetterConfirmationBanner({
+  firstName,
+  onSaved,
+}: {
+  firstName: string;
+  onSaved: () => void;
+}) {
   const [region, setRegion] = useState<Region>('us');
   const [platform, setPlatform] = useState<Platform>('desktop');
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     setRegion(detectRegion());
@@ -114,26 +117,86 @@ function SetterConfirmationBanner() {
   const phone = PHONE_NUMBERS[region];
   const isMobile = platform === 'ios' || platform === 'android';
 
+  const handleSave = () => {
+    downloadVCard(phone.raw);
+    trackContactSaved(region, platform);
+    setSaved(true);
+    onSaved();
+  };
+
   return (
-    <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white">
-      <div className="max-w-4xl mx-auto px-4 pt-5 pb-3 md:pt-6 md:pb-4 text-center">
-        <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight mb-1">
-          You're in. <span className="text-orange-600">Now watch this.</span>
+    <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
+      <div className="max-w-3xl mx-auto px-4 pt-6 pb-8 md:pt-8 md:pb-10 text-center">
+        <div className="inline-flex items-center gap-2 bg-green-100 border border-green-200 px-3 py-1 rounded-full text-[11px] md:text-xs font-bold uppercase tracking-wider text-green-700 mb-4">
+          <CheckCircle className="w-3 h-3" />
+          You're in
+        </div>
+        <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.05] mb-2">
+          {firstName ? `We'll be in touch, ${firstName}.` : "We'll be in touch."}
         </h1>
-        <p className="text-sm text-gray-500">
-          We'll call you from <span className="font-semibold text-gray-700">{phone.display}</span>.
-          {isMobile ? (
-            <> <button onClick={() => { downloadVCard(phone.raw); trackContactSaved(region, platform); }} className="text-orange-600 font-semibold underline underline-offset-2 cursor-pointer">Save the contact</button> so you pick up.</>
-          ) : (
-            <> Save it as "Travis Marziani" so you pick up.</>
-          )}
-          {' '}
-          <span className="text-gray-400">
-            Wrong region? {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map((r, i) => (
-              <span key={r}>{i > 0 && ' / '}<button onClick={() => setRegion(r)} className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer">{PHONE_NUMBERS[r].label}</button></span>
-            ))}
-          </span>
+        <p className="text-base md:text-lg text-gray-600 mb-6">
+          We'll be calling you from <span className="font-bold text-gray-900">{phone.display}</span>. Save it as <span className="font-bold text-gray-900">"Travis Marziani"</span> so you know it's us.
         </p>
+
+        {isMobile ? (
+          saved ? (
+            <div className="flex flex-col items-center gap-4">
+              <div className="inline-flex items-center gap-2 bg-green-50 border-2 border-green-300 rounded-xl px-5 py-3 text-green-800 font-bold text-sm">
+                <CheckCircle className="w-5 h-5" />
+                Saved. You're all set.
+              </div>
+              <a
+                href={`sms:${phone.raw}?&body=${encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`)}`}
+                onClick={() => trackEvent('setter_confirm_text_clicked', { region })}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm transition-colors shadow-md cursor-pointer"
+              >
+                <Phone className="w-4 h-4" />
+                Text "YES" to Confirm
+              </a>
+              <p className="text-xs text-gray-400">
+                Opens your messages. Tap send. Done.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <button
+                onClick={handleSave}
+                className="inline-flex items-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl transition-colors shadow-md text-base cursor-pointer"
+              >
+                <Phone className="w-5 h-5" />
+                Save Travis to Contacts
+              </button>
+              <p className="text-xs text-gray-400">
+                Takes 10 seconds. So you pick up when we call.
+              </p>
+            </div>
+          )
+        ) : (
+          <div className="bg-white border border-orange-200 rounded-xl px-5 py-4 text-left max-w-md mx-auto">
+            <p className="text-xs font-bold uppercase tracking-wider text-orange-700 mb-2">On your phone:</p>
+            <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
+              <li>Open Contacts</li>
+              <li>Add <span className="font-mono font-bold">{phone.display}</span></li>
+              <li>Save as <span className="font-bold">"Travis Marziani"</span></li>
+              <li>Text <span className="font-bold">"YES"</span> to confirm your call</li>
+            </ol>
+          </div>
+        )}
+
+        <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mt-5">
+          <span>Wrong region?</span>
+          {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map((r, i) => (
+            <span key={r}>
+              {i > 0 && <span className="text-gray-300">/</span>}{' '}
+              <button
+                onClick={() => setRegion(r)}
+                className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
+              >
+                {PHONE_NUMBERS[r].label}
+              </button>
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -171,6 +234,7 @@ function SetterFinalCTA() {
 
 export function TrainingNewSetter() {
   const [p, setP] = useState<Personalization | null>(null);
+  const [contactSaved, setContactSaved] = useState(false);
 
   useEffect(() => {
     const personalization = getPersonalization();
@@ -200,18 +264,16 @@ export function TrainingNewSetter() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <StepProgressBar />
-      <SetterConfirmationBanner />
+      <SetterConfirmationBanner firstName={p?.firstName || ''} onSaved={() => setContactSaved(true)} />
       <ResearchVideo />
-      <PersonalizedIntro p={p} />
-      <WhatToExpect p={p} />
-      <BreakoutVideos p={p} />
-      <OpportunitySection />
+      <NextStepsList
+        microAskLabel="Save Travis to your contacts (above)"
+        microAskDone={contactSaved}
+      />
       <TestimonialHighlights p={p} />
       <MethodCheckIn />
       <LowCapitalStrategies p={p} />
       <CreditCardQuiz p={p} />
-      <ResourceSection />
       <SetterFinalCTA />
       <SharedFooter />
       <ConfirmationExitPopup />

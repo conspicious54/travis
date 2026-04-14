@@ -260,12 +260,17 @@ export function WhatToExpect({ p }: { p: Personalization | null }) {
 
 export function ResearchVideo() {
   return (
-    <div className="max-w-4xl mx-auto px-4 pt-8 pb-10 md:pt-10 md:pb-12">
+    <div className="max-w-4xl mx-auto px-4 pt-6 pb-8 md:pt-8 md:pb-10">
       <div className="text-center mb-5">
-        <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-red-700">
-          <Play className="w-3 h-3" />
-          Required before your call
-        </div>
+        <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-2">
+          Step 1 of 3
+        </p>
+        <h2 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight leading-[1.1] mb-2">
+          Watch this <span className="text-orange-600">4-minute video</span>
+        </h2>
+        <p className="text-sm md:text-base text-gray-600 max-w-lg mx-auto">
+          Exactly what to expect on your call, plus how to show up prepared.
+        </p>
       </div>
       <div className="relative">
         <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
@@ -280,15 +285,81 @@ export function ResearchVideo() {
           />
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Scroll-down indicator */}
-      <div className="text-center mt-10 md:mt-12">
-        <p className="text-sm md:text-base text-gray-600 font-medium mb-3">
-          Have questions? Keep scrolling. <span className="text-orange-600 font-bold">We've answered them below.</span>
-        </p>
-        <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 animate-bounce">
-          <ChevronDown className="w-5 h-5 text-orange-600" />
+/* ───────────── how to show up prepared (clarity) ────────────────── */
+
+export function NextStepsList({
+  microAskLabel,
+  microAskDone = false,
+}: {
+  microAskLabel: string;
+  microAskDone?: boolean;
+}) {
+  return (
+    <div className="bg-gradient-to-b from-white to-orange-50/40 border-t border-gray-100 py-10 md:py-14">
+      <div className="max-w-2xl mx-auto px-4">
+        <div className="text-center mb-8">
+          <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-2">
+            Step 2 of 3
+          </p>
+          <h2 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight leading-[1.1]">
+            How to Show Up <span className="text-orange-600">Prepared</span>
+          </h2>
         </div>
+
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 md:p-7 shadow-sm space-y-4">
+          <StepRow
+            num={1}
+            done={microAskDone}
+            label={microAskLabel}
+            sub="Takes 10 seconds. The people who do this show up 95% of the time."
+          />
+          <StepRow
+            num={2}
+            label="Watch the 4-minute video above"
+            sub="So you know exactly what to expect and don't waste time on your call."
+          />
+          <StepRow
+            num={3}
+            label="Have your goals and numbers ready"
+            sub="Your revenue target, starting budget, and what you've tried already. The more specific you are, the more specific your plan will be."
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepRow({
+  num,
+  done = false,
+  label,
+  sub,
+}: {
+  num: number;
+  done?: boolean;
+  label: string;
+  sub?: string;
+}) {
+  return (
+    <div className="flex items-start gap-4">
+      <div
+        className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-black ${
+          done
+            ? 'bg-green-500 text-white'
+            : 'bg-orange-100 text-orange-700 border-2 border-orange-200'
+        }`}
+      >
+        {done ? <CheckCircle className="w-5 h-5" /> : num}
+      </div>
+      <div className="flex-1 pt-1">
+        <p className={`font-bold text-gray-900 ${done ? 'line-through text-gray-400' : ''}`}>
+          {label}
+        </p>
+        {sub && <p className="text-xs md:text-sm text-gray-500 mt-1 leading-relaxed">{sub}</p>}
       </div>
     </div>
   );
@@ -442,7 +513,82 @@ export function OpportunitySection() {
   );
 }
 
+/* ───────────── slim trust block (cross-pollination) ──────────────
+   Replaces the old big 65-video inline grid with:
+   - 1 featured student video embed (pick a banger)
+   - A big clear button to the full YouTube playlist of student stories
+   - Trust bar
+   Matches Ruby's "cross-pollinate via YouTube" principle — send them
+   to the channel, don't embed 60 videos inline.
+──────────────────────────────────────────────────────────────────── */
+
+const STUDENT_PLAYLIST_URL = 'https://www.youtube.com/playlist?list=PLGNIbsmRLMnt7DzERqhHjwxaSNKdBLbq0';
+
 export function TestimonialHighlights({ p }: { p?: Personalization | null }) {
+  // Featured video: swap based on situation so the first story resonates
+  let featured = { id: '9GSDrJRv2CE', name: 'AJ Rantz', revenue: '$1M', time: '3 years' };
+  if (p?.capital === 'none' || p?.capital === 'save') {
+    featured = { id: 'R-NmmLoh2jo', name: 'Mina', revenue: '$242K', time: '12 months' };
+  } else if (p?.situation === 'amazon_stuck') {
+    featured = { id: 'Vw9OrGVTGoI', name: 'Michael', revenue: '$310K', time: '12 months' };
+  } else if (p?.situation === 'never_started') {
+    featured = { id: '2X10mIm5eXc', name: 'Brent', revenue: '$293K', time: '12 months' };
+  }
+
+  let subhead = "Real students who were exactly where you are.";
+  if (p?.situation === 'amazon_stuck') {
+    subhead = "Watch how other sellers broke through the same plateau.";
+  } else if (p?.situation === 'never_started') {
+    subhead = "Students who had never started a business before.";
+  } else if (p?.capital === 'none' || p?.capital === 'save') {
+    subhead = "Students who started with very little capital.";
+  }
+
+  return (
+    <div className="bg-white py-12 md:py-16 border-t border-gray-100">
+      <div className="max-w-3xl mx-auto px-4 text-center">
+        <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-2">
+          You're in good company
+        </span>
+        <h2 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight leading-[1.1] mb-3">
+          14,000+ students have<br className="md:hidden" /> taken this same call
+        </h2>
+        <p className="text-gray-600 text-sm md:text-base max-w-lg mx-auto mb-8">
+          {subhead}
+        </p>
+
+        {/* One featured video */}
+        <div className="rounded-2xl overflow-hidden shadow-lg ring-1 ring-gray-200 mb-5">
+          <YouTubeLazyEmbed videoId={featured.id} title={`${featured.name} student story`} />
+        </div>
+        <p className="text-xs text-gray-500 mb-8">
+          <span className="font-bold text-gray-900">{featured.name}</span> &middot; <span className="font-bold text-orange-600">{featured.revenue}</span> in {featured.time}
+        </p>
+
+        {/* Playlist CTA */}
+        <a
+          href={STUDENT_PLAYLIST_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => trackEvent('student_playlist_clicked')}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer shadow-md"
+        >
+          <Play className="w-4 h-4" fill="currentColor" />
+          Watch more student stories on YouTube
+        </a>
+        <p className="text-xs text-gray-400 mt-3">
+          Full playlist of 60+ stories on Travis's channel
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────── deprecated: old giant testimonial grid ────────────
+   Kept behind a non-exported function in case we want to bring it
+   back. All confirmation pages now use the slim version above.
+──────────────────────────────────────────────────────────────────── */
+function _OldTestimonialHighlights({ p }: { p?: Personalization | null }) {
   const [showAll, setShowAll] = useState(false);
 
   const youtubeTestimonials = [
@@ -603,7 +749,7 @@ export function TestimonialHighlights({ p }: { p?: Personalization | null }) {
 ──────────────────────────────────────────────────────────────────── */
 
 export function MethodCheckIn() {
-  const [answer, setAnswer] = useState<'yes' | 'kinda' | 'no' | null>(null);
+  const [answer, setAnswer] = useState<'yes' | null>(null);
 
   const handleYes = () => {
     setAnswer('yes');
@@ -620,18 +766,23 @@ export function MethodCheckIn() {
     window.location.href = '/method';
   };
 
+  const handleQuestions = () => {
+    trackEvent('method_checkin_answered', { answer: 'questions' });
+    window.location.href = '/questions';
+  };
+
   return (
     <div className="bg-gradient-to-b from-white via-orange-50/40 to-white border-t border-gray-100 py-14 md:py-20">
       <div className="max-w-3xl mx-auto px-4 text-center">
-        <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
-          Quick check-in
-        </span>
-        <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1] mb-4">
+        <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-2">
+          Step 3 of 3
+        </p>
+        <h2 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight leading-[1.1] mb-3">
           Do you understand how the<br />
           <span className="text-orange-600">Passion Product Method</span> works?
         </h2>
-        <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto mb-10">
-          Knowing the method going into your call means you can skip the basics and spend the time on what matters for you.
+        <p className="text-gray-600 text-sm md:text-base max-w-xl mx-auto mb-10">
+          Knowing the method going into your call means you can skip the basics and spend the time on what actually matters for you.
         </p>
 
         {answer === 'yes' ? (
@@ -640,7 +791,7 @@ export function MethodCheckIn() {
             Great. You're ready for your call.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 max-w-3xl mx-auto">
             <button
               onClick={handleYes}
               className="group px-5 py-5 bg-white border-2 border-gray-200 hover:border-green-400 hover:bg-green-50/50 rounded-2xl font-bold text-sm transition-all cursor-pointer shadow-sm"
@@ -661,6 +812,13 @@ export function MethodCheckIn() {
             >
               <div className="text-2xl mb-1">🙋</div>
               <div className="text-gray-900 group-hover:text-orange-700">No, show me</div>
+            </button>
+            <button
+              onClick={handleQuestions}
+              className="group px-5 py-5 bg-white border-2 border-gray-200 hover:border-orange-400 hover:bg-orange-50/50 rounded-2xl font-bold text-sm transition-all cursor-pointer shadow-sm"
+            >
+              <div className="text-2xl mb-1">💬</div>
+              <div className="text-gray-900 group-hover:text-orange-700">I have some questions</div>
             </button>
           </div>
         )}

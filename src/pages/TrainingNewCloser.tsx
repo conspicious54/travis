@@ -1,19 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import {
   ResearchVideo,
-  BreakoutVideos,
-  OpportunitySection,
   TestimonialHighlights,
-  ResourceSection,
   SharedFooter,
-  PersonalizedIntro,
-  WhatToExpect,
   LowCapitalStrategies,
   CreditCardQuiz,
   ConfirmationExitPopup,
   MethodCheckIn,
+  NextStepsList,
 } from '../components/TrainingNewSections';
-import { CheckCircle, Calendar, Clock, Star, Shield, ChevronDown } from 'lucide-react';
+import { CheckCircle, Calendar, Star, Shield, ChevronDown } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackCalendarAdded } from '../lib/posthog';
 
@@ -388,16 +384,37 @@ function formatHumanTime(d: Date): string {
 
 function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo | null; firstName: string }) {
   return (
-    <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white">
-      <div className="max-w-4xl mx-auto px-4 pt-5 pb-3 md:pt-6 md:pb-4 text-center">
-        <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight mb-1">
-          {firstName ? `${firstName}, you're booked.` : "You're booked."} <span className="text-orange-600">Now watch this.</span>
+    <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
+      <div className="max-w-3xl mx-auto px-4 pt-6 pb-8 md:pt-8 md:pb-10 text-center">
+        <div className="inline-flex items-center gap-2 bg-green-100 border border-green-200 px-3 py-1 rounded-full text-[11px] md:text-xs font-bold uppercase tracking-wider text-green-700 mb-4">
+          <CheckCircle className="w-3 h-3" />
+          Your call is booked
+        </div>
+        <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.05] mb-2">
+          {firstName ? `You're in, ${firstName}.` : "You're in."}
         </h1>
-        <p className="text-sm text-gray-500">
-          {meeting
-            ? `Check your email for the calendar invite. Your call is on ${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}.`
-            : 'Check your email for the calendar invite and join link.'}
+        <p className="text-base md:text-lg text-gray-600 mb-6">
+          {meeting ? (
+            <>
+              Your call is on{' '}
+              <span className="font-bold text-gray-900">{formatHumanDate(meeting.start)}</span>
+              {' at '}
+              <span className="font-bold text-gray-900">{formatHumanTime(meeting.start)}</span>.
+            </>
+          ) : (
+            'Check your email for the calendar invite and join link.'
+          )}
         </p>
+
+        {/* Micro-ask: one-click calendar add, above the fold */}
+        {meeting && (
+          <div>
+            <CalendarButton meeting={meeting} variant="primary" />
+            <p className="text-xs text-gray-400 mt-2">
+              Takes 10 seconds. So you don't miss it.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -472,18 +489,16 @@ export function TrainingNewCloser() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <StepProgressBar />
       <CloserConfirmationBanner meeting={meeting} firstName={firstName} />
       <ResearchVideo />
-      <PersonalizedIntro p={p} />
-      <WhatToExpect p={p} />
-      <BreakoutVideos p={p} />
-      <OpportunitySection />
+      <NextStepsList
+        microAskLabel="Add the call to your calendar (above)"
+        microAskDone={!!meeting}
+      />
       <TestimonialHighlights p={p} />
       <MethodCheckIn />
       <LowCapitalStrategies p={p} />
       <CreditCardQuiz p={p} />
-      <ResourceSection />
       <CloserFinalCTA meeting={meeting} firstName={firstName} />
       <SharedFooter />
       <ConfirmationExitPopup />

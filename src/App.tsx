@@ -16,6 +16,7 @@ import { Router } from './pages/Router';
 import { Book } from './pages/Book';
 import { RealCost } from './pages/RealCost';
 import { Method } from './pages/Method';
+import { Questions } from './pages/Questions';
 import { Terms } from './pages/Terms';
 import { OptIn } from './pages/OptIn';
 import { FreeCourse } from './pages/FreeCourse';
@@ -53,6 +54,7 @@ function AppWrapper() {
                 <Route path="/book" element={<Book />} />
                 <Route path="/realcost" element={<RealCost />} />
                 <Route path="/method" element={<Method />} />
+                <Route path="/questions" element={<Questions />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/optin" element={<OptIn />} />
                 <Route path="/freecourse" element={<FreeCourse />} />

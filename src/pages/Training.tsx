@@ -1,58 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import {
   ResearchVideo,
-  BreakoutVideos,
-  OpportunitySection,
   TestimonialHighlights,
-  ResourceSection,
   SharedFooter,
-  PersonalizedIntro,
-  WhatToExpect,
   LowCapitalStrategies,
   CreditCardQuiz,
   ConfirmationExitPopup,
   MethodCheckIn,
+  NextStepsList,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Star, Shield } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import { identifyUser, setPersonProperties, trackConfirmationPageViewed } from '../lib/posthog';
 
-/* ───────────────── shared step progress bar ───────────────────────── */
-
-function StepProgressBar() {
-  return (
-    <div className="bg-white border-b border-gray-100">
-      <div className="max-w-4xl mx-auto px-4 py-3">
-        <div className="flex items-center justify-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-              <CheckCircle className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Booked</span>
-          </div>
-          <div className="w-12 h-0.5 bg-gradient-to-r from-green-500 to-orange-500" />
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold ring-4 ring-orange-100">
-              2
-            </div>
-            <span className="text-xs font-bold text-orange-600 uppercase tracking-wider">Prepare</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ───────────────── generic confirmation banner ────────────────────── */
 
-function ConfirmationBanner() {
+function ConfirmationBanner({ firstName }: { firstName: string }) {
   return (
-    <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white">
-      <div className="max-w-4xl mx-auto px-4 pt-5 pb-3 md:pt-6 md:pb-4 text-center">
-        <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight mb-1">
-          You're in. <span className="text-orange-600">Now watch this.</span>
+    <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
+      <div className="max-w-3xl mx-auto px-4 pt-6 pb-8 md:pt-8 md:pb-10 text-center">
+        <div className="inline-flex items-center gap-2 bg-green-100 border border-green-200 px-3 py-1 rounded-full text-[11px] md:text-xs font-bold uppercase tracking-wider text-green-700 mb-4">
+          <CheckCircle className="w-3 h-3" />
+          You're in
+        </div>
+        <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.05] mb-2">
+          {firstName ? `You're all set, ${firstName}.` : "You're all set."}
         </h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-base md:text-lg text-gray-600">
           Check your email for the calendar invite and join link.
         </p>
       </div>
@@ -71,7 +45,7 @@ function FinalCTA() {
           You've Already Taken the <span className="text-orange-400">Hardest Step</span>
         </h2>
         <p className="text-slate-300 text-lg md:text-xl mb-10 max-w-xl mx-auto leading-relaxed">
-          Most people think about starting for months. Or years. You actually took action. Show up ready, and let's build your plan together.
+          Most people think about starting for months. Or years. You actually took action. Show up ready and let's build your plan together.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-6 text-slate-400 text-sm">
@@ -117,18 +91,15 @@ export function Training() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <StepProgressBar />
-      <ConfirmationBanner />
+      <ConfirmationBanner firstName={p?.firstName || ''} />
       <ResearchVideo />
-      <PersonalizedIntro p={p} />
-      <WhatToExpect p={p} />
-      <BreakoutVideos p={p} />
-      <OpportunitySection />
+      <NextStepsList
+        microAskLabel="Check your email for the calendar invite"
+      />
       <TestimonialHighlights p={p} />
       <MethodCheckIn />
       <LowCapitalStrategies p={p} />
       <CreditCardQuiz p={p} />
-      <ResourceSection />
       <FinalCTA />
       <SharedFooter />
       <ConfirmationExitPopup />
