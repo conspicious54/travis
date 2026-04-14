@@ -259,7 +259,59 @@ export function WhatToExpect({ p }: { p: Personalization | null }) {
   );
 }
 
+const MAIN_VIDEO_ID = 'EdiPp5vF68Q';
+
 export function ResearchVideo() {
+  const { markDone } = usePrepChecklist();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    // Subscribe to YouTube iframe state change events, so we can mark
+    // step 2 done the moment the user finishes the video.
+    const subscribe = () => {
+      const w = iframeRef.current?.contentWindow;
+      if (!w) return;
+      // Tell the player we're listening for state changes
+      w.postMessage(JSON.stringify({ event: 'listening', id: MAIN_VIDEO_ID }), '*');
+      w.postMessage(
+        JSON.stringify({
+          event: 'command',
+          func: 'addEventListener',
+          args: ['onStateChange'],
+        }),
+        '*'
+      );
+    };
+
+    const iframe = iframeRef.current;
+    if (iframe) {
+      iframe.addEventListener('load', subscribe);
+    }
+
+    const handleMessage = (event: MessageEvent) => {
+      if (!event.origin.includes('youtube.com')) return;
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        // state 0 = ENDED
+        if (data?.event === 'onStateChange' && data?.info === 0) {
+          markDone('video');
+        }
+        // state 1 = PLAYING — record that the video was started
+        if (data?.event === 'onStateChange' && data?.info === 1) {
+          trackEvent('main_video_started');
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      if (iframe) iframe.removeEventListener('load', subscribe);
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [markDone]);
+
   return (
     <div className="max-w-4xl mx-auto px-4 pt-6 pb-8 md:pt-8 md:pb-10">
       <div className="text-center mb-5">
@@ -267,7 +319,7 @@ export function ResearchVideo() {
           Step 1 of 3
         </p>
         <h2 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight leading-[1.1] mb-2">
-          Watch this <span className="text-orange-600">4-minute video</span>
+          Watch this <span className="text-orange-600">short video</span>
         </h2>
         <p className="text-sm md:text-base text-gray-600 max-w-lg mx-auto">
           Exactly what to expect on your call, plus how to show up prepared.
@@ -277,9 +329,11 @@ export function ResearchVideo() {
         <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
         <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video ring-1 ring-gray-200">
           <iframe
-            src="https://videos.sproutvideo.com/embed/5a9adbb3181fe6cfd0/12f186a3bf77fb51"
+            ref={iframeRef}
+            src={`https://www.youtube.com/embed/${MAIN_VIDEO_ID}?enablejsapi=1&rel=0&modestbranding=1`}
             className="w-full h-full"
             frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"
             title="Watch this before your call"
