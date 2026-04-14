@@ -415,6 +415,12 @@ function KickstarterInterlude() {
               amount="$10,000+"
               url="https://www.kickstarter.com/projects/slimcaddy/slim-caddytm-organizer"
             />
+            <ReceiptRow
+              name="Connor"
+              project="Performance Gum"
+              amount="fully funded"
+              url="https://www.kickstarter.com/projects/connorbyers/performance-gum-elite-energy-gum-for-peak-performance"
+            />
           </ul>
           <p className={`${MONO} text-xs text-black/60 border-t border-black/20 pt-3 mt-4`}>
             ── click any campaign to see the real receipts ──
