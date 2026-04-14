@@ -348,10 +348,42 @@ function KickstarterInterlude() {
             <span className="block text-4xl md:text-7xl">or, you could launch</span>
             <span className="block text-5xl md:text-8xl text-yellow-400 mt-1">with someone else's money.</span>
           </h2>
-          <p className={`${SERIF} italic text-white/70 text-base md:text-lg mt-6 max-w-xl mx-auto`}>
-            We guide students through Kickstarter launches. Real customers pay for your product before you make a single unit.
-          </p>
         </div>
+
+        {/* Plain-English explainer of Kickstarter */}
+        <div className="max-w-3xl mx-auto bg-white/5 backdrop-blur-sm border border-white/15 p-6 md:p-8 mb-10">
+          <p className={`${IMPACT} uppercase text-[10px] md:text-xs tracking-[0.3em] text-yellow-400 mb-4`}>
+            ── What is Kickstarter? ──
+          </p>
+          <p className={`${SERIF} text-base md:text-lg text-white/90 leading-relaxed mb-4`}>
+            Kickstarter is a website where people go to fund products before they exist. You create a page showing what you're going to make. Real customers pay in advance to get one when it ships.
+          </p>
+          <p className={`${SERIF} text-base md:text-lg text-white/80 leading-relaxed mb-6`}>
+            If enough people pledge their money, your product gets built. If not, nobody gets charged and you lose nothing. It's essentially a live stress test for your idea, and if it passes, you walk away with the cash to manufacture.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-white/15">
+            <KickstarterBenefit
+              num="1"
+              title="No inventory risk"
+              body="You don't manufacture until real customers have already paid for it. You can't end up with a garage full of unsold product."
+            />
+            <KickstarterBenefit
+              num="2"
+              title="Market validation"
+              body="If people pull out their wallets for a product that doesn't exist yet, you have proof the market wants it before you bet a dollar."
+            />
+            <KickstarterBenefit
+              num="3"
+              title="Launch capital"
+              body="The money you raise is what pays for the first manufacturing run. You get funded and validated in the same move."
+            />
+          </div>
+        </div>
+
+        <p className={`${SERIF} italic text-white/70 text-base md:text-lg text-center max-w-xl mx-auto mb-10`}>
+          We guide students through the entire Kickstarter launch. Here's what a few of them have raised.
+        </p>
 
         {/* Receipt of raises */}
         <div className="max-w-2xl mx-auto bg-[#faf7f2] text-black p-5 md:p-7 border-2 border-yellow-400">
@@ -394,6 +426,18 @@ function KickstarterInterlude() {
         </p>
       </div>
       <div className={`h-3 ${DANGER_STRIPES}`} />
+    </div>
+  );
+}
+
+function KickstarterBenefit({ num, title, body }: { num: string; title: string; body: string }) {
+  return (
+    <div>
+      <div className="flex items-baseline gap-2 mb-1">
+        <span className={`${IMPACT} text-yellow-400 text-xl leading-none`}>{num}.</span>
+        <p className={`${IMPACT} uppercase text-sm md:text-base tracking-wider text-white`}>{title}</p>
+      </div>
+      <p className="text-xs md:text-sm text-white/70 leading-relaxed">{body}</p>
     </div>
   );
 }
