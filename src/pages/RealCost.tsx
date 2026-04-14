@@ -358,14 +358,34 @@ function KickstarterInterlude() {
           <p className={`${MONO} text-[10px] uppercase tracking-widest text-black/60 border-b border-black/20 pb-2 mb-3`}>
             STUDENT LAUNCH FUND RECEIPTS
           </p>
-          <ul className={`${MONO} text-sm md:text-base space-y-2`}>
-            <ReceiptRow name="AJ" amount="$120,000+" />
-            <ReceiptRow name="Travis" amount="$15,000+" />
-            <ReceiptRow name="Jeremy" amount="$10,000+" />
-            <ReceiptRow name="Brent" amount="multi $10,000s" />
+          <ul className={`${MONO} text-sm md:text-base space-y-3`}>
+            <ReceiptRow
+              name="AJ"
+              project="Cocktail Cards"
+              amount="$120,000+"
+              url="https://www.indiegogo.com/en/projects/albertrantz/cocktail-cards"
+            />
+            <ReceiptRow
+              name="Brent"
+              project="SearPro Torch"
+              amount="multi $10,000s"
+              url="https://www.kickstarter.com/projects/searprollc/searpro-the-best-multi-use-torch-on-the-market"
+            />
+            <ReceiptRow
+              name="Travis"
+              project="Performance Nut Butter"
+              amount="$15,000+"
+              url="https://www.kickstarter.com/projects/739456358/performance-nut-butter-on-the-go-keto-paleo-and-ve"
+            />
+            <ReceiptRow
+              name="Jeremy"
+              project="Slim Caddy Organizer"
+              amount="$10,000+"
+              url="https://www.kickstarter.com/projects/slimcaddy/slim-caddytm-organizer"
+            />
           </ul>
           <p className={`${MONO} text-xs text-black/60 border-t border-black/20 pt-3 mt-4`}>
-            ── dozens of others have done the same ──
+            ── click any campaign to see the real receipts ──
           </p>
         </div>
 
@@ -378,12 +398,32 @@ function KickstarterInterlude() {
   );
 }
 
-function ReceiptRow({ name, amount }: { name: string; amount: string }) {
+function ReceiptRow({
+  name,
+  project,
+  amount,
+  url,
+}: {
+  name: string;
+  project: string;
+  amount: string;
+  url: string;
+}) {
   return (
-    <li className="flex items-center gap-2">
-      <span className="font-bold">{name}</span>
-      <span className="flex-1 border-b border-dotted border-black/40" />
-      <span className="font-bold text-green-800">{amount}</span>
+    <li>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex flex-wrap items-baseline gap-x-2 gap-y-0 hover:bg-black/5 -mx-2 px-2 py-1 transition-colors"
+      >
+        <span className="font-bold">{name}</span>
+        <span className="text-black/60 text-xs md:text-sm italic group-hover:underline underline-offset-2">
+          {project} →
+        </span>
+        <span className="flex-1 border-b border-dotted border-black/40 min-w-[20px]" />
+        <span className="font-bold text-green-800">{amount}</span>
+      </a>
     </li>
   );
 }
@@ -444,7 +484,7 @@ function TheBill() {
         </h2>
 
         <p className={`${SERIF} italic text-white/70 text-center max-w-xl mx-auto text-base md:text-lg mb-14`}>
-          Six months after launch. Same $25,000/month in revenue. Two very different bills.
+          Six months after launch. Two very different realities.
         </p>
 
         {/* Two invoices */}
@@ -453,14 +493,14 @@ function TheBill() {
             kind="diy"
             title="Invoice: Doing it alone"
             lines={[
-              ['Revenue per month', '$25,000'],
-              ['Ad spend (untuned PPC)', '-$8,000'],
-              ['Cost of goods (no negotiation)', '-$12,500'],
-              ['Amazon fees', '-$4,000'],
-              ['Net margin', '~break-even'],
+              ['Revenue per month', '$3,500'],
+              ['Ad spend (untuned PPC)', '-$1,500'],
+              ['Cost of goods (no negotiation)', '-$1,700'],
+              ['Amazon fees', '-$600'],
+              ['Net margin', 'losing money'],
             ]}
-            total="$200,000 – $300,000+"
-            totalSub="LOST PROFIT in year 1 compared to what your product could have done."
+            total="Stuck under $5K/mo"
+            totalSub="A product that can't get off the ground. Most DIY launches never break out of this range."
           />
 
           <Invoice
