@@ -12,6 +12,7 @@ import {
 import { CheckCircle, Star, Shield } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import { identifyUser, setPersonProperties, trackConfirmationPageViewed } from '../lib/posthog';
+import { PrepChecklistProvider, usePrepChecklist } from '../context/PrepChecklistContext';
 
 /* ───────────────── generic confirmation banner ────────────────────── */
 
@@ -111,19 +112,31 @@ export function Training() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <ConfirmationBanner firstName={p?.firstName || ''} />
-      <ResearchVideo />
-      <NextStepsList
-        microAskLabel="Check your email for the calendar invite"
-      />
-      <TestimonialHighlights p={p} />
-      <MethodCheckIn />
-      <LowCapitalStrategies p={p} />
-      <CreditCardQuiz p={p} />
-      <FinalCTA firstName={p?.firstName || ''} />
-      <SharedFooter />
-      <ConfirmationExitPopup />
-    </div>
+    <PrepChecklistProvider>
+      <AutoMarkMicroAsk />
+      <div className="min-h-screen bg-white text-gray-900">
+        <ConfirmationBanner firstName={p?.firstName || ''} />
+        <ResearchVideo />
+        <NextStepsList
+          microAskLabel="Check your email for the calendar invite"
+        />
+        <TestimonialHighlights p={p} />
+        <MethodCheckIn />
+        <LowCapitalStrategies p={p} />
+        <CreditCardQuiz p={p} />
+        <FinalCTA firstName={p?.firstName || ''} />
+        <SharedFooter />
+        <ConfirmationExitPopup />
+      </div>
+    </PrepChecklistProvider>
   );
+}
+
+// Generic /training doesn't have a confirm button, so auto-mark micro-ask done
+function AutoMarkMicroAsk() {
+  const { markDone } = usePrepChecklist();
+  useEffect(() => {
+    markDone('microAsk');
+  }, [markDone]);
+  return null;
 }

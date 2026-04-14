@@ -13,6 +13,7 @@ import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare,
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackCalendarAdded, trackEvent } from '../lib/posthog';
 import { detectRegion, PHONE_NUMBERS, type Region } from '../lib/regionPhone';
+import { PrepChecklistProvider, usePrepChecklist } from '../context/PrepChecklistContext';
 
 /* ───────────────────── closer-specific sections ──────────────────── */
 
@@ -385,6 +386,7 @@ function formatHumanTime(d: Date): string {
 
 function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo | null; firstName: string }) {
   const [region, setRegion] = useState<Region>('us');
+  const { markDone } = usePrepChecklist();
 
   useEffect(() => {
     setRegion(detectRegion());
@@ -394,6 +396,16 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
   const smsBody = encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
   const whatsappBody = encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
   const whatsappNumber = phone.raw.replace(/[^\d]/g, '');
+
+  const handleConfirmText = () => {
+    trackEvent('closer_confirm_text_clicked', { region });
+    markDone('microAsk');
+  };
+
+  const handleConfirmWhatsapp = () => {
+    trackEvent('closer_confirm_whatsapp_clicked', { region });
+    markDone('microAsk');
+  };
 
   return (
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
@@ -432,7 +444,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
           <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 max-w-lg mx-auto">
             <a
               href={`sms:${phone.raw}?&body=${smsBody}`}
-              onClick={() => trackEvent('closer_confirm_text_clicked', { region })}
+              onClick={handleConfirmText}
               className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
             >
               <MessageSquare className="w-4 h-4" />
@@ -442,7 +454,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
               href={`https://wa.me/${whatsappNumber}?text=${whatsappBody}`}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => trackEvent('closer_confirm_whatsapp_clicked', { region })}
+              onClick={handleConfirmWhatsapp}
               className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
             >
               <MessageCircle className="w-4 h-4" />
@@ -573,20 +585,19 @@ export function TrainingNewCloser() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <CloserConfirmationBanner meeting={meeting} firstName={firstName} />
-      <ResearchVideo />
-      <NextStepsList
-        microAskLabel="Add the call to your calendar (above)"
-        microAskDone={!!meeting}
-      />
-      <TestimonialHighlights p={p} />
-      <MethodCheckIn />
-      <LowCapitalStrategies p={p} />
-      <CreditCardQuiz p={p} />
-      <CloserFinalCTA meeting={meeting} firstName={firstName} />
-      <SharedFooter />
-      <ConfirmationExitPopup />
-    </div>
+    <PrepChecklistProvider>
+      <div className="min-h-screen bg-white text-gray-900">
+        <CloserConfirmationBanner meeting={meeting} firstName={firstName} />
+        <ResearchVideo />
+        <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
+        <TestimonialHighlights p={p} />
+        <MethodCheckIn />
+        <LowCapitalStrategies p={p} />
+        <CreditCardQuiz p={p} />
+        <CloserFinalCTA meeting={meeting} firstName={firstName} />
+        <SharedFooter />
+        <ConfirmationExitPopup />
+      </div>
+    </PrepChecklistProvider>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users, CheckCircle, Check, Mail } from 'lucide-react';
 import type { Personalization, Reason, Situation, ValuedFeature, Capital, TravisHistory, Region } from '../lib/personalization';
 import { trackTestimonialsExpanded, trackCreditQuizStarted, trackCreditQuizCompleted, trackCreditCardApplyClicked, trackEvent } from '../lib/posthog';
+import { usePrepChecklist } from '../context/PrepChecklistContext';
 
 /* ───────────────────────────── helpers ───────────────────────────── */
 
@@ -316,25 +317,29 @@ const KEY_PRINCIPLES = [
 
 export function NextStepsList({
   microAskLabel,
-  microAskDone = false,
 }: {
   microAskLabel: string;
+  /** @deprecated - now managed by PrepChecklistContext */
   microAskDone?: boolean;
 }) {
-  const [checkedPrinciples, setCheckedPrinciples] = useState<Set<string>>(new Set());
-  const allChecked = checkedPrinciples.size === KEY_PRINCIPLES.length;
+  const {
+    completed,
+    principlesChecked,
+    togglePrinciple,
+    setPrinciplesTotal,
+  } = usePrepChecklist();
 
-  const toggle = (id: string) => {
-    setCheckedPrinciples(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-        trackEvent('principle_checked', { principle: id });
-      }
-      return next;
-    });
+  useEffect(() => {
+    setPrinciplesTotal(KEY_PRINCIPLES.length);
+  }, [setPrinciplesTotal]);
+
+  const allChecked = principlesChecked.size === KEY_PRINCIPLES.length;
+
+  const handlePrincipleToggle = (id: string) => {
+    if (!principlesChecked.has(id)) {
+      trackEvent('principle_checked', { principle: id });
+    }
+    togglePrinciple(id);
   };
 
   return (
@@ -352,12 +357,13 @@ export function NextStepsList({
         <div className="bg-white border border-gray-200 rounded-2xl p-5 md:p-7 shadow-sm space-y-4">
           <StepRow
             num={1}
-            done={microAskDone}
+            done={completed.microAsk}
             label={microAskLabel}
             sub="Takes 10 seconds. The people who do this show up 95% of the time."
           />
           <StepRow
             num={2}
+            done={completed.video}
             label="Watch the 4-minute video above"
             sub="So you know exactly what to expect and don't waste time on your call."
           />
@@ -390,7 +396,7 @@ export function NextStepsList({
               ) : (
                 <ul className="mt-4 space-y-2">
                   {KEY_PRINCIPLES.map((p) => {
-                    const isChecked = checkedPrinciples.has(p.id);
+                    const isChecked = principlesChecked.has(p.id);
                     return (
                       <li
                         key={p.id}
@@ -399,7 +405,7 @@ export function NextStepsList({
                         }`}
                       >
                         <button
-                          onClick={() => toggle(p.id)}
+                          onClick={() => handlePrincipleToggle(p.id)}
                           className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center cursor-pointer transition-colors ${
                             isChecked
                               ? 'bg-green-500 border-green-500 text-white'
@@ -1404,40 +1410,94 @@ export function ResourceSection() {
 export function ConfirmationExitPopup() {
   const [show, setShow] = useState(false);
   const firedRef = useRef(false);
+  const { completed, isAllComplete } = usePrepChecklist();
+
+  // Snapshot the state at the moment the popup is triggered so the
+  // content doesn't change if the user's state updates while it's open
+  const [snapshot, setSnapshot] = useState<typeof completed | null>(null);
 
   useEffect(() => {
     const STORAGE_FLAG = 'pp_exit_popup_shown';
-
-    // Don't show again if already shown this session
     if (sessionStorage.getItem(STORAGE_FLAG)) return;
 
     const trigger = () => {
       if (firedRef.current) return;
+      // If they've completed everything, don't bug them
+      if (isAllComplete()) return;
       firedRef.current = true;
       sessionStorage.setItem(STORAGE_FLAG, '1');
+      setSnapshot({ ...completed });
       setShow(true);
+      trackEvent('exit_popup_shown', {
+        microAsk: completed.microAsk,
+        video: completed.video,
+        principles: completed.principles,
+      });
     };
 
-    // Desktop: mouse leaves toward top of viewport
     const handleMouseLeave = (e: MouseEvent) => {
       if (e.clientY <= 5) trigger();
     };
-
-    // Mobile: tab switch or back button
     const handleVisibility = () => {
       if (document.visibilityState === 'hidden') trigger();
     };
 
     document.addEventListener('mouseleave', handleMouseLeave);
     document.addEventListener('visibilitychange', handleVisibility);
-
     return () => {
       document.removeEventListener('mouseleave', handleMouseLeave);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, []);
+  }, [completed, isAllComplete]);
 
-  if (!show) return null;
+  if (!show || !snapshot) return null;
+
+  // Determine what to say based on what's undone
+  const undone = {
+    microAsk: !snapshot.microAsk,
+    video: !snapshot.video,
+    principles: !snapshot.principles,
+  };
+
+  // Prioritize the biggest value: video > principles > microAsk
+  let headline: string;
+  let body: string;
+  let ctaLabel: string;
+  let ctaScrollTarget: 'video' | 'top' = 'top';
+
+  if (undone.video) {
+    headline = 'Wait. Did you watch the video?';
+    body = "The people who show up prepared get way more out of their call. The video at the top covers exactly what to expect, who we are, and how this works. It's only 4 minutes.";
+    ctaLabel = 'Take me back to the video';
+    ctaScrollTarget = 'top';
+  } else if (undone.principles) {
+    headline = 'One more step before you go.';
+    body = "You've watched the video — nice. Now just check off the key principles so you walk into your call with the full picture. Takes a minute.";
+    ctaLabel = 'Show me the principles';
+    ctaScrollTarget = 'top';
+  } else if (undone.microAsk) {
+    headline = "Don't forget to confirm.";
+    body = "You've done the work to prepare — now just tap Text or WhatsApp at the top so our team knows you'll be there. Takes 10 seconds.";
+    ctaLabel = 'Back to confirm';
+    ctaScrollTarget = 'top';
+  } else {
+    // Shouldn't happen since we gate on isAllComplete, but fallback
+    headline = 'Before you go.';
+    body = "Want to see exactly what doing this alone actually costs? It's not what most people think.";
+    ctaLabel = 'Show me';
+  }
+
+  const dismissToRealCost = () => {
+    setShow(false);
+    window.location.href = '/realcost';
+  };
+
+  const backToPage = () => {
+    setShow(false);
+    if (ctaScrollTarget === 'top') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
@@ -1464,38 +1524,55 @@ export function ConfirmationExitPopup() {
         />
 
         <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-3 leading-tight">
-          Wait. Did you watch the video?
+          {headline}
         </h3>
 
-        <p className="text-sm md:text-base text-gray-600 mb-4 leading-relaxed">
-          The people who show up to their call prepared get way more out of it. The video at the top of this page covers everything you need to know about the Passion Product method, how it works, and what to expect.
+        <p className="text-sm md:text-base text-gray-600 mb-6 leading-relaxed">
+          {body}
         </p>
 
-        <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-          Take a few minutes with it. You'll walk into your call knowing exactly what questions to ask, and you'll be able to make a clear decision without second-guessing yourself.
-        </p>
+        {/* Progress snapshot */}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-6 text-left">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">Your progress</p>
+          <ul className="space-y-1.5">
+            <ProgressRow done={snapshot.microAsk} label="Confirm via text or WhatsApp" />
+            <ProgressRow done={snapshot.video} label="Watch the video" />
+            <ProgressRow done={snapshot.principles} label="Understand the key principles" />
+          </ul>
+        </div>
 
         <button
-          onClick={() => {
-            setShow(false);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onClick={backToPage}
           className="w-full py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors cursor-pointer text-sm shadow-md"
         >
-          Take me back to the video
+          {ctaLabel}
         </button>
 
         <button
-          onClick={() => {
-            setShow(false);
-            window.location.href = '/realcost';
-          }}
+          onClick={dismissToRealCost}
           className="mt-3 text-xs text-gray-400 hover:text-gray-600 cursor-pointer underline underline-offset-2"
         >
-          I've already watched it
+          I've already done the work
         </button>
       </div>
     </div>
+  );
+}
+
+function ProgressRow({ done, label }: { done: boolean; label: string }) {
+  return (
+    <li className="flex items-center gap-2 text-xs md:text-sm">
+      <span
+        className={`shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
+          done ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'
+        }`}
+      >
+        {done ? <Check className="w-2.5 h-2.5" strokeWidth={4} /> : null}
+      </span>
+      <span className={done ? 'text-gray-500 line-through' : 'text-gray-900 font-medium'}>
+        {label}
+      </span>
+    </li>
   );
 }
 

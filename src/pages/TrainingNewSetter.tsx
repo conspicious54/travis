@@ -12,6 +12,7 @@ import {
 import { CheckCircle, Phone, Star, Shield, MessageSquare, MessageCircle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackContactSaved, trackEvent } from '../lib/posthog';
+import { PrepChecklistProvider, usePrepChecklist } from '../context/PrepChecklistContext';
 
 /* ─────────────────── region & platform detection ─────────────────── */
 
@@ -108,6 +109,7 @@ function SetterConfirmationBanner({
   const [region, setRegion] = useState<Region>('us');
   const [platform, setPlatform] = useState<Platform>('desktop');
   const [saved, setSaved] = useState(false);
+  const { markDone } = usePrepChecklist();
 
   useEffect(() => {
     setRegion(detectRegion());
@@ -122,6 +124,16 @@ function SetterConfirmationBanner({
     trackContactSaved(region, platform);
     setSaved(true);
     onSaved();
+  };
+
+  const handleConfirmText = () => {
+    trackEvent('setter_confirm_text_clicked', { region });
+    markDone('microAsk');
+  };
+
+  const handleConfirmWhatsapp = () => {
+    trackEvent('setter_confirm_whatsapp_clicked', { region });
+    markDone('microAsk');
   };
 
   const smsBody = encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
@@ -156,7 +168,7 @@ function SetterConfirmationBanner({
           <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 max-w-lg mx-auto">
             <a
               href={`sms:${phone.raw}?&body=${smsBody}`}
-              onClick={() => trackEvent('setter_confirm_text_clicked', { region })}
+              onClick={handleConfirmText}
               className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
             >
               <MessageSquare className="w-4 h-4" />
@@ -166,7 +178,7 @@ function SetterConfirmationBanner({
               href={`https://wa.me/${whatsappNumber}?text=${smsBody}`}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => trackEvent('setter_confirm_whatsapp_clicked', { region })}
+              onClick={handleConfirmWhatsapp}
               className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
             >
               <MessageCircle className="w-4 h-4" />
@@ -279,7 +291,6 @@ function SetterFinalCTA({ firstName }: { firstName: string }) {
 
 export function TrainingNewSetter() {
   const [p, setP] = useState<Personalization | null>(null);
-  const [contactSaved, setContactSaved] = useState(false);
 
   useEffect(() => {
     const personalization = getPersonalization();
@@ -308,20 +319,19 @@ export function TrainingNewSetter() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <SetterConfirmationBanner firstName={p?.firstName || ''} onSaved={() => setContactSaved(true)} />
-      <ResearchVideo />
-      <NextStepsList
-        microAskLabel="Save Travis to your contacts (above)"
-        microAskDone={contactSaved}
-      />
-      <TestimonialHighlights p={p} />
-      <MethodCheckIn />
-      <LowCapitalStrategies p={p} />
-      <CreditCardQuiz p={p} />
-      <SetterFinalCTA firstName={p?.firstName || ''} />
-      <SharedFooter />
-      <ConfirmationExitPopup />
-    </div>
+    <PrepChecklistProvider>
+      <div className="min-h-screen bg-white text-gray-900">
+        <SetterConfirmationBanner firstName={p?.firstName || ''} onSaved={() => {}} />
+        <ResearchVideo />
+        <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
+        <TestimonialHighlights p={p} />
+        <MethodCheckIn />
+        <LowCapitalStrategies p={p} />
+        <CreditCardQuiz p={p} />
+        <SetterFinalCTA firstName={p?.firstName || ''} />
+        <SharedFooter />
+        <ConfirmationExitPopup />
+      </div>
+    </PrepChecklistProvider>
   );
 }
