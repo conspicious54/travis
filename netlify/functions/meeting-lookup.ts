@@ -177,8 +177,11 @@ async function findLatestAppointmentForContact(
     'hs_meeting_location',
     'hs_meeting_external_url',
     'hs_videoconference_link',
+    'hs_meeting_outcome',
+    'hs_appointment_status',
     'hubspot_owner_id',
     'createdate',
+    'hs_createdate',
   ];
 
   const tryObjectType = async (objectType: string) => {
@@ -217,11 +220,24 @@ async function findLatestAppointmentForContact(
     );
     if (!batchRes.ok) return null;
     const batchData = await batchRes.json();
-    const results = (batchData?.results || []) as Array<{
+    const allResults = (batchData?.results || []) as Array<{
       id: string;
       properties: Record<string, unknown>;
       createdAt?: string;
     }>;
+    if (allResults.length === 0) return null;
+
+    // Skip canceled appointments. HubSpot prefixes the title with
+    // "Canceled:" when an appointment is canceled.
+    const isCanceled = (r: { properties: Record<string, unknown> }): boolean => {
+      const title = String(r.properties?.hs_appointment_name || r.properties?.hs_meeting_title || '');
+      if (/^canceled[\s:]/i.test(title) || /^cancelled[\s:]/i.test(title)) return true;
+      const outcome = String(r.properties?.hs_meeting_outcome || '').toLowerCase();
+      if (outcome === 'canceled' || outcome === 'cancelled') return true;
+      return false;
+    };
+
+    const results = allResults.filter((r) => !isCanceled(r));
     if (results.length === 0) return null;
 
     // Sort by when the appointment record itself was created. The most

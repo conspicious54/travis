@@ -52,6 +52,8 @@ interface MeetingInfo {
   firstName: string;
   lastName: string;
   email: string;
+  /** true if we couldn't verify the start time (partial hydration) */
+  startUnknown?: boolean;
 }
 
 function parseDate(val: string | null): Date | null {
@@ -148,7 +150,11 @@ async function hydrateFromHubSpot(
       );
       if (!res.ok) continue;
       data = (await res.json()) as LookupResponse;
-    } catch {
+      // eslint-disable-next-line no-console
+      console.log('[confirmation] hubspot lookup response', data);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.log('[confirmation] hubspot lookup error', err);
       continue;
     }
 
@@ -157,17 +163,25 @@ async function hydrateFromHubSpot(
     // Merge: URL params win for every field they already have a value
     // for. Lookup only supplies what's missing.
     const start =
-      (urlMeeting?.start) ||
+      urlMeeting?.start ||
       (data.startIso ? parseDate(data.startIso) : null);
-    if (!start) continue;
 
+    // If we got a joinUrl or ownerName but no start time, still return
+    // a partial MeetingInfo using "now" as a placeholder so the banner
+    // can render the Zoom button. The banner uses startUnknown flag to
+    // avoid displaying a fake time.
+    if (!start && !data.joinUrl && !data.ownerName) {
+      continue; // nothing useful — try next retry
+    }
+
+    const safeStart = start || new Date();
     const end =
       urlMeeting?.end ||
       (data.endIso ? parseDate(data.endIso) : null) ||
-      new Date(start.getTime() + 30 * 60 * 1000);
+      new Date(safeStart.getTime() + 30 * 60 * 1000);
 
     const merged: MeetingInfo = {
-      start,
+      start: safeStart,
       end,
       title: urlMeeting?.title || data.title || 'Amazon Strategy Call with Passion Product',
       joinUrl: urlMeeting?.joinUrl || data.joinUrl || '',
@@ -175,6 +189,7 @@ async function hydrateFromHubSpot(
       firstName: urlMeeting?.firstName || '',
       lastName: urlMeeting?.lastName || '',
       email: urlMeeting?.email || email,
+      startUnknown: !start,
     };
     return merged;
   }
