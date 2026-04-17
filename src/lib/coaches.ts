@@ -8,9 +8,10 @@ export interface Coach {
   firstName: string;
   fullName: string;
   role: string;
-  photoUrl: string; // populate once you have the real image URLs
+  tenure: string; // e.g. "Part of the Passion Product team for 3+ years"
+  photoUrl: string;
   travisIntro: string; // 1–2 sentences, as if spoken by Travis
-  bio: string; // 2–3 sentences, more detail on how they help
+  bio: string; // 2–3 sentences on how they help
 }
 
 export const COACHES: Record<string, Coach> = {
@@ -18,41 +19,45 @@ export const COACHES: Record<string, Coach> = {
     id: 'sharlee',
     firstName: 'Sharlee',
     fullName: 'Sharlee Fuentes',
-    role: 'Lead Amazon Coach',
+    role: 'Passion Product Lead Amazon Coach',
+    tenure: 'On the Passion Product team',
     photoUrl: 'https://ca.slack-edge.com/T03TC8Y0CUB-U0ANQG6P1E3-e99b626cb26d-512',
     travisIntro:
-      "Sharlee is one of my sharpest Amazon coaches. She's been side-by-side with hundreds of our students as they built real brands, and she's the person I trust to cut through the noise and tell you what's actually worth your time.",
-    bio: "She's walked through every stage of the Passion Product method with students — from picking the right product to launching on Amazon and scaling past six figures. On your call she'll look at your situation, figure out where you are, and give you the exact next steps.",
+      "Sharlee is one of my sharpest in-house Amazon coaches here at Passion Product. She's been side-by-side with hundreds of our students as they built real brands, and she's the person I trust to cut through the noise and tell you what's actually worth your time.",
+    bio: "As part of the Passion Product coaching team, she's walked students through every stage of our method — from picking the right product to launching on Amazon and scaling past six figures. On your call she'll look at your situation, figure out where you are, and give you the exact next steps.",
   },
   'jorge rodriguez': {
     id: 'jorge',
     firstName: 'Jorge',
     fullName: 'Jorge Rodriguez',
-    role: 'Lead Amazon Coach',
+    role: 'Passion Product Lead Amazon Coach',
+    tenure: 'On the Passion Product team',
     photoUrl: 'https://ca.slack-edge.com/T03TC8Y0CUB-U0AJF7S2RA9-9f8571abcc34-512',
     travisIntro:
-      "Jorge is one of my best Amazon coaches. He's the guy I'd want in my corner if I were starting over today — sharp, direct, and focused on getting you results.",
-    bio: "He knows the Passion Product method inside out and has coached hundreds of students through finding their first product, nailing their branding, and hitting a successful launch. On your call he'll get straight to what's going to move the needle for you.",
+      "Jorge is one of my best in-house Amazon coaches at Passion Product. He's the guy I'd want in my corner if I were starting over today — sharp, direct, and focused on getting you results.",
+    bio: "He's one of the coaches we've trained directly on the Passion Product method, and he's guided hundreds of our students through finding their first product, nailing their branding, and hitting a successful launch. On your call he'll get straight to what's going to move the needle for you.",
   },
   'matthew kemp': {
     id: 'matthew',
     firstName: 'Matt',
     fullName: 'Matthew Kemp',
-    role: 'Lead Amazon Coach',
-    photoUrl: '', // TODO: add real photo URL
+    role: 'Passion Product Lead Amazon Coach',
+    tenure: 'On the Passion Product team',
+    photoUrl: '',
     travisIntro:
-      "Matt is one of my top Amazon coaches. He's the kind of coach who takes your goals seriously and keeps you accountable to actually hitting them.",
-    bio: "He's helped hundreds of students work through the Passion Product method — from spotting a winning niche to building a brand people actually want to buy from. On your call he'll break down exactly what the path looks like for your situation.",
+      "Matt is one of my top in-house Amazon coaches at Passion Product. He's the kind of coach who takes your goals seriously and keeps you accountable to actually hitting them.",
+    bio: "As part of our coaching team, he's helped hundreds of our students work through the Passion Product method — from spotting a winning niche to building a brand people actually want to buy from. On your call he'll break down exactly what the path looks like for your situation.",
   },
   'jesse saunders': {
     id: 'jesse',
     firstName: 'Jesse',
     fullName: 'Jesse Saunders',
-    role: 'Lead Amazon Coach',
-    photoUrl: '', // TODO: add real photo URL
+    role: 'Passion Product Lead Amazon Coach',
+    tenure: 'On the Passion Product team',
+    photoUrl: '',
     travisIntro:
-      "Jesse is one of my best Amazon coaches. If you want someone who's going to be real with you and help you build something that actually works long-term, he's your guy.",
-    bio: "He's deep in the Passion Product method and has helped hundreds of students move from 'I want to do this' to actually having a real brand on Amazon. On your call he'll help you see the clearest path forward for where you're at.",
+      "Jesse is one of my best in-house Amazon coaches at Passion Product. If you want someone who's going to be real with you and help you build something that actually works long-term, he's your guy.",
+    bio: "He's deep in our method and has helped hundreds of Passion Product students move from 'I want to do this' to actually having a real brand on Amazon. On your call he'll help you see the clearest path forward for where you're at.",
   },
 };
 

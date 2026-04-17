@@ -1700,12 +1700,12 @@ export function MeetYourCoach({ ownerName }: { ownerName: string | null | undefi
             Meet <span className="text-orange-600">{coach.firstName}</span>
           </h2>
           <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto">
-            One of Travis's hand-picked Amazon coaches. Here's a quick intro.
+            One of the in-house coaches on the Passion Product team, hand-picked and trained by Travis himself.
           </p>
         </div>
 
         {/* Portrait pair */}
-        <div className="flex items-center justify-center gap-4 md:gap-6 mb-8">
+        <div className="flex items-center justify-center gap-4 md:gap-6 mb-4">
           <CoachPortrait
             photoUrl={coach.photoUrl}
             name={coach.fullName}
@@ -1717,6 +1717,14 @@ export function MeetYourCoach({ ownerName }: { ownerName: string | null | undefi
             name={TRAVIS.fullName}
             role={TRAVIS.role}
           />
+        </div>
+
+        {/* Team badge */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex items-center gap-1.5 bg-orange-100 border border-orange-200 px-3 py-1 rounded-full text-[11px] md:text-xs font-bold uppercase tracking-wider text-orange-700">
+            <Sparkles className="w-3 h-3" />
+            The Passion Product coaching team
+          </div>
         </div>
 
         {/* Travis's intro of the coach */}
