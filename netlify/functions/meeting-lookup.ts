@@ -47,15 +47,23 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
   try {
     // 1. Find the contact by email
-    const contactId = await findContactId(email, token, trace);
-    if (!contactId) {
+    const contact = await findContactId(email, token, trace);
+    if (!contact) {
       return json(200, { found: false, reason: 'contact_not_found', email, ...(debug ? { trace } : {}) });
     }
+    const contactId = contact.id;
 
     // 2. Find the most recent appointment/meeting for that contact
     const found = await findLatestAppointmentForContact(contactId, token, trace);
     if (!found) {
-      return json(200, { found: false, reason: 'no_meeting_found', contactId, ...(debug ? { trace } : {}) });
+      return json(200, {
+        found: false,
+        reason: 'no_meeting_found',
+        contactId,
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        ...(debug ? { trace } : {}),
+      });
     }
 
     // 3. Fetch the owner name
@@ -79,6 +87,8 @@ export const handler: Handler = async (event: HandlerEvent) => {
       source: found.source,
       appointmentId: found.id,
       contactId,
+      firstName: contact.firstName,
+      lastName: contact.lastName,
       startIso: toIso(pick('hs_appointment_start', 'hs_meeting_start_time')),
       endIso: toIso(pick('hs_appointment_end', 'hs_meeting_end_time')),
       title: pick('hs_appointment_name', 'hs_meeting_title'),
@@ -137,12 +147,19 @@ async function hubspotFetch(
   return res;
 }
 
+interface ContactData {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+}
+
 async function findContactId(
   email: string,
   token: string,
   trace: DebugEntry[]
-): Promise<string | null> {
-  const url = `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email`;
+): Promise<ContactData | null> {
+  // Request firstname + lastname properties so we don't need a second call
+  const url = `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email&properties=firstname,lastname`;
   const res = await hubspotFetch(
     url,
     { headers: { Authorization: `Bearer ${token}` } },
@@ -155,7 +172,12 @@ async function findContactId(
     throw new Error(`contact lookup ${res.status}: ${errBody}`);
   }
   const data = await res.json();
-  return data.id || null;
+  if (!data.id) return null;
+  return {
+    id: String(data.id),
+    firstName: data.properties?.firstname || undefined,
+    lastName: data.properties?.lastname || undefined,
+  };
 }
 
 /** Try the Appointments object first (newer), then fall back to

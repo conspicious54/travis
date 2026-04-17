@@ -130,6 +130,8 @@ interface LookupResponse {
   title?: string;
   joinUrl?: string;
   ownerName?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 async function hydrateFromHubSpot(
@@ -187,8 +189,8 @@ async function hydrateFromHubSpot(
       title: urlMeeting?.title || data.title || 'Amazon Strategy Call with Passion Product',
       joinUrl: urlMeeting?.joinUrl || data.joinUrl || '',
       organizer: urlMeeting?.organizer || data.ownerName || 'Passion Product Team',
-      firstName: urlMeeting?.firstName || '',
-      lastName: urlMeeting?.lastName || '',
+      firstName: urlMeeting?.firstName || data.firstName || '',
+      lastName: urlMeeting?.lastName || data.lastName || '',
       email: urlMeeting?.email || email,
       startUnknown: !start,
     };
@@ -489,9 +491,31 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
   // visitor's region. Falls back to the default regional number if the
   // owner isn't mapped or has no number for this region.
   const phone = getCloserPhone(meeting?.organizer, region);
-  const smsBody = encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
-  const whatsappBody = encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
   const whatsappNumber = phone.raw.replace(/[^\d]/g, '');
+
+  // Build a confirmation message body that includes the exact booked
+  // time (if we have a verified meeting time) and the person's full
+  // name. Falls back to a simple message when those aren't available.
+  const fullName = [
+    meeting?.firstName || firstName,
+    meeting?.lastName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
+  const confirmationBody = (() => {
+    const hasRealTime = meeting && !meeting.startUnknown;
+    const namePart = fullName ? ` - ${fullName}` : '';
+    if (hasRealTime) {
+      const when = `${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}`;
+      return `YES, I'm confirming my call on ${when}${namePart}`;
+    }
+    return `YES, I'm confirming my call${namePart}`;
+  })();
+
+  const smsBody = encodeURIComponent(confirmationBody);
+  const whatsappBody = encodeURIComponent(confirmationBody);
 
   const handleConfirmText = () => {
     trackEvent('closer_confirm_text_clicked', { region, owner: meeting?.organizer || null, phone: phone.raw });

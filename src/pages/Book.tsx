@@ -201,6 +201,7 @@ export function Book() {
         if (eventData.title) redirectParams.set('title', eventData.title as string);
         if (joinUrl) redirectParams.set('join', joinUrl);
         if (contact.firstName) redirectParams.set('firstname', contact.firstName);
+        if (contact.lastName) redirectParams.set('lastname', contact.lastName);
         if (contact.email) redirectParams.set('email', contact.email);
         if (ownerName) redirectParams.set('owner', ownerName);
 
