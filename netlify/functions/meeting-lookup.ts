@@ -224,12 +224,47 @@ async function findLatestAppointmentForContact(
     }>;
     if (results.length === 0) return null;
 
-    // Pick the most recently created
-    results.sort((a, b) => {
-      const aTs = new Date(a.createdAt || String(a.properties?.createdate || 0)).getTime();
-      const bTs = new Date(b.createdAt || String(b.properties?.createdate || 0)).getTime();
-      return bTs - aTs;
-    });
+    // Get the start time of the meeting (not the record's createdAt)
+    const getStartMs = (r: { properties: Record<string, unknown>; createdAt?: string }): number => {
+      const raw =
+        r.properties?.hs_appointment_start ||
+        r.properties?.hs_meeting_start_time ||
+        r.createdAt ||
+        r.properties?.createdate;
+      if (!raw) return 0;
+      const s = String(raw);
+      // HubSpot returns timestamps as epoch ms strings in some cases
+      if (/^\d{13}$/.test(s)) return parseInt(s, 10);
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? 0 : d.getTime();
+    };
+
+    // Get the record's createdAt — tiebreaker for "which booking was
+    // made most recently" (e.g. if someone reschedules, the new record
+    // has the same start time but a newer createdAt)
+    const getCreatedMs = (r: { createdAt?: string; properties: Record<string, unknown> }): number => {
+      const raw = r.createdAt || r.properties?.createdate;
+      if (!raw) return 0;
+      const d = new Date(String(raw));
+      return isNaN(d.getTime()) ? 0 : d.getTime();
+    };
+
+    const now = Date.now();
+
+    // Prefer upcoming meetings. Among upcoming, pick the next one.
+    // If all are in the past, pick the most recently created.
+    const upcoming = results.filter((r) => getStartMs(r) >= now - 15 * 60 * 1000);
+    if (upcoming.length > 0) {
+      upcoming.sort((a, b) => {
+        const diff = getStartMs(a) - getStartMs(b);
+        if (diff !== 0) return diff; // earliest upcoming first
+        return getCreatedMs(b) - getCreatedMs(a); // newer record wins on tie
+      });
+      return { ...upcoming[0], source: objectType };
+    }
+
+    // Fallback: most recently created record
+    results.sort((a, b) => getCreatedMs(b) - getCreatedMs(a));
     return { ...results[0], source: objectType };
   };
 
