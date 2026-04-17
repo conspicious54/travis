@@ -110,6 +110,77 @@ function isFullTimestamp(v: string): boolean {
   return v.includes('T') && (v.includes(':') || /[Z+-]\d{2}/.test(v));
 }
 
+function getEmailFromUrl(): string {
+  if (typeof window === 'undefined') return '';
+  const p = new URLSearchParams(window.location.search);
+  return p.get('email') || p.get('Email') || '';
+}
+
+/* Ask the HubSpot-backed lookup function for anything missing — most
+   importantly the Zoom join URL, but also confirmed start/end time
+   and owner name if they weren't in the URL. URL params always win
+   over the lookup so we never overwrite verified data. */
+interface LookupResponse {
+  found?: boolean;
+  startIso?: string;
+  endIso?: string;
+  title?: string;
+  joinUrl?: string;
+  ownerName?: string;
+}
+
+async function hydrateFromHubSpot(
+  email: string,
+  urlMeeting: MeetingInfo | null
+): Promise<MeetingInfo | null> {
+  // Short retry loop — HubSpot sometimes indexes a new appointment a
+  // couple of seconds after the booking completes.
+  const attemptDelaysMs = [0, 2000, 5000];
+
+  for (const delay of attemptDelaysMs) {
+    if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+
+    let data: LookupResponse | null = null;
+    try {
+      const res = await fetch(
+        `/.netlify/functions/meeting-lookup?email=${encodeURIComponent(email)}`,
+        { headers: { Accept: 'application/json' } }
+      );
+      if (!res.ok) continue;
+      data = (await res.json()) as LookupResponse;
+    } catch {
+      continue;
+    }
+
+    if (!data?.found) continue;
+
+    // Merge: URL params win for every field they already have a value
+    // for. Lookup only supplies what's missing.
+    const start =
+      (urlMeeting?.start) ||
+      (data.startIso ? parseDate(data.startIso) : null);
+    if (!start) continue;
+
+    const end =
+      urlMeeting?.end ||
+      (data.endIso ? parseDate(data.endIso) : null) ||
+      new Date(start.getTime() + 30 * 60 * 1000);
+
+    const merged: MeetingInfo = {
+      start,
+      end,
+      title: urlMeeting?.title || data.title || 'Amazon Strategy Call with Passion Product',
+      joinUrl: urlMeeting?.joinUrl || data.joinUrl || '',
+      organizer: urlMeeting?.organizer || data.ownerName || 'Passion Product Team',
+      firstName: urlMeeting?.firstName || '',
+      lastName: urlMeeting?.lastName || '',
+      email: urlMeeting?.email || email,
+    };
+    return merged;
+  }
+  return null;
+}
+
 /* localStorage data persisted by the booking-relay page before HubSpot */
 interface BookingRelayData {
   firstname?: string;
@@ -564,11 +635,22 @@ export function TrainingNewCloser() {
   const [p, setP] = useState<Personalization | null>(null);
 
   useEffect(() => {
-    const m = parseMeetingInfo() || getMeetingFromStorage();
-    setMeeting(m);
+    const urlMeeting = parseMeetingInfo();
+    setMeeting(urlMeeting);
+
     const personalization = getPersonalization();
     setP(personalization);
-    setFirstName(personalization.firstName || m?.firstName || getFirstName());
+    setFirstName(personalization.firstName || urlMeeting?.firstName || getFirstName());
+
+    // Fill in ANY missing fields (start time, Zoom URL, owner) from
+    // HubSpot via the meeting-lookup Netlify function. URL params are
+    // the source of truth; we only call the API for what's missing.
+    const email = urlMeeting?.email || personalization.email || getEmailFromUrl();
+    if (email) {
+      hydrateFromHubSpot(email, urlMeeting).then((hydrated) => {
+        if (hydrated) setMeeting(hydrated);
+      });
+    }
 
     // PostHog: identify + track
     if (personalization.email) {
@@ -590,7 +672,7 @@ export function TrainingNewCloser() {
       reason: personalization.reason,
       situation: personalization.situation,
       capital: personalization.capital,
-      has_meeting: !!m,
+      has_meeting: !!urlMeeting,
     });
   }, []);
 
