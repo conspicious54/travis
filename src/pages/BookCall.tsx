@@ -63,13 +63,6 @@ export function BookCall() {
     persistTypeformAnswers();
     trackBookingPageViewed('setter');
 
-    // Wipe any stale meeting data from a previous booking
-    try {
-      localStorage.removeItem(MEETING_KEY);
-    } catch {
-      /* no-op */
-    }
-
     const params = new URLSearchParams(window.location.search);
     const email = params.get('email');
     if (email) {
@@ -101,17 +94,39 @@ export function BookCall() {
 
         trackBookingCompleted('setter');
 
-        try {
-          localStorage.setItem(MEETING_KEY, JSON.stringify({
-            ...payload,
-            _captured_at: new Date().toISOString(),
-          }));
-        } catch {
-          /* no-op */
-        }
+        const event =
+          payload?.bookingResponse?.postResponse?.event ||
+          payload?.bookingResponse?.event ||
+          payload?.event ||
+          {};
+        const contact =
+          payload?.bookingResponse?.postResponse?.contact ||
+          payload?.bookingResponse?.contact ||
+          payload?.contact ||
+          {};
+
+        const start = event.dateString || event.start || event.startTime;
+        const duration = event.duration || 30 * 60 * 1000;
+        const end = start ? new Date(new Date(start).getTime() + Number(duration)).toISOString() : '';
+
+        const redirectParams = new URLSearchParams();
+        if (start) redirectParams.set('start', start);
+        if (end) redirectParams.set('end', end);
+        if (event.title) redirectParams.set('title', event.title);
+        const joinUrl = event.videoConferenceUrl || event.location || '';
+        if (joinUrl) redirectParams.set('join', joinUrl);
+        if (contact.firstName) redirectParams.set('firstname', contact.firstName);
+        if (contact.lastName) redirectParams.set('lastname', contact.lastName);
+        if (contact.email) redirectParams.set('email', contact.email);
+        const owner = event.owner?.fullName || event.ownerName;
+        if (owner) redirectParams.set('organizer', owner);
+
+        const target = redirectParams.toString()
+          ? `${REDIRECT_TO}?${redirectParams.toString()}`
+          : REDIRECT_TO;
 
         setTimeout(() => {
-          window.location.href = REDIRECT_TO;
+          window.location.href = target;
         }, 800);
       }
     };

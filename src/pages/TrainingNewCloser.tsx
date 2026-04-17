@@ -66,12 +66,28 @@ function parseDate(val: string | null): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-// URL-param based meeting parsing is DISABLED alongside getMeetingFromStorage.
-// We do not trust any source of meeting time until we've verified HubSpot's
-// actual postMessage payload shape. See getMeetingFromStorage for the full
-// note. Always returns null.
+/* Meeting info comes from URL params set by /book AFTER HubSpot's
+   postMessage fires. That redirect is our only trusted source of truth. */
 function parseMeetingInfo(): MeetingInfo | null {
-  return null;
+  if (typeof window === 'undefined') return null;
+  const p = new URLSearchParams(window.location.search);
+
+  const start = parseDate(p.get('start'));
+  if (!start) return null;
+
+  const end = parseDate(p.get('end')) || new Date(start.getTime() + 30 * 60 * 1000);
+  if (!end) return null;
+
+  return {
+    start,
+    end,
+    title: p.get('title') || 'Amazon Strategy Call with Passion Product',
+    joinUrl: p.get('join') || '',
+    organizer: p.get('organizer') || 'Passion Product Team',
+    firstName: p.get('firstname') || p.get('first_name') || p.get('firstName') || '',
+    lastName: p.get('lastname') || p.get('last_name') || p.get('lastName') || '',
+    email: p.get('email') || '',
+  };
 }
 
 /* localStorage data persisted by the booking-relay page before HubSpot */

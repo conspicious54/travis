@@ -73,14 +73,6 @@ export function Book() {
     persistTypeformAnswers();
     trackBookingPageViewed('closer');
 
-    // Wipe any previous booking's meeting data so the confirmation
-    // page can never accidentally show an old meeting's time.
-    try {
-      localStorage.removeItem(MEETING_KEY);
-    } catch {
-      /* no-op */
-    }
-
     // Identify user if we have their email
     const params = new URLSearchParams(window.location.search);
     const email = params.get('email');
@@ -111,26 +103,50 @@ export function Book() {
       if (data.meetingBookSucceeded || data.eventName === 'meetingBookSucceeded') {
         const payload = data.meetingsPayload || data.payload || data;
 
-        // Log the raw shape so we can verify what HubSpot actually sends.
-        // This is safe to leave in production — helps debug without PII
-        // showing in UI. Open DevTools on /book to inspect.
         // eslint-disable-next-line no-console
         console.log('[HubSpot meetingBookSucceeded payload]', payload);
 
         trackBookingCompleted('closer');
 
-        try {
-          localStorage.setItem(MEETING_KEY, JSON.stringify({
-            ...payload,
-            _captured_at: new Date().toISOString(),
-          }));
-        } catch {
-          /* no-op */
-        }
+        // Extract what we need from the payload. HubSpot's documented shape
+        // nests the event under bookingResponse.postResponse.event, but older
+        // versions put it at bookingResponse.event — try both.
+        const event =
+          payload?.bookingResponse?.postResponse?.event ||
+          payload?.bookingResponse?.event ||
+          payload?.event ||
+          {};
+        const contact =
+          payload?.bookingResponse?.postResponse?.contact ||
+          payload?.bookingResponse?.contact ||
+          payload?.contact ||
+          {};
 
-        // Small delay so the user briefly sees HubSpot's success state
+        // dateString is the ISO start time (e.g. "2026-04-22T17:00:00-07:00").
+        // duration is in milliseconds.
+        const start = event.dateString || event.start || event.startTime;
+        const duration = event.duration || 30 * 60 * 1000;
+        const end = start ? new Date(new Date(start).getTime() + Number(duration)).toISOString() : '';
+
+        // Build the redirect URL with verified meeting data as params
+        const redirectParams = new URLSearchParams();
+        if (start) redirectParams.set('start', start);
+        if (end) redirectParams.set('end', end);
+        if (event.title) redirectParams.set('title', event.title);
+        const joinUrl = event.videoConferenceUrl || event.location || '';
+        if (joinUrl) redirectParams.set('join', joinUrl);
+        if (contact.firstName) redirectParams.set('firstname', contact.firstName);
+        if (contact.lastName) redirectParams.set('lastname', contact.lastName);
+        if (contact.email) redirectParams.set('email', contact.email);
+        const owner = event.owner?.fullName || event.ownerName;
+        if (owner) redirectParams.set('organizer', owner);
+
+        const target = redirectParams.toString()
+          ? `${REDIRECT_TO}?${redirectParams.toString()}`
+          : REDIRECT_TO;
+
         setTimeout(() => {
-          window.location.href = REDIRECT_TO;
+          window.location.href = target;
         }, 800);
       }
     };
