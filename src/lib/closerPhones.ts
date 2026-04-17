@@ -33,14 +33,14 @@ const CLOSER_PHONES: Record<string, CloserPhoneMap> = {
   },
   'sharlee fuentes': {
     us:   { display: '(478) 800-7090',   raw: '+14788007090',  label: 'Sharlee — US' },
-    // No UK or AU line listed for Sharlee — will fall back to region default
+    // Sharlee has no UK or AU line yet — default to Jesse for those regions
+    eu:   { display: '+44 7463 587844',  raw: '+447463587844', label: 'Jesse — UK' },
+    aunz: { display: '+61 468 080 264',  raw: '+61468080264',  label: 'Jesse — AU' },
   },
-  // Jesse Saunders: his Kixie lines show "2 Numbers" as a placeholder
-  // without specifics in the export. Add specific numbers here when known.
   'jesse saunders': {
-    // us: { ... },
-    // eu: { ... },
-    // aunz: { ... },
+    us:   { display: '(661) 560-4412',   raw: '+16615604412',  label: 'Jesse — US' },
+    eu:   { display: '+44 7463 587844',  raw: '+447463587844', label: 'Jesse — UK' },
+    aunz: { display: '+61 468 080 264',  raw: '+61468080264',  label: 'Jesse — AU' },
   },
 };
 
