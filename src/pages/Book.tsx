@@ -159,12 +159,47 @@ export function Book() {
         // Meeting owner is organizer.name per HubSpot's documented shape
         const ownerName = (organizer.name as string | undefined) || '';
 
+        // ───── Look for the Zoom / video URL aggressively ───────────
+        // Per HubSpot forums the meeting location is supposed to be
+        // server-side only, but we'll scan the postMessage payload
+        // thoroughly just in case it IS there under a field we don't
+        // know about. Log everything so we can diagnose on real bookings.
+        const allStrings: Array<{ path: string; value: string }> = [];
+        const walkStrings = (obj: unknown, path: string) => {
+          if (obj === null || obj === undefined) return;
+          if (typeof obj === 'string') {
+            allStrings.push({ path, value: obj });
+            return;
+          }
+          if (typeof obj === 'object') {
+            for (const k of Object.keys(obj as Record<string, unknown>)) {
+              walkStrings((obj as Record<string, unknown>)[k], path ? `${path}.${k}` : k);
+            }
+          }
+        };
+        walkStrings(payload, '');
+
+        const VIDEO_HOSTS = /(zoom\.us|meet\.google\.com|teams\.(microsoft|live)\.com|gotomeeting\.com|gotomeet\.me|webex\.com|whereby\.com|meet\.jit\.si|hubspot\.com\/meetings)/i;
+        const joinUrlCandidates = allStrings.filter(s => VIDEO_HOSTS.test(s.value));
+        const locationFields = allStrings.filter(s => /location/i.test(s.path));
+
+        // eslint-disable-next-line no-console
+        console.log('[HubSpot join URL candidates]', joinUrlCandidates);
+        // eslint-disable-next-line no-console
+        console.log('[HubSpot location-ish fields]', locationFields);
+
+        let joinUrl = joinUrlCandidates[0]?.value || '';
+        if (joinUrl && !/^https?:\/\//i.test(joinUrl)) {
+          joinUrl = `https://${joinUrl}`;
+        }
+
         // Build the redirect URL. If we don't have a real start timestamp,
         // DON'T pass start/end — confirmation page shows generic fallback.
         const redirectParams = new URLSearchParams();
         if (startIso) redirectParams.set('start', startIso);
         if (endIso) redirectParams.set('end', endIso);
         if (eventData.title) redirectParams.set('title', eventData.title as string);
+        if (joinUrl) redirectParams.set('join', joinUrl);
         if (contact.firstName) redirectParams.set('firstname', contact.firstName);
         if (contact.email) redirectParams.set('email', contact.email);
         if (ownerName) redirectParams.set('owner', ownerName);
