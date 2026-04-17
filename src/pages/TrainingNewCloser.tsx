@@ -77,7 +77,11 @@ function parseMeetingInfo(): MeetingInfo | null {
   const p = new URLSearchParams(window.location.search);
 
   const rawStart = p.get('start');
-  if (!rawStart || !isFullTimestamp(rawStart)) return null;
+  if (!rawStart || !isFullTimestamp(rawStart)) {
+    // eslint-disable-next-line no-console
+    console.log('[confirmation] Rejected meeting time. start param =', rawStart, '— not a full timestamp. Showing generic fallback.');
+    return null;
+  }
 
   const start = parseDate(rawStart);
   if (!start) return null;

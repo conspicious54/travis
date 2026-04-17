@@ -103,14 +103,14 @@ export function Book() {
       if (data.meetingBookSucceeded || data.eventName === 'meetingBookSucceeded') {
         const payload = data.meetingsPayload || data.payload || data;
 
+        // Deep log so we can see every field HubSpot actually sends.
         // eslint-disable-next-line no-console
         console.log('[HubSpot meetingBookSucceeded payload]', payload);
+        // eslint-disable-next-line no-console
+        console.log('[HubSpot payload JSON]', JSON.stringify(payload, null, 2));
 
         trackBookingCompleted('closer');
 
-        // Extract what we need from the payload. HubSpot's documented shape
-        // nests the event under bookingResponse.postResponse.event, but older
-        // versions put it at bookingResponse.event — try both.
         const event =
           payload?.bookingResponse?.postResponse?.event ||
           payload?.bookingResponse?.event ||
@@ -122,41 +122,49 @@ export function Book() {
           payload?.contact ||
           {};
 
-        // Gather every candidate field HubSpot might use for the start
-        // time, and pick only one that's a real full timestamp (ISO with
-        // time, or epoch ms number). Skip date-only strings like
-        // "2026-04-23" which default to midnight UTC and produce wrong
-        // local times.
-        const startCandidates = [
-          event.startTime,
-          event.start,
-          event.dateString,
-          event.startDate,
-          payload?.bookingResponse?.startTime,
-        ];
-
-        const isFullTimestamp = (v: unknown): v is string | number => {
-          if (typeof v === 'number' && v > 1e10) return true; // epoch seconds or ms
-          if (typeof v !== 'string') return false;
-          // Needs a "T" (ISO) AND either a ":" for time or "Z"/timezone offset
-          if (v.includes('T') && (v.includes(':') || /[Z+-]\d{2}/.test(v))) return true;
-          return false;
+        // Walk the payload and find every value that looks like a full
+        // timestamp. This catches HubSpot fields whose names we may not
+        // know yet.
+        const foundTimestamps: Array<{ path: string; value: string | number; ms: number }> = [];
+        const walk = (obj: unknown, path: string) => {
+          if (obj === null || obj === undefined) return;
+          if (typeof obj === 'number' && obj > 1e12 && obj < 4e12) {
+            foundTimestamps.push({ path, value: obj, ms: obj });
+            return;
+          }
+          if (typeof obj === 'string') {
+            // Must have T and a time component — reject bare dates
+            if (obj.includes('T') && (obj.includes(':') || /[Z+-]\d{2}/.test(obj))) {
+              const d = new Date(obj);
+              if (!isNaN(d.getTime()) && d.getTime() > 1e12) {
+                foundTimestamps.push({ path, value: obj, ms: d.getTime() });
+              }
+            }
+            return;
+          }
+          if (typeof obj === 'object') {
+            for (const k of Object.keys(obj as Record<string, unknown>)) {
+              walk((obj as Record<string, unknown>)[k], path ? `${path}.${k}` : k);
+            }
+          }
         };
+        walk(payload, '');
+
+        // eslint-disable-next-line no-console
+        console.log('[HubSpot timestamps found]', foundTimestamps);
+
+        // Pick the earliest future timestamp — that's almost certainly
+        // the meeting start. End is either duration later, or the next
+        // timestamp if it's close enough.
+        const now = Date.now();
+        const futureStamps = foundTimestamps.filter(t => t.ms > now - 60 * 60 * 1000);
+        futureStamps.sort((a, b) => a.ms - b.ms);
 
         let startMs: number | null = null;
         let startIso = '';
-        for (const cand of startCandidates) {
-          if (!isFullTimestamp(cand)) continue;
-          const d = new Date(
-            typeof cand === 'number'
-              ? (cand < 1e12 ? cand * 1000 : cand)
-              : cand
-          );
-          if (!isNaN(d.getTime())) {
-            startMs = d.getTime();
-            startIso = d.toISOString();
-            break;
-          }
+        if (futureStamps.length > 0) {
+          startMs = futureStamps[0].ms;
+          startIso = new Date(startMs).toISOString();
         }
 
         const duration = Number(event.duration) || 30 * 60 * 1000;

@@ -105,35 +105,46 @@ export function BookCall() {
           payload?.contact ||
           {};
 
-        const startCandidates = [
-          event.startTime,
-          event.start,
-          event.dateString,
-          event.startDate,
-          payload?.bookingResponse?.startTime,
-        ];
+        // eslint-disable-next-line no-console
+        console.log('[HubSpot payload JSON]', JSON.stringify(payload, null, 2));
 
-        const isFullTimestamp = (v: unknown): v is string | number => {
-          if (typeof v === 'number' && v > 1e10) return true;
-          if (typeof v !== 'string') return false;
-          if (v.includes('T') && (v.includes(':') || /[Z+-]\d{2}/.test(v))) return true;
-          return false;
+        // Walk the payload and find every value that looks like a full timestamp
+        const foundTimestamps: Array<{ path: string; value: string | number; ms: number }> = [];
+        const walk = (obj: unknown, path: string) => {
+          if (obj === null || obj === undefined) return;
+          if (typeof obj === 'number' && obj > 1e12 && obj < 4e12) {
+            foundTimestamps.push({ path, value: obj, ms: obj });
+            return;
+          }
+          if (typeof obj === 'string') {
+            if (obj.includes('T') && (obj.includes(':') || /[Z+-]\d{2}/.test(obj))) {
+              const d = new Date(obj);
+              if (!isNaN(d.getTime()) && d.getTime() > 1e12) {
+                foundTimestamps.push({ path, value: obj, ms: d.getTime() });
+              }
+            }
+            return;
+          }
+          if (typeof obj === 'object') {
+            for (const k of Object.keys(obj as Record<string, unknown>)) {
+              walk((obj as Record<string, unknown>)[k], path ? `${path}.${k}` : k);
+            }
+          }
         };
+        walk(payload, '');
+
+        // eslint-disable-next-line no-console
+        console.log('[HubSpot timestamps found]', foundTimestamps);
+
+        const now = Date.now();
+        const futureStamps = foundTimestamps.filter(t => t.ms > now - 60 * 60 * 1000);
+        futureStamps.sort((a, b) => a.ms - b.ms);
 
         let startMs: number | null = null;
         let startIso = '';
-        for (const cand of startCandidates) {
-          if (!isFullTimestamp(cand)) continue;
-          const d = new Date(
-            typeof cand === 'number'
-              ? (cand < 1e12 ? cand * 1000 : cand)
-              : cand
-          );
-          if (!isNaN(d.getTime())) {
-            startMs = d.getTime();
-            startIso = d.toISOString();
-            break;
-          }
+        if (futureStamps.length > 0) {
+          startMs = futureStamps[0].ms;
+          startIso = new Date(startMs).toISOString();
         }
 
         const duration = Number(event.duration) || 30 * 60 * 1000;
