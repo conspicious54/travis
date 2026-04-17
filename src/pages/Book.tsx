@@ -110,160 +110,61 @@ export function Book() {
 
         trackBookingCompleted('closer');
 
-        /* ───── HubSpot payload field paths (per community + testing) ─
-         * Authoritative timestamps (epoch ms): bookedMeeting.startTimeUtc
-         *                                      bookedMeeting.endTimeUtc
-         * Unreliable (date-only in some cases): bookingResponse.event.dateString
-         * Join URL: bookedMeeting.location or bookingResponse.postResponse.event.videoConferenceUrl
-         * Contact: bookingResponse.postResponse.contact.{firstName, lastName, email}
+        /* ───── Documented HubSpot meetingsPayload shape ─────────────
+         *   meetingsPayload.bookingResponse.event.dateString    (meeting start, ISO w/ time)
+         *   meetingsPayload.bookingResponse.event.duration      (ms)
+         *   meetingsPayload.bookingResponse.postResponse.organizer.name
+         *   meetingsPayload.bookingResponse.postResponse.contact.{firstName, email}
+         *
+         * The Zoom / video URL is the HubSpot meeting's "location"
+         * property. HubSpot does not include it in the postMessage
+         * payload — it's only on the server side (CRM engagement
+         * record). So we can't get it via iframe. Workaround: the same
+         * user will receive HubSpot's calendar invite email which has
+         * the Zoom link in it. We link them to "check email" for that.
          */
-        const bookedMeeting = payload?.bookedMeeting || {};
-        const event =
-          payload?.bookingResponse?.postResponse?.event ||
-          payload?.bookingResponse?.event ||
-          payload?.event ||
-          {};
-        const contact =
-          payload?.bookingResponse?.postResponse?.contact ||
-          payload?.bookingResponse?.contact ||
-          payload?.contact ||
-          {};
+        const bookingResponse = payload?.bookingResponse || {};
+        const eventData = bookingResponse.event || {};
+        const postResponse = bookingResponse.postResponse || {};
+        const organizer = postResponse.organizer || bookingResponse.organizer || {};
+        const contact = postResponse.contact || bookingResponse.contact || {};
 
-        // Prefer the documented bookedMeeting.startTimeUtc / endTimeUtc
-        // (epoch ms), then fall back to scanning the whole payload for
-        // any full-timestamp field we can find.
-        const toMs = (v: unknown): number | null => {
-          if (typeof v === 'number' && v > 1e12 && v < 4e12) return v;
-          if (typeof v === 'string' && v.includes('T') && (v.includes(':') || /[Z+-]\d{2}/.test(v))) {
-            const d = new Date(v);
-            if (!isNaN(d.getTime()) && d.getTime() > 1e12) return d.getTime();
+        // dateString is an ISO timestamp like "2026-04-23T19:00:00.000Z"
+        // OR just a bare "2026-04-23" in some versions. Only trust it
+        // if it has a time component.
+        const hasTime = (v: unknown): v is string =>
+          typeof v === 'string' && v.includes('T') && (v.includes(':') || /[Z+-]\d{2}/.test(v));
+
+        let startMs: number | null = null;
+        let startIso = '';
+        if (hasTime(eventData.dateString)) {
+          const d = new Date(eventData.dateString);
+          if (!isNaN(d.getTime())) {
+            startMs = d.getTime();
+            startIso = d.toISOString();
           }
-          return null;
-        };
-
-        let startMs: number | null =
-          toMs(bookedMeeting.startTimeUtc) ||
-          toMs(bookedMeeting.startTime) ||
-          toMs(event.startTime) ||
-          toMs(event.start) ||
-          null;
-        let endMs: number | null =
-          toMs(bookedMeeting.endTimeUtc) ||
-          toMs(bookedMeeting.endTime) ||
-          toMs(event.endTime) ||
-          toMs(event.end) ||
-          null;
-
-        // Deep-walk fallback only if the documented paths didn't work
-        if (startMs === null) {
-          const found: Array<{ path: string; ms: number }> = [];
-          const walk = (obj: unknown, path: string) => {
-            if (obj === null || obj === undefined) return;
-            const ms = toMs(obj);
-            if (ms !== null) {
-              found.push({ path, ms });
-              return;
-            }
-            if (typeof obj === 'object') {
-              for (const k of Object.keys(obj as Record<string, unknown>)) {
-                walk((obj as Record<string, unknown>)[k], path ? `${path}.${k}` : k);
-              }
-            }
-          };
-          walk(payload, '');
-          // eslint-disable-next-line no-console
-          console.log('[HubSpot fallback timestamps]', found);
-          const now = Date.now();
-          const future = found.filter(t => t.ms > now - 60 * 60 * 1000).sort((a, b) => a.ms - b.ms);
-          if (future.length > 0) startMs = future[0].ms;
+        } else if (typeof eventData.dateString === 'number') {
+          // Some versions use epoch ms
+          const d = new Date(eventData.dateString);
+          if (!isNaN(d.getTime())) {
+            startMs = d.getTime();
+            startIso = d.toISOString();
+          }
         }
 
-        const duration = Number(event.duration) || 30 * 60 * 1000;
-        if (endMs === null && startMs !== null) endMs = startMs + duration;
-
-        const startIso = startMs !== null ? new Date(startMs).toISOString() : '';
+        const duration = Number(eventData.duration) || 30 * 60 * 1000;
+        const endMs = startMs !== null ? startMs + duration : null;
         const endIso = endMs !== null ? new Date(endMs).toISOString() : '';
 
-        // ───── Deep-walk for join URL and owner ─────────────────────
-        // HubSpot field names vary. Find both by pattern-matching values
-        // anywhere in the payload.
-        type Found = { path: string; value: string };
-        const allStrings: Found[] = [];
-        const walkStrings = (obj: unknown, path: string) => {
-          if (obj === null || obj === undefined) return;
-          if (typeof obj === 'string') {
-            allStrings.push({ path, value: obj });
-            return;
-          }
-          if (typeof obj === 'object') {
-            for (const k of Object.keys(obj as Record<string, unknown>)) {
-              walkStrings((obj as Record<string, unknown>)[k], path ? `${path}.${k}` : k);
-            }
-          }
-        };
-        walkStrings(payload, '');
-
-        // Log EVERY URL-ish string in the payload so we can see exactly
-        // where HubSpot stores the zoom link, regardless of field name.
-        const urlLikeStrings = allStrings.filter(s =>
-          /^https?:\/\//i.test(s.value) ||
-          /zoom\.us|meet\.google|teams\.(microsoft|live)|gotomeet|webex|whereby|jit\.si/i.test(s.value)
-        );
-        // eslint-disable-next-line no-console
-        console.log('[HubSpot all URL-like strings]', urlLikeStrings);
-
-        // Also log everything at a path containing "location"
-        const locationFields = allStrings.filter(s => /location/i.test(s.path));
-        // eslint-disable-next-line no-console
-        console.log('[HubSpot location-ish fields]', locationFields);
-
-        // Find video conferencing URL — match by host domain (don't
-        // require full https:// prefix, some payloads strip it)
-        const VIDEO_HOSTS = /(zoom\.us|meet\.google\.com|teams\.(microsoft|live)\.com|gotomeeting\.com|gotomeet\.me|webex\.com|whereby\.com|meet\.jit\.si|hubspot\.com\/meetings)/i;
-        const joinUrlMatches = allStrings.filter(s => VIDEO_HOSTS.test(s.value));
-        // eslint-disable-next-line no-console
-        console.log('[HubSpot join URL candidates]', joinUrlMatches);
-
-        // Fallback to documented fields if no pattern match
-        let joinUrl =
-          joinUrlMatches[0]?.value ||
-          bookedMeeting.location ||
-          bookedMeeting.conferenceUrl ||
-          event.videoConferenceUrl ||
-          event.conferenceUrl ||
-          event.location ||
-          '';
-
-        // Normalize — if we got something like "zoom.us/j/12345" without
-        // a protocol, prepend https://
-        if (joinUrl && !/^https?:\/\//i.test(joinUrl) && VIDEO_HOSTS.test(joinUrl)) {
-          joinUrl = `https://${joinUrl}`;
-        }
-
-        // Find meeting owner. Any string at a path containing owner / host
-        // / organizer / assignee. Prefer the one that looks like a name
-        // (contains a space) rather than an email or ID.
-        const OWNER_PATH = /\b(owner|organizer|host|assignee|assignedTo|hostName|ownerName)/i;
-        const ownerCandidates = allStrings.filter(s => OWNER_PATH.test(s.path));
-        // eslint-disable-next-line no-console
-        console.log('[HubSpot owner candidates]', ownerCandidates);
-
-        const isLikelyName = (v: string) =>
-          !v.includes('@') && !/^\d+$/.test(v) && !/^https?:\/\//i.test(v);
-        const ownerName =
-          ownerCandidates.find(c => isLikelyName(c.value) && c.value.trim().includes(' '))?.value ||
-          ownerCandidates.find(c => isLikelyName(c.value))?.value ||
-          (event.owner?.fullName as string | undefined) ||
-          (event.ownerName as string | undefined) ||
-          '';
+        // Meeting owner is organizer.name per HubSpot's documented shape
+        const ownerName = (organizer.name as string | undefined) || '';
 
         // Build the redirect URL. If we don't have a real start timestamp,
         // DON'T pass start/end — confirmation page shows generic fallback.
         const redirectParams = new URLSearchParams();
         if (startIso) redirectParams.set('start', startIso);
         if (endIso) redirectParams.set('end', endIso);
-        if (event.title) redirectParams.set('title', event.title);
-        if (joinUrl) redirectParams.set('join', joinUrl);
+        if (eventData.title) redirectParams.set('title', eventData.title as string);
         if (contact.firstName) redirectParams.set('firstname', contact.firstName);
         if (contact.email) redirectParams.set('email', contact.email);
         if (ownerName) redirectParams.set('owner', ownerName);
