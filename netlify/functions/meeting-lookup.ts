@@ -1,73 +1,71 @@
 import type { Handler, HandlerEvent } from '@netlify/functions';
 
 /* ───── /.netlify/functions/meeting-lookup ────────────────────────
-   Given a contact email, look up the most recent Appointment in
-   HubSpot (via Private App token) and return the booking details.
+   Given a contact email, look up their most recent Appointment (or
+   Meeting) in HubSpot via the Private App token and return booking
+   details including the Zoom / video URL.
 
    URL:  /.netlify/functions/meeting-lookup?email=someone@example.com
-   Requires env var: HUBSPOT_TOKEN (the Private App access token)
+         /.netlify/functions/meeting-lookup?email=X&debug=1   (verbose)
 
-   The confirmation page uses this ONLY for fields that didn't come
-   through the URL query params — primarily the Zoom join URL and
-   the confirmed start/end times.
+   Requires env var HUBSPOT_TOKEN (the Private App access token).
+
+   When anything goes wrong we still return HTTP 200 with
+   { found: false, reason, detail } so the client-side hydration
+   just falls back to URL params silently.
 ──────────────────────────────────────────────────────────────────── */
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
+  'Content-Type': 'application/json',
 };
+
+type DebugEntry = { step: string; url?: string; status?: number; body?: unknown };
 
 export const handler: Handler = async (event: HandlerEvent) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: CORS, body: '' };
   }
   if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, headers: CORS, body: 'Method not allowed' };
+    return json(405, { error: 'Method not allowed' });
   }
 
   const email = (event.queryStringParameters?.email || '').trim().toLowerCase();
+  const debug = event.queryStringParameters?.debug === '1';
+  const trace: DebugEntry[] = [];
+
   if (!email || !email.includes('@')) {
-    return {
-      statusCode: 400,
-      headers: CORS,
-      body: JSON.stringify({ error: 'email query param required' }),
-    };
+    return json(200, { found: false, reason: 'email_missing' });
   }
 
   const token = process.env.HUBSPOT_TOKEN;
   if (!token) {
-    return {
-      statusCode: 500,
-      headers: CORS,
-      body: JSON.stringify({ error: 'HUBSPOT_TOKEN env var not set' }),
-    };
+    return json(200, { found: false, reason: 'token_not_set' });
   }
 
   try {
     // 1. Find the contact by email
-    const contactId = await findContactId(email, token);
+    const contactId = await findContactId(email, token, trace);
     if (!contactId) {
-      return ok({ found: false, reason: 'contact_not_found' });
+      return json(200, { found: false, reason: 'contact_not_found', email, ...(debug ? { trace } : {}) });
     }
 
-    // 2. Find the most recent appointment associated with that contact
-    const appointment = await findLatestAppointmentForContact(contactId, token);
-    if (!appointment) {
-      return ok({ found: false, reason: 'no_appointment_found', contactId });
+    // 2. Find the most recent appointment/meeting for that contact
+    const found = await findLatestAppointmentForContact(contactId, token, trace);
+    if (!found) {
+      return json(200, { found: false, reason: 'no_meeting_found', contactId, ...(debug ? { trace } : {}) });
     }
 
-    // 3. Fetch the owner name if we have an owner id
+    // 3. Fetch the owner name
     let ownerName: string | undefined;
-    const ownerId = appointment.properties?.hubspot_owner_id as string | undefined;
+    const ownerId = found.properties?.hubspot_owner_id as string | undefined;
     if (ownerId) {
-      ownerName = await getOwnerName(ownerId, token).catch(() => undefined);
+      ownerName = await getOwnerName(ownerId, token, trace).catch(() => undefined);
     }
 
-    // Map the messy HubSpot property names to clean names. Appointment
-    // objects may use hs_appointment_* or hs_meeting_* depending on the
-    // portal config, so we look for both.
-    const p = appointment.properties || {};
+    const p = found.properties || {};
     const pick = (...keys: string[]): string | undefined => {
       for (const k of keys) {
         const v = p[k];
@@ -76,12 +74,13 @@ export const handler: Handler = async (event: HandlerEvent) => {
       return undefined;
     };
 
-    const result = {
+    return json(200, {
       found: true,
-      appointmentId: appointment.id,
+      source: found.source,
+      appointmentId: found.id,
       contactId,
-      startIso: pick('hs_appointment_start', 'hs_meeting_start_time'),
-      endIso: pick('hs_appointment_end', 'hs_meeting_end_time'),
+      startIso: toIso(pick('hs_appointment_start', 'hs_meeting_start_time')),
+      endIso: toIso(pick('hs_appointment_end', 'hs_meeting_end_time')),
       title: pick('hs_appointment_name', 'hs_meeting_title'),
       joinUrl: pick(
         'hs_appointment_location',
@@ -91,105 +90,166 @@ export const handler: Handler = async (event: HandlerEvent) => {
       ),
       ownerId,
       ownerName,
-      // For debugging: return every property we got so we can see what
-      // HubSpot actually sends and adjust field mappings.
-      rawProperties: p,
-    };
-
-    return ok(result);
+      ...(debug ? { rawProperties: p, trace } : {}),
+    });
   } catch (err) {
     console.error('[meeting-lookup]', err);
-    return {
-      statusCode: 500,
-      headers: { ...CORS, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'lookup failed', detail: String(err) }),
-    };
+    return json(200, {
+      found: false,
+      reason: 'exception',
+      detail: String(err instanceof Error ? err.message : err),
+      ...(debug ? { trace } : {}),
+    });
   }
 };
 
-function ok(body: unknown) {
-  return {
-    statusCode: 200,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  };
+function json(statusCode: number, body: unknown) {
+  return { statusCode, headers: CORS, body: JSON.stringify(body) };
 }
 
-async function findContactId(email: string, token: string): Promise<string | null> {
-  // GET /crm/v3/objects/contacts/{email}?idProperty=email
+function toIso(v: string | undefined): string | undefined {
+  if (!v) return undefined;
+  // HubSpot returns timestamps as epoch ms strings sometimes
+  if (/^\d{13}$/.test(v)) {
+    const d = new Date(parseInt(v, 10));
+    return isNaN(d.getTime()) ? undefined : d.toISOString();
+  }
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? undefined : d.toISOString();
+}
+
+async function hubspotFetch(
+  url: string,
+  init: RequestInit,
+  trace: DebugEntry[],
+  step: string
+): Promise<Response> {
+  const res = await fetch(url, init);
+  const entry: DebugEntry = { step, url, status: res.status };
+  if (!res.ok) {
+    try {
+      entry.body = await res.clone().json();
+    } catch {
+      entry.body = await res.clone().text();
+    }
+  }
+  trace.push(entry);
+  return res;
+}
+
+async function findContactId(
+  email: string,
+  token: string,
+  trace: DebugEntry[]
+): Promise<string | null> {
   const url = `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await hubspotFetch(
+    url,
+    { headers: { Authorization: `Bearer ${token}` } },
+    trace,
+    'find_contact'
+  );
   if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`contact lookup failed: ${res.status}`);
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`contact lookup ${res.status}: ${errBody}`);
+  }
   const data = await res.json();
   return data.id || null;
 }
 
+/** Try the Appointments object first (newer), then fall back to
+    Meetings engagements. Uses v4 associations endpoint for robustness. */
 async function findLatestAppointmentForContact(
   contactId: string,
-  token: string
-): Promise<{ id: string; properties: Record<string, unknown> } | null> {
-  // Use the search endpoint to find appointments associated with this
-  // contact, sorted by createdate desc, limit 1.
-  const body = {
-    filterGroups: [
+  token: string,
+  trace: DebugEntry[]
+): Promise<{ id: string; properties: Record<string, unknown>; source: string } | null> {
+  // Properties to request — HubSpot ignores ones that don't exist
+  const properties = [
+    'hs_appointment_start',
+    'hs_appointment_end',
+    'hs_appointment_name',
+    'hs_appointment_location',
+    'hs_meeting_start_time',
+    'hs_meeting_end_time',
+    'hs_meeting_title',
+    'hs_meeting_location',
+    'hs_meeting_external_url',
+    'hs_videoconference_link',
+    'hubspot_owner_id',
+    'createdate',
+  ];
+
+  const tryObjectType = async (objectType: string) => {
+    // v4 associations: contact -> objectType
+    const assocUrl = `https://api.hubapi.com/crm/v4/objects/contacts/${contactId}/associations/${encodeURIComponent(objectType)}?limit=100`;
+    const assocRes = await hubspotFetch(
+      assocUrl,
+      { headers: { Authorization: `Bearer ${token}` } },
+      trace,
+      `assoc_${objectType}`
+    );
+    if (!assocRes.ok) return null;
+    const assocData = await assocRes.json();
+    const ids: string[] = (assocData?.results || [])
+      .map((r: { toObjectId?: string | number; id?: string | number }) => String(r.toObjectId ?? r.id ?? ''))
+      .filter(Boolean);
+    if (ids.length === 0) return null;
+
+    // Batch read — returns properties for all associated records
+    const batchUrl = `https://api.hubapi.com/crm/v3/objects/${encodeURIComponent(objectType)}/batch/read`;
+    const batchRes = await hubspotFetch(
+      batchUrl,
       {
-        filters: [
-          {
-            propertyName: 'associations.contact',
-            operator: 'EQ',
-            value: contactId,
-          },
-        ],
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          properties,
+          inputs: ids.map((id) => ({ id })),
+        }),
       },
-    ],
-    sorts: [{ propertyName: 'createdate', direction: 'DESCENDING' }],
-    // Request every property we might need. The API silently ignores
-    // properties that don't exist on this portal.
-    properties: [
-      'hs_appointment_start',
-      'hs_appointment_end',
-      'hs_appointment_name',
-      'hs_appointment_location',
-      'hs_meeting_start_time',
-      'hs_meeting_end_time',
-      'hs_meeting_title',
-      'hs_meeting_location',
-      'hs_meeting_external_url',
-      'hs_videoconference_link',
-      'hubspot_owner_id',
-      'createdate',
-    ],
-    limit: 1,
-  };
+      trace,
+      `batch_${objectType}`
+    );
+    if (!batchRes.ok) return null;
+    const batchData = await batchRes.json();
+    const results = (batchData?.results || []) as Array<{
+      id: string;
+      properties: Record<string, unknown>;
+      createdAt?: string;
+    }>;
+    if (results.length === 0) return null;
 
-  const tryEndpoint = async (url: string) => {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+    // Pick the most recently created
+    results.sort((a, b) => {
+      const aTs = new Date(a.createdAt || String(a.properties?.createdate || 0)).getTime();
+      const bTs = new Date(b.createdAt || String(b.properties?.createdate || 0)).getTime();
+      return bTs - aTs;
     });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json?.results?.[0] || null;
+    return { ...results[0], source: objectType };
   };
 
-  // Try appointments first (newer), fall back to meetings (legacy)
+  // Try appointments first, then meetings (legacy)
   return (
-    (await tryEndpoint('https://api.hubapi.com/crm/v3/objects/appointments/search')) ||
-    (await tryEndpoint('https://api.hubapi.com/crm/v3/objects/meetings/search'))
+    (await tryObjectType('appointments')) ||
+    (await tryObjectType('meetings'))
   );
 }
 
-async function getOwnerName(ownerId: string, token: string): Promise<string | undefined> {
-  const res = await fetch(
+async function getOwnerName(
+  ownerId: string,
+  token: string,
+  trace: DebugEntry[]
+): Promise<string | undefined> {
+  const res = await hubspotFetch(
     `https://api.hubapi.com/crm/v3/owners/${encodeURIComponent(ownerId)}`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}` } },
+    trace,
+    'get_owner'
   );
   if (!res.ok) return undefined;
   const data = await res.json();
