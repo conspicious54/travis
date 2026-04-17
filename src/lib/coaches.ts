@@ -19,7 +19,7 @@ export const COACHES: Record<string, Coach> = {
     firstName: 'Sharlee',
     fullName: 'Sharlee Fuentes',
     role: 'Lead Amazon Coach',
-    photoUrl: '', // TODO: add real photo URL
+    photoUrl: 'https://ca.slack-edge.com/T03TC8Y0CUB-U0ANQG6P1E3-e99b626cb26d-512',
     travisIntro:
       "Sharlee is one of my sharpest Amazon coaches. She's been side-by-side with hundreds of our students as they built real brands, and she's the person I trust to cut through the noise and tell you what's actually worth your time.",
     bio: "She's walked through every stage of the Passion Product method with students — from picking the right product to launching on Amazon and scaling past six figures. On your call she'll look at your situation, figure out where you are, and give you the exact next steps.",
@@ -29,7 +29,7 @@ export const COACHES: Record<string, Coach> = {
     firstName: 'Jorge',
     fullName: 'Jorge Rodriguez',
     role: 'Lead Amazon Coach',
-    photoUrl: '', // TODO: add real photo URL
+    photoUrl: 'https://ca.slack-edge.com/T03TC8Y0CUB-U0AJF7S2RA9-9f8571abcc34-512',
     travisIntro:
       "Jorge is one of my best Amazon coaches. He's the guy I'd want in my corner if I were starting over today — sharp, direct, and focused on getting you results.",
     bio: "He knows the Passion Product method inside out and has coached hundreds of students through finding their first product, nailing their branding, and hitting a successful launch. On your call he'll get straight to what's going to move the needle for you.",
@@ -73,5 +73,5 @@ export const TRAVIS = {
   fullName: 'Travis Marziani',
   role: 'Founder, Passion Product',
   photoUrl:
-    'https://passionproduct.com/wp-content/uploads/2024/10/Travis-hosting-event-1.webp',
+    'https://cdn.boldjourney.com/wp-content/uploads/2023/09/c-TravisMarziani__8_1694708666679.jpg',
 };
