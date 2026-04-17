@@ -103,7 +103,6 @@ export function Book() {
       if (data.meetingBookSucceeded || data.eventName === 'meetingBookSucceeded') {
         const payload = data.meetingsPayload || data.payload || data;
 
-        // Deep log so we can see every field HubSpot actually sends.
         // eslint-disable-next-line no-console
         console.log('[HubSpot meetingBookSucceeded payload]', payload);
         // eslint-disable-next-line no-console
@@ -111,6 +110,14 @@ export function Book() {
 
         trackBookingCompleted('closer');
 
+        /* ───── HubSpot payload field paths (per community + testing) ─
+         * Authoritative timestamps (epoch ms): bookedMeeting.startTimeUtc
+         *                                      bookedMeeting.endTimeUtc
+         * Unreliable (date-only in some cases): bookingResponse.event.dateString
+         * Join URL: bookedMeeting.location or bookingResponse.postResponse.event.videoConferenceUrl
+         * Contact: bookingResponse.postResponse.contact.{firstName, lastName, email}
+         */
+        const bookedMeeting = payload?.bookedMeeting || {};
         const event =
           payload?.bookingResponse?.postResponse?.event ||
           payload?.bookingResponse?.event ||
@@ -122,62 +129,75 @@ export function Book() {
           payload?.contact ||
           {};
 
-        // Walk the payload and find every value that looks like a full
-        // timestamp. This catches HubSpot fields whose names we may not
-        // know yet.
-        const foundTimestamps: Array<{ path: string; value: string | number; ms: number }> = [];
-        const walk = (obj: unknown, path: string) => {
-          if (obj === null || obj === undefined) return;
-          if (typeof obj === 'number' && obj > 1e12 && obj < 4e12) {
-            foundTimestamps.push({ path, value: obj, ms: obj });
-            return;
+        // Prefer the documented bookedMeeting.startTimeUtc / endTimeUtc
+        // (epoch ms), then fall back to scanning the whole payload for
+        // any full-timestamp field we can find.
+        const toMs = (v: unknown): number | null => {
+          if (typeof v === 'number' && v > 1e12 && v < 4e12) return v;
+          if (typeof v === 'string' && v.includes('T') && (v.includes(':') || /[Z+-]\d{2}/.test(v))) {
+            const d = new Date(v);
+            if (!isNaN(d.getTime()) && d.getTime() > 1e12) return d.getTime();
           }
-          if (typeof obj === 'string') {
-            // Must have T and a time component — reject bare dates
-            if (obj.includes('T') && (obj.includes(':') || /[Z+-]\d{2}/.test(obj))) {
-              const d = new Date(obj);
-              if (!isNaN(d.getTime()) && d.getTime() > 1e12) {
-                foundTimestamps.push({ path, value: obj, ms: d.getTime() });
+          return null;
+        };
+
+        let startMs: number | null =
+          toMs(bookedMeeting.startTimeUtc) ||
+          toMs(bookedMeeting.startTime) ||
+          toMs(event.startTime) ||
+          toMs(event.start) ||
+          null;
+        let endMs: number | null =
+          toMs(bookedMeeting.endTimeUtc) ||
+          toMs(bookedMeeting.endTime) ||
+          toMs(event.endTime) ||
+          toMs(event.end) ||
+          null;
+
+        // Deep-walk fallback only if the documented paths didn't work
+        if (startMs === null) {
+          const found: Array<{ path: string; ms: number }> = [];
+          const walk = (obj: unknown, path: string) => {
+            if (obj === null || obj === undefined) return;
+            const ms = toMs(obj);
+            if (ms !== null) {
+              found.push({ path, ms });
+              return;
+            }
+            if (typeof obj === 'object') {
+              for (const k of Object.keys(obj as Record<string, unknown>)) {
+                walk((obj as Record<string, unknown>)[k], path ? `${path}.${k}` : k);
               }
             }
-            return;
-          }
-          if (typeof obj === 'object') {
-            for (const k of Object.keys(obj as Record<string, unknown>)) {
-              walk((obj as Record<string, unknown>)[k], path ? `${path}.${k}` : k);
-            }
-          }
-        };
-        walk(payload, '');
-
-        // eslint-disable-next-line no-console
-        console.log('[HubSpot timestamps found]', foundTimestamps);
-
-        // Pick the earliest future timestamp — that's almost certainly
-        // the meeting start. End is either duration later, or the next
-        // timestamp if it's close enough.
-        const now = Date.now();
-        const futureStamps = foundTimestamps.filter(t => t.ms > now - 60 * 60 * 1000);
-        futureStamps.sort((a, b) => a.ms - b.ms);
-
-        let startMs: number | null = null;
-        let startIso = '';
-        if (futureStamps.length > 0) {
-          startMs = futureStamps[0].ms;
-          startIso = new Date(startMs).toISOString();
+          };
+          walk(payload, '');
+          // eslint-disable-next-line no-console
+          console.log('[HubSpot fallback timestamps]', found);
+          const now = Date.now();
+          const future = found.filter(t => t.ms > now - 60 * 60 * 1000).sort((a, b) => a.ms - b.ms);
+          if (future.length > 0) startMs = future[0].ms;
         }
 
         const duration = Number(event.duration) || 30 * 60 * 1000;
-        const end = startMs !== null ? new Date(startMs + duration).toISOString() : '';
+        if (endMs === null && startMs !== null) endMs = startMs + duration;
 
-        // Build the redirect URL with verified meeting data as params.
-        // If we don't have a real timestamp, DON'T pass start/end at all
-        // so the confirmation page falls back to the generic message.
+        const startIso = startMs !== null ? new Date(startMs).toISOString() : '';
+        const endIso = endMs !== null ? new Date(endMs).toISOString() : '';
+
+        // Join URL for the video call (closer page only — setter is phone)
+        const joinUrl =
+          bookedMeeting.location ||
+          bookedMeeting.conferenceUrl ||
+          event.videoConferenceUrl ||
+          event.conferenceUrl ||
+          '';
+
+        // Build the redirect URL. If we don't have a real start timestamp,
+        // DON'T pass start/end — confirmation page shows generic fallback.
         const redirectParams = new URLSearchParams();
         if (startIso) redirectParams.set('start', startIso);
-        if (end) redirectParams.set('end', end);
+        if (endIso) redirectParams.set('end', endIso);
         if (event.title) redirectParams.set('title', event.title);
-        const joinUrl = event.videoConferenceUrl || event.location || '';
         if (joinUrl) redirectParams.set('join', joinUrl);
         if (contact.firstName) redirectParams.set('firstname', contact.firstName);
         if (contact.lastName) redirectParams.set('lastname', contact.lastName);

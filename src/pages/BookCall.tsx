@@ -90,77 +90,24 @@ export function BookCall() {
         const payload = data.meetingsPayload || data.payload || data;
 
         // eslint-disable-next-line no-console
-        console.log('[HubSpot meetingBookSucceeded payload]', payload);
+        console.log('[HubSpot meetingBookSucceeded payload - setter]', payload);
 
         trackBookingCompleted('setter');
 
-        const event =
-          payload?.bookingResponse?.postResponse?.event ||
-          payload?.bookingResponse?.event ||
-          payload?.event ||
-          {};
+        // Setter is a PHONE CALL, not a video meeting. Only carry the
+        // contact info forward. No start time, no join URL, no calendar
+        // event. The setter page relies on phone-number contact saving,
+        // not meeting details.
         const contact =
           payload?.bookingResponse?.postResponse?.contact ||
           payload?.bookingResponse?.contact ||
           payload?.contact ||
           {};
 
-        // eslint-disable-next-line no-console
-        console.log('[HubSpot payload JSON]', JSON.stringify(payload, null, 2));
-
-        // Walk the payload and find every value that looks like a full timestamp
-        const foundTimestamps: Array<{ path: string; value: string | number; ms: number }> = [];
-        const walk = (obj: unknown, path: string) => {
-          if (obj === null || obj === undefined) return;
-          if (typeof obj === 'number' && obj > 1e12 && obj < 4e12) {
-            foundTimestamps.push({ path, value: obj, ms: obj });
-            return;
-          }
-          if (typeof obj === 'string') {
-            if (obj.includes('T') && (obj.includes(':') || /[Z+-]\d{2}/.test(obj))) {
-              const d = new Date(obj);
-              if (!isNaN(d.getTime()) && d.getTime() > 1e12) {
-                foundTimestamps.push({ path, value: obj, ms: d.getTime() });
-              }
-            }
-            return;
-          }
-          if (typeof obj === 'object') {
-            for (const k of Object.keys(obj as Record<string, unknown>)) {
-              walk((obj as Record<string, unknown>)[k], path ? `${path}.${k}` : k);
-            }
-          }
-        };
-        walk(payload, '');
-
-        // eslint-disable-next-line no-console
-        console.log('[HubSpot timestamps found]', foundTimestamps);
-
-        const now = Date.now();
-        const futureStamps = foundTimestamps.filter(t => t.ms > now - 60 * 60 * 1000);
-        futureStamps.sort((a, b) => a.ms - b.ms);
-
-        let startMs: number | null = null;
-        let startIso = '';
-        if (futureStamps.length > 0) {
-          startMs = futureStamps[0].ms;
-          startIso = new Date(startMs).toISOString();
-        }
-
-        const duration = Number(event.duration) || 30 * 60 * 1000;
-        const end = startMs !== null ? new Date(startMs + duration).toISOString() : '';
-
         const redirectParams = new URLSearchParams();
-        if (startIso) redirectParams.set('start', startIso);
-        if (end) redirectParams.set('end', end);
-        if (event.title) redirectParams.set('title', event.title);
-        const joinUrl = event.videoConferenceUrl || event.location || '';
-        if (joinUrl) redirectParams.set('join', joinUrl);
         if (contact.firstName) redirectParams.set('firstname', contact.firstName);
         if (contact.lastName) redirectParams.set('lastname', contact.lastName);
         if (contact.email) redirectParams.set('email', contact.email);
-        const owner = event.owner?.fullName || event.ownerName;
-        if (owner) redirectParams.set('organizer', owner);
 
         const target = redirectParams.toString()
           ? `${REDIRECT_TO}?${redirectParams.toString()}`
