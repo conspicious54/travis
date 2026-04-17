@@ -7,6 +7,7 @@ import {
   CreditCardQuiz,
   ConfirmationExitPopup,
   MethodCheckIn,
+  MeetYourCoach,
   NextStepsList,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle } from 'lucide-react';
@@ -727,6 +728,7 @@ export function TrainingNewCloser() {
         <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
         <TestimonialHighlights p={p} />
         <MethodCheckIn />
+        <MeetYourCoach ownerName={meeting?.organizer} />
         <LowCapitalStrategies p={p} />
         <CreditCardQuiz p={p} />
         <CloserFinalCTA meeting={meeting} firstName={firstName} />

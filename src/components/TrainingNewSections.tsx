@@ -3,6 +3,7 @@ import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, Tr
 import type { Personalization, Reason, Situation, ValuedFeature, Capital, TravisHistory, Region } from '../lib/personalization';
 import { trackTestimonialsExpanded, trackCreditQuizStarted, trackCreditQuizCompleted, trackCreditCardApplyClicked, trackEvent } from '../lib/posthog';
 import { usePrepChecklist } from '../context/PrepChecklistContext';
+import { getCoachByOwnerName, TRAVIS } from '../lib/coaches';
 
 /* ───────────────────────────── helpers ───────────────────────────── */
 
@@ -1675,6 +1676,134 @@ function ProgressRow({ done, label }: { done: boolean; label: string }) {
         {label}
       </span>
     </li>
+  );
+}
+
+/* ───────────── meet your coach section ─────────────────────────────
+   Shows the coach this visitor is booked with, alongside Travis. The
+   coach is pulled from the HubSpot meeting owner via the hydration.
+   Only renders when we have a mapped coach (skip if owner unknown).
+──────────────────────────────────────────────────────────────────── */
+
+export function MeetYourCoach({ ownerName }: { ownerName: string | null | undefined }) {
+  const coach = getCoachByOwnerName(ownerName);
+  if (!coach) return null;
+
+  return (
+    <div className="bg-gradient-to-b from-white via-orange-50/30 to-white border-t border-gray-100 py-14 md:py-20">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="text-center mb-10">
+          <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-2">
+            Your Strategy Call
+          </p>
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.05] mb-3">
+            Meet <span className="text-orange-600">{coach.firstName}</span>
+          </h2>
+          <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto">
+            One of Travis's hand-picked Amazon coaches. Here's a quick intro.
+          </p>
+        </div>
+
+        {/* Portrait pair */}
+        <div className="flex items-center justify-center gap-4 md:gap-6 mb-8">
+          <CoachPortrait
+            photoUrl={coach.photoUrl}
+            name={coach.fullName}
+            role={coach.role}
+          />
+          <div className="text-3xl md:text-4xl text-orange-400 font-black">+</div>
+          <CoachPortrait
+            photoUrl={TRAVIS.photoUrl}
+            name={TRAVIS.fullName}
+            role={TRAVIS.role}
+          />
+        </div>
+
+        {/* Travis's intro of the coach */}
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="shrink-0">
+                <PortraitCircle photoUrl={TRAVIS.photoUrl} name={TRAVIS.fullName} size="sm" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  A quick note from Travis
+                </p>
+                <p className="text-gray-800 text-base md:text-lg leading-relaxed mt-1 italic">
+                  "{coach.travisIntro}"
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <p className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-2">
+                What {coach.firstName} will do on your call
+              </p>
+              <p className="text-gray-700 text-sm md:text-base leading-relaxed">
+                {coach.bio}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CoachPortrait({
+  photoUrl,
+  name,
+  role,
+}: {
+  photoUrl: string;
+  name: string;
+  role: string;
+}) {
+  return (
+    <div className="flex flex-col items-center text-center">
+      <PortraitCircle photoUrl={photoUrl} name={name} size="lg" />
+      <p className="font-black text-gray-900 text-sm md:text-base mt-3 leading-tight">{name}</p>
+      <p className="text-xs text-orange-600 font-bold uppercase tracking-wider mt-1">{role}</p>
+    </div>
+  );
+}
+
+function PortraitCircle({
+  photoUrl,
+  name,
+  size,
+}: {
+  photoUrl: string;
+  name: string;
+  size: 'sm' | 'lg';
+}) {
+  const dim = size === 'lg' ? 'w-28 h-28 md:w-36 md:h-36' : 'w-12 h-12';
+  const textSize = size === 'lg' ? 'text-3xl md:text-4xl' : 'text-sm';
+  const initials = name
+    .split(/\s+/)
+    .map((w) => w[0]?.toUpperCase())
+    .slice(0, 2)
+    .join('');
+
+  return (
+    <div
+      className={`${dim} rounded-full overflow-hidden bg-gradient-to-br from-orange-200 to-amber-100 border-4 border-white shadow-lg flex items-center justify-center`}
+    >
+      {photoUrl ? (
+        <img
+          src={photoUrl}
+          alt={name}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            // Fall back to initials if the image 404s
+            (e.currentTarget as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      ) : (
+        <span className={`${textSize} font-black text-orange-700`}>{initials}</span>
+      )}
+    </div>
   );
 }
 
