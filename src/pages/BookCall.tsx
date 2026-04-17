@@ -63,6 +63,13 @@ export function BookCall() {
     persistTypeformAnswers();
     trackBookingPageViewed('setter');
 
+    // Wipe any stale meeting data from a previous booking
+    try {
+      localStorage.removeItem(MEETING_KEY);
+    } catch {
+      /* no-op */
+    }
+
     const params = new URLSearchParams(window.location.search);
     const email = params.get('email');
     if (email) {
@@ -87,8 +94,14 @@ export function BookCall() {
       if (!data || typeof data !== 'object') return;
 
       if (data.meetingBookSucceeded || data.eventName === 'meetingBookSucceeded') {
+        const payload = data.meetingsPayload || data.payload || data;
+
+        // eslint-disable-next-line no-console
+        console.log('[HubSpot meetingBookSucceeded payload]', payload);
+
+        trackBookingCompleted('setter');
+
         try {
-          const payload = data.meetingsPayload || data.payload || data;
           localStorage.setItem(MEETING_KEY, JSON.stringify({
             ...payload,
             _captured_at: new Date().toISOString(),
@@ -96,7 +109,7 @@ export function BookCall() {
         } catch {
           /* no-op */
         }
-        trackBookingCompleted('setter');
+
         setTimeout(() => {
           window.location.href = REDIRECT_TO;
         }, 800);

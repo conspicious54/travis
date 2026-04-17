@@ -73,6 +73,14 @@ export function Book() {
     persistTypeformAnswers();
     trackBookingPageViewed('closer');
 
+    // Wipe any previous booking's meeting data so the confirmation
+    // page can never accidentally show an old meeting's time.
+    try {
+      localStorage.removeItem(MEETING_KEY);
+    } catch {
+      /* no-op */
+    }
+
     // Identify user if we have their email
     const params = new URLSearchParams(window.location.search);
     const email = params.get('email');
@@ -101,8 +109,17 @@ export function Book() {
 
       // HubSpot fires events with meetingBookSucceeded
       if (data.meetingBookSucceeded || data.eventName === 'meetingBookSucceeded') {
+        const payload = data.meetingsPayload || data.payload || data;
+
+        // Log the raw shape so we can verify what HubSpot actually sends.
+        // This is safe to leave in production — helps debug without PII
+        // showing in UI. Open DevTools on /book to inspect.
+        // eslint-disable-next-line no-console
+        console.log('[HubSpot meetingBookSucceeded payload]', payload);
+
+        trackBookingCompleted('closer');
+
         try {
-          const payload = data.meetingsPayload || data.payload || data;
           localStorage.setItem(MEETING_KEY, JSON.stringify({
             ...payload,
             _captured_at: new Date().toISOString(),
@@ -110,7 +127,7 @@ export function Book() {
         } catch {
           /* no-op */
         }
-        trackBookingCompleted('closer');
+
         // Small delay so the user briefly sees HubSpot's success state
         setTimeout(() => {
           window.location.href = REDIRECT_TO;

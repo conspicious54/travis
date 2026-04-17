@@ -124,7 +124,11 @@ function getRelayData(): BookingRelayData {
   }
 }
 
-/* Meeting data captured from HubSpot's postMessage on /book */
+/* Meeting data captured from HubSpot's postMessage on /book.
+   Strict — only trust data that:
+     - Was captured in the last 24 hours
+     - Has a parseable start time that is in the near future
+   Otherwise return null and show the generic fallback (no guessing). */
 function getMeetingFromStorage(): MeetingInfo | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -132,22 +136,47 @@ function getMeetingFromStorage(): MeetingInfo | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
 
-    // HubSpot's payload contains nested objects — pull what we need
-    const startMs =
+    // Reject stale data (older than 24 hours). Prevents old meeting
+    // info from showing up on a fresh visit.
+    if (parsed._captured_at) {
+      const captured = new Date(parsed._captured_at);
+      const ageMs = Date.now() - captured.getTime();
+      if (isNaN(captured.getTime()) || ageMs > 24 * 60 * 60 * 1000 || ageMs < 0) {
+        localStorage.removeItem('pp_meeting_data');
+        return null;
+      }
+    } else {
+      // No timestamp means we don't know how old this is — drop it
+      localStorage.removeItem('pp_meeting_data');
+      return null;
+    }
+
+    // HubSpot's payload has a few possible shapes. Try each, in priority.
+    const startRaw =
       parsed.bookingResponse?.event?.dateString ||
       parsed.bookingResponse?.event?.start ||
       parsed.event?.start ||
       parsed.start ||
       parsed.startTime;
-    const endMs =
+    const endRaw =
       parsed.bookingResponse?.event?.end ||
       parsed.event?.end ||
       parsed.end ||
       parsed.endTime;
 
-    const start = startMs ? parseDate(typeof startMs === 'number' ? String(startMs) : startMs) : null;
+    const start = startRaw ? parseDate(typeof startRaw === 'number' ? String(startRaw) : startRaw) : null;
     if (!start) return null;
-    const end = endMs ? parseDate(typeof endMs === 'number' ? String(endMs) : endMs) : new Date(start.getTime() + 30 * 60 * 1000);
+
+    // Sanity check: meeting must be between 1 hour in the past and 90
+    // days in the future. Anything else is almost certainly bad data.
+    const nowMs = Date.now();
+    const startMs = start.getTime();
+    if (startMs < nowMs - 60 * 60 * 1000 || startMs > nowMs + 90 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem('pp_meeting_data');
+      return null;
+    }
+
+    const end = endRaw ? parseDate(typeof endRaw === 'number' ? String(endRaw) : endRaw) : new Date(start.getTime() + 30 * 60 * 1000);
     if (!end) return null;
 
     const relay = getRelayData();
@@ -170,11 +199,13 @@ function getMeetingFromStorage(): MeetingInfo | null {
       firstName:
         parsed.bookingResponse?.contact?.firstName ||
         parsed.firstName ||
+        parsed.firstname ||
         relay.firstname ||
         '',
       lastName:
         parsed.bookingResponse?.contact?.lastName ||
         parsed.lastName ||
+        parsed.lastname ||
         relay.lastname ||
         '',
       email:
@@ -204,16 +235,29 @@ function formatForICS(d: Date): string {
   return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 }
 
+// Escape text for RFC 5545 ICS property values
+function escapeIcsText(s: string): string {
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n');
+}
+
 function buildICS(m: MeetingInfo): string {
   const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}@passionproduct.com`;
   const now = formatForICS(new Date());
-  const description = [
+
+  const descriptionParts = [
     'Your personalized Amazon FBA strategy session with the Passion Product team.',
     '',
     m.joinUrl ? `Join link: ${m.joinUrl}` : '',
     '',
     'Come ready with your goals, budget, and any questions about your Amazon journey.',
-  ].filter(Boolean).join('\\n');
+  ].filter(Boolean);
+  const description = escapeIcsText(descriptionParts.join('\n'));
+
+  const location = m.joinUrl || 'Video Call';
 
   const lines = [
     'BEGIN:VCALENDAR',
@@ -226,11 +270,13 @@ function buildICS(m: MeetingInfo): string {
     `DTSTAMP:${now}`,
     `DTSTART:${formatForICS(m.start)}`,
     `DTEND:${formatForICS(m.end)}`,
-    `SUMMARY:${m.title}`,
+    `SUMMARY:${escapeIcsText(m.title)}`,
     `DESCRIPTION:${description}`,
-    m.joinUrl ? `LOCATION:${m.joinUrl}` : 'LOCATION:Video Call',
-    `ORGANIZER;CN=${m.organizer}:MAILTO:team@passionproduct.com`,
-    m.email ? `ATTENDEE;CN=${m.firstName} ${m.lastName};RSVP=TRUE:MAILTO:${m.email}` : '',
+    `LOCATION:${escapeIcsText(location)}`,
+    // URL property makes many calendar apps render the join link as a clickable button
+    m.joinUrl ? `URL:${m.joinUrl}` : '',
+    `ORGANIZER;CN=${escapeIcsText(m.organizer)}:MAILTO:team@passionproduct.com`,
+    m.email ? `ATTENDEE;CN=${escapeIcsText(`${m.firstName} ${m.lastName}`.trim())};RSVP=TRUE:MAILTO:${m.email}` : '',
     'STATUS:CONFIRMED',
     'BEGIN:VALARM',
     'ACTION:DISPLAY',
