@@ -106,7 +106,6 @@ export function BookCall() {
 
         const redirectParams = new URLSearchParams();
         if (contact.firstName) redirectParams.set('firstname', contact.firstName);
-        if (contact.lastName) redirectParams.set('lastname', contact.lastName);
         if (contact.email) redirectParams.set('email', contact.email);
 
         const target = redirectParams.toString()

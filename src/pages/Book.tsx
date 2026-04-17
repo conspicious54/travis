@@ -203,22 +203,42 @@ export function Book() {
         };
         walkStrings(payload, '');
 
-        // Find video conferencing URL by domain pattern
-        const VIDEO_HOSTS = /\b(zoom\.us|meet\.google\.com|teams\.(microsoft|live)\.com|gotomeeting\.com|gotomeet\.me|webex\.com|whereby\.com|meet\.jit\.si|hubspot\.com\/meetings)\b/i;
-        const joinUrlMatches = allStrings.filter(s =>
-          /^https?:\/\//i.test(s.value) && VIDEO_HOSTS.test(s.value)
+        // Log EVERY URL-ish string in the payload so we can see exactly
+        // where HubSpot stores the zoom link, regardless of field name.
+        const urlLikeStrings = allStrings.filter(s =>
+          /^https?:\/\//i.test(s.value) ||
+          /zoom\.us|meet\.google|teams\.(microsoft|live)|gotomeet|webex|whereby|jit\.si/i.test(s.value)
         );
+        // eslint-disable-next-line no-console
+        console.log('[HubSpot all URL-like strings]', urlLikeStrings);
+
+        // Also log everything at a path containing "location"
+        const locationFields = allStrings.filter(s => /location/i.test(s.path));
+        // eslint-disable-next-line no-console
+        console.log('[HubSpot location-ish fields]', locationFields);
+
+        // Find video conferencing URL — match by host domain (don't
+        // require full https:// prefix, some payloads strip it)
+        const VIDEO_HOSTS = /(zoom\.us|meet\.google\.com|teams\.(microsoft|live)\.com|gotomeeting\.com|gotomeet\.me|webex\.com|whereby\.com|meet\.jit\.si|hubspot\.com\/meetings)/i;
+        const joinUrlMatches = allStrings.filter(s => VIDEO_HOSTS.test(s.value));
         // eslint-disable-next-line no-console
         console.log('[HubSpot join URL candidates]', joinUrlMatches);
 
         // Fallback to documented fields if no pattern match
-        const joinUrl =
+        let joinUrl =
           joinUrlMatches[0]?.value ||
           bookedMeeting.location ||
           bookedMeeting.conferenceUrl ||
           event.videoConferenceUrl ||
           event.conferenceUrl ||
+          event.location ||
           '';
+
+        // Normalize — if we got something like "zoom.us/j/12345" without
+        // a protocol, prepend https://
+        if (joinUrl && !/^https?:\/\//i.test(joinUrl) && VIDEO_HOSTS.test(joinUrl)) {
+          joinUrl = `https://${joinUrl}`;
+        }
 
         // Find meeting owner. Any string at a path containing owner / host
         // / organizer / assignee. Prefer the one that looks like a name
@@ -245,7 +265,6 @@ export function Book() {
         if (event.title) redirectParams.set('title', event.title);
         if (joinUrl) redirectParams.set('join', joinUrl);
         if (contact.firstName) redirectParams.set('firstname', contact.firstName);
-        if (contact.lastName) redirectParams.set('lastname', contact.lastName);
         if (contact.email) redirectParams.set('email', contact.email);
         if (ownerName) redirectParams.set('owner', ownerName);
 
