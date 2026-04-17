@@ -122,15 +122,51 @@ export function Book() {
           payload?.contact ||
           {};
 
-        // dateString is the ISO start time (e.g. "2026-04-22T17:00:00-07:00").
-        // duration is in milliseconds.
-        const start = event.dateString || event.start || event.startTime;
-        const duration = event.duration || 30 * 60 * 1000;
-        const end = start ? new Date(new Date(start).getTime() + Number(duration)).toISOString() : '';
+        // Gather every candidate field HubSpot might use for the start
+        // time, and pick only one that's a real full timestamp (ISO with
+        // time, or epoch ms number). Skip date-only strings like
+        // "2026-04-23" which default to midnight UTC and produce wrong
+        // local times.
+        const startCandidates = [
+          event.startTime,
+          event.start,
+          event.dateString,
+          event.startDate,
+          payload?.bookingResponse?.startTime,
+        ];
 
-        // Build the redirect URL with verified meeting data as params
+        const isFullTimestamp = (v: unknown): v is string | number => {
+          if (typeof v === 'number' && v > 1e10) return true; // epoch seconds or ms
+          if (typeof v !== 'string') return false;
+          // Needs a "T" (ISO) AND either a ":" for time or "Z"/timezone offset
+          if (v.includes('T') && (v.includes(':') || /[Z+-]\d{2}/.test(v))) return true;
+          return false;
+        };
+
+        let startMs: number | null = null;
+        let startIso = '';
+        for (const cand of startCandidates) {
+          if (!isFullTimestamp(cand)) continue;
+          const d = new Date(
+            typeof cand === 'number'
+              ? (cand < 1e12 ? cand * 1000 : cand)
+              : cand
+          );
+          if (!isNaN(d.getTime())) {
+            startMs = d.getTime();
+            startIso = d.toISOString();
+            break;
+          }
+        }
+
+        const duration = Number(event.duration) || 30 * 60 * 1000;
+        const end = startMs !== null ? new Date(startMs + duration).toISOString() : '';
+
+        // Build the redirect URL with verified meeting data as params.
+        // If we don't have a real timestamp, DON'T pass start/end at all
+        // so the confirmation page falls back to the generic message.
         const redirectParams = new URLSearchParams();
-        if (start) redirectParams.set('start', start);
+        if (startIso) redirectParams.set('start', startIso);
         if (end) redirectParams.set('end', end);
         if (event.title) redirectParams.set('title', event.title);
         const joinUrl = event.videoConferenceUrl || event.location || '';

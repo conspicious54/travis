@@ -67,16 +67,26 @@ function parseDate(val: string | null): Date | null {
 }
 
 /* Meeting info comes from URL params set by /book AFTER HubSpot's
-   postMessage fires. That redirect is our only trusted source of truth. */
+   postMessage fires. That redirect is our only trusted source of truth.
+
+   We refuse a bare date string like "2026-04-23" — JavaScript parses
+   that as midnight UTC which displays wrong in local time. Only a full
+   ISO timestamp (with a T and a time component) is acceptable. */
 function parseMeetingInfo(): MeetingInfo | null {
   if (typeof window === 'undefined') return null;
   const p = new URLSearchParams(window.location.search);
 
-  const start = parseDate(p.get('start'));
+  const rawStart = p.get('start');
+  if (!rawStart || !isFullTimestamp(rawStart)) return null;
+
+  const start = parseDate(rawStart);
   if (!start) return null;
 
-  const end = parseDate(p.get('end')) || new Date(start.getTime() + 30 * 60 * 1000);
-  if (!end) return null;
+  const rawEnd = p.get('end');
+  const end =
+    rawEnd && isFullTimestamp(rawEnd)
+      ? parseDate(rawEnd) || new Date(start.getTime() + 30 * 60 * 1000)
+      : new Date(start.getTime() + 30 * 60 * 1000);
 
   return {
     start,
@@ -88,6 +98,12 @@ function parseMeetingInfo(): MeetingInfo | null {
     lastName: p.get('lastname') || p.get('last_name') || p.get('lastName') || '',
     email: p.get('email') || '',
   };
+}
+
+function isFullTimestamp(v: string): boolean {
+  if (!v) return false;
+  // Must have "T" AND either ":" for time or a Z/timezone offset
+  return v.includes('T') && (v.includes(':') || /[Z+-]\d{2}/.test(v));
 }
 
 /* localStorage data persisted by the booking-relay page before HubSpot */

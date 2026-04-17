@@ -105,12 +105,42 @@ export function BookCall() {
           payload?.contact ||
           {};
 
-        const start = event.dateString || event.start || event.startTime;
-        const duration = event.duration || 30 * 60 * 1000;
-        const end = start ? new Date(new Date(start).getTime() + Number(duration)).toISOString() : '';
+        const startCandidates = [
+          event.startTime,
+          event.start,
+          event.dateString,
+          event.startDate,
+          payload?.bookingResponse?.startTime,
+        ];
+
+        const isFullTimestamp = (v: unknown): v is string | number => {
+          if (typeof v === 'number' && v > 1e10) return true;
+          if (typeof v !== 'string') return false;
+          if (v.includes('T') && (v.includes(':') || /[Z+-]\d{2}/.test(v))) return true;
+          return false;
+        };
+
+        let startMs: number | null = null;
+        let startIso = '';
+        for (const cand of startCandidates) {
+          if (!isFullTimestamp(cand)) continue;
+          const d = new Date(
+            typeof cand === 'number'
+              ? (cand < 1e12 ? cand * 1000 : cand)
+              : cand
+          );
+          if (!isNaN(d.getTime())) {
+            startMs = d.getTime();
+            startIso = d.toISOString();
+            break;
+          }
+        }
+
+        const duration = Number(event.duration) || 30 * 60 * 1000;
+        const end = startMs !== null ? new Date(startMs + duration).toISOString() : '';
 
         const redirectParams = new URLSearchParams();
-        if (start) redirectParams.set('start', start);
+        if (startIso) redirectParams.set('start', startIso);
         if (end) redirectParams.set('end', end);
         if (event.title) redirectParams.set('title', event.title);
         const joinUrl = event.videoConferenceUrl || event.location || '';
