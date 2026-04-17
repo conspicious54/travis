@@ -13,6 +13,7 @@ import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare,
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackCalendarAdded, trackEvent } from '../lib/posthog';
 import { detectRegion, PHONE_NUMBERS, type Region } from '../lib/regionPhone';
+import { getCloserPhone } from '../lib/closerPhones';
 import { PrepChecklistProvider, usePrepChecklist } from '../context/PrepChecklistContext';
 
 /* ───────────────────── closer-specific sections ──────────────────── */
@@ -484,18 +485,21 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
     setRegion(detectRegion());
   }, []);
 
-  const phone = PHONE_NUMBERS[region];
+  // Look up the specific Kixie line for this meeting's owner and the
+  // visitor's region. Falls back to the default regional number if the
+  // owner isn't mapped or has no number for this region.
+  const phone = getCloserPhone(meeting?.organizer, region);
   const smsBody = encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
   const whatsappBody = encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
   const whatsappNumber = phone.raw.replace(/[^\d]/g, '');
 
   const handleConfirmText = () => {
-    trackEvent('closer_confirm_text_clicked', { region });
+    trackEvent('closer_confirm_text_clicked', { region, owner: meeting?.organizer || null, phone: phone.raw });
     markDone('microAsk');
   };
 
   const handleConfirmWhatsapp = () => {
-    trackEvent('closer_confirm_whatsapp_clicked', { region });
+    trackEvent('closer_confirm_whatsapp_clicked', { region, owner: meeting?.organizer || null, phone: phone.raw });
     markDone('microAsk');
   };
 
