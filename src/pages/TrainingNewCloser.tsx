@@ -66,36 +66,12 @@ function parseDate(val: string | null): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
+// URL-param based meeting parsing is DISABLED alongside getMeetingFromStorage.
+// We do not trust any source of meeting time until we've verified HubSpot's
+// actual postMessage payload shape. See getMeetingFromStorage for the full
+// note. Always returns null.
 function parseMeetingInfo(): MeetingInfo | null {
-  if (typeof window === 'undefined') return null;
-  const p = new URLSearchParams(window.location.search);
-  const relay = getRelayData();
-
-  const start =
-    parseDate(p.get('start')) ||
-    parseDate(p.get('startTime')) ||
-    parseDate(p.get('start_time')) ||
-    parseDate(p.get('meetingStartTime'));
-
-  if (!start) return null;
-
-  const end =
-    parseDate(p.get('end')) ||
-    parseDate(p.get('endTime')) ||
-    parseDate(p.get('end_time')) ||
-    parseDate(p.get('meetingEndTime')) ||
-    new Date(start.getTime() + 30 * 60 * 1000);
-
-  return {
-    start,
-    end,
-    title: p.get('title') || 'Amazon Strategy Call with Passion Product',
-    joinUrl: p.get('join') || p.get('joinUrl') || p.get('conferenceUrl') || '',
-    organizer: p.get('organizer') || p.get('organizerName') || 'Passion Product Team',
-    firstName: p.get('first_name') || p.get('firstName') || p.get('firstname') || relay.firstname || '',
-    lastName: p.get('last_name') || p.get('lastName') || p.get('lastname') || relay.lastname || '',
-    email: p.get('email') || relay.email || '',
-  };
+  return null;
 }
 
 /* localStorage data persisted by the booking-relay page before HubSpot */
@@ -124,99 +100,28 @@ function getRelayData(): BookingRelayData {
   }
 }
 
-/* Meeting data captured from HubSpot's postMessage on /book.
-   Strict — only trust data that:
-     - Was captured in the last 24 hours
-     - Has a parseable start time that is in the near future
-   Otherwise return null and show the generic fallback (no guessing). */
+/* Meeting time display is DISABLED until we verify HubSpot's actual
+   payload shape. Showing a wrong time is worse than showing no time.
+
+   To turn back on:
+   1. Do a test booking on /book with DevTools Console open
+   2. Copy the object logged as "[HubSpot meetingBookSucceeded payload]"
+   3. Map those real fields into the parser below
+   4. Re-enable by returning the parsed MeetingInfo
+
+   Until then, we always return null so the banner falls back to the
+   generic "Check your email for the calendar invite" message. */
 function getMeetingFromStorage(): MeetingInfo | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('pp_meeting_data');
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-
-    // Reject stale data (older than 24 hours). Prevents old meeting
-    // info from showing up on a fresh visit.
-    if (parsed._captured_at) {
-      const captured = new Date(parsed._captured_at);
-      const ageMs = Date.now() - captured.getTime();
-      if (isNaN(captured.getTime()) || ageMs > 24 * 60 * 60 * 1000 || ageMs < 0) {
-        localStorage.removeItem('pp_meeting_data');
-        return null;
-      }
-    } else {
-      // No timestamp means we don't know how old this is — drop it
+  // Wipe any stale meeting data on every confirmation page load so old
+  // bookings can never leak into the UI.
+  if (typeof window !== 'undefined') {
+    try {
       localStorage.removeItem('pp_meeting_data');
-      return null;
+    } catch {
+      /* no-op */
     }
-
-    // HubSpot's payload has a few possible shapes. Try each, in priority.
-    const startRaw =
-      parsed.bookingResponse?.event?.dateString ||
-      parsed.bookingResponse?.event?.start ||
-      parsed.event?.start ||
-      parsed.start ||
-      parsed.startTime;
-    const endRaw =
-      parsed.bookingResponse?.event?.end ||
-      parsed.event?.end ||
-      parsed.end ||
-      parsed.endTime;
-
-    const start = startRaw ? parseDate(typeof startRaw === 'number' ? String(startRaw) : startRaw) : null;
-    if (!start) return null;
-
-    // Sanity check: meeting must be between 1 hour in the past and 90
-    // days in the future. Anything else is almost certainly bad data.
-    const nowMs = Date.now();
-    const startMs = start.getTime();
-    if (startMs < nowMs - 60 * 60 * 1000 || startMs > nowMs + 90 * 24 * 60 * 60 * 1000) {
-      localStorage.removeItem('pp_meeting_data');
-      return null;
-    }
-
-    const end = endRaw ? parseDate(typeof endRaw === 'number' ? String(endRaw) : endRaw) : new Date(start.getTime() + 30 * 60 * 1000);
-    if (!end) return null;
-
-    const relay = getRelayData();
-
-    return {
-      start,
-      end,
-      title: parsed.bookingResponse?.event?.title || parsed.title || 'Amazon Strategy Call with Passion Product',
-      joinUrl:
-        parsed.bookingResponse?.event?.videoConferenceUrl ||
-        parsed.bookingResponse?.event?.location ||
-        parsed.videoConferenceUrl ||
-        parsed.joinUrl ||
-        parsed.join ||
-        '',
-      organizer:
-        parsed.bookingResponse?.event?.owner?.fullName ||
-        parsed.organizer ||
-        'Passion Product Team',
-      firstName:
-        parsed.bookingResponse?.contact?.firstName ||
-        parsed.firstName ||
-        parsed.firstname ||
-        relay.firstname ||
-        '',
-      lastName:
-        parsed.bookingResponse?.contact?.lastName ||
-        parsed.lastName ||
-        parsed.lastname ||
-        relay.lastname ||
-        '',
-      email:
-        parsed.bookingResponse?.contact?.email ||
-        parsed.email ||
-        relay.email ||
-        '',
-    };
-  } catch {
-    return null;
   }
+  return null;
 }
 
 function getFirstName(): string {
