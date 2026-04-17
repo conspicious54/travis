@@ -184,12 +184,57 @@ export function Book() {
         const startIso = startMs !== null ? new Date(startMs).toISOString() : '';
         const endIso = endMs !== null ? new Date(endMs).toISOString() : '';
 
-        // Join URL for the video call (closer page only — setter is phone)
+        // ───── Deep-walk for join URL and owner ─────────────────────
+        // HubSpot field names vary. Find both by pattern-matching values
+        // anywhere in the payload.
+        type Found = { path: string; value: string };
+        const allStrings: Found[] = [];
+        const walkStrings = (obj: unknown, path: string) => {
+          if (obj === null || obj === undefined) return;
+          if (typeof obj === 'string') {
+            allStrings.push({ path, value: obj });
+            return;
+          }
+          if (typeof obj === 'object') {
+            for (const k of Object.keys(obj as Record<string, unknown>)) {
+              walkStrings((obj as Record<string, unknown>)[k], path ? `${path}.${k}` : k);
+            }
+          }
+        };
+        walkStrings(payload, '');
+
+        // Find video conferencing URL by domain pattern
+        const VIDEO_HOSTS = /\b(zoom\.us|meet\.google\.com|teams\.(microsoft|live)\.com|gotomeeting\.com|gotomeet\.me|webex\.com|whereby\.com|meet\.jit\.si|hubspot\.com\/meetings)\b/i;
+        const joinUrlMatches = allStrings.filter(s =>
+          /^https?:\/\//i.test(s.value) && VIDEO_HOSTS.test(s.value)
+        );
+        // eslint-disable-next-line no-console
+        console.log('[HubSpot join URL candidates]', joinUrlMatches);
+
+        // Fallback to documented fields if no pattern match
         const joinUrl =
+          joinUrlMatches[0]?.value ||
           bookedMeeting.location ||
           bookedMeeting.conferenceUrl ||
           event.videoConferenceUrl ||
           event.conferenceUrl ||
+          '';
+
+        // Find meeting owner. Any string at a path containing owner / host
+        // / organizer / assignee. Prefer the one that looks like a name
+        // (contains a space) rather than an email or ID.
+        const OWNER_PATH = /\b(owner|organizer|host|assignee|assignedTo|hostName|ownerName)/i;
+        const ownerCandidates = allStrings.filter(s => OWNER_PATH.test(s.path));
+        // eslint-disable-next-line no-console
+        console.log('[HubSpot owner candidates]', ownerCandidates);
+
+        const isLikelyName = (v: string) =>
+          !v.includes('@') && !/^\d+$/.test(v) && !/^https?:\/\//i.test(v);
+        const ownerName =
+          ownerCandidates.find(c => isLikelyName(c.value) && c.value.trim().includes(' '))?.value ||
+          ownerCandidates.find(c => isLikelyName(c.value))?.value ||
+          (event.owner?.fullName as string | undefined) ||
+          (event.ownerName as string | undefined) ||
           '';
 
         // Build the redirect URL. If we don't have a real start timestamp,
@@ -202,8 +247,7 @@ export function Book() {
         if (contact.firstName) redirectParams.set('firstname', contact.firstName);
         if (contact.lastName) redirectParams.set('lastname', contact.lastName);
         if (contact.email) redirectParams.set('email', contact.email);
-        const owner = event.owner?.fullName || event.ownerName;
-        if (owner) redirectParams.set('organizer', owner);
+        if (ownerName) redirectParams.set('owner', ownerName);
 
         const target = redirectParams.toString()
           ? `${REDIRECT_TO}?${redirectParams.toString()}`

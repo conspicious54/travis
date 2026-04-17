@@ -97,7 +97,7 @@ function parseMeetingInfo(): MeetingInfo | null {
     end,
     title: p.get('title') || 'Amazon Strategy Call with Passion Product',
     joinUrl: p.get('join') || '',
-    organizer: p.get('organizer') || 'Passion Product Team',
+    organizer: p.get('owner') || p.get('organizer') || 'Passion Product Team',
     firstName: p.get('firstname') || p.get('first_name') || p.get('firstName') || '',
     lastName: p.get('lastname') || p.get('last_name') || p.get('lastName') || '',
     email: p.get('email') || '',
@@ -409,7 +409,11 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
         <p className="text-lg md:text-2xl text-gray-700 max-w-2xl mx-auto mb-3 leading-snug">
           {meeting ? (
             <>
-              Your strategy call is on{' '}
+              Your strategy call
+              {meeting.organizer && meeting.organizer !== 'Passion Product Team' ? (
+                <> with <span className="font-bold text-gray-900">{meeting.organizer}</span></>
+              ) : null}
+              {' '}is on{' '}
               <span className="font-bold text-gray-900">{formatHumanDate(meeting.start)}</span>
               {' at '}
               <span className="font-bold text-gray-900">{formatHumanTime(meeting.start)}</span>.
