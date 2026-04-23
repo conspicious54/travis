@@ -313,6 +313,127 @@ confirm_by_coach = upsert(
     ),
 )
 
+scroll_depth = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Scroll depth distribution",
+        "How far down the confirmation pages people actually scroll. A large gap "
+        "between 50% and 75% means the lower sections aren't getting seen.",
+        trends_query(
+            [event_node("scroll_depth_reached")],
+            breakdown="depth_pct",
+            display="ActionsBarValue",
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+dwell_trend = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Median dwell time on confirmation pages",
+        "Median seconds_on_page from the dwell heartbeat, by page. A falling "
+        "median means people are bouncing earlier.",
+        {
+            "kind": "TrendsQuery",
+            "series": [
+                {
+                    "kind": "EventsNode",
+                    "event": "dwell_heartbeat",
+                    "name": "dwell_heartbeat",
+                    "math": "median",
+                    "math_property": "seconds_on_page",
+                }
+            ],
+            "dateRange": {"date_from": "-30d"},
+            "interval": "day",
+            "breakdownFilter": {"breakdown_type": "event", "breakdown": "faq_location"},
+            "trendsFilter": {"display": "ActionsLineGraph"},
+        },
+        dashboards=[DASH_ID],
+    ),
+)
+
+app_switch = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Confirm click → app switch rate (did they actually send?)",
+        "Proxy funnel: confirm click → tab blurs within 15s. If the switch step "
+        "drops a lot, people are clicking the button but not actually sending.",
+        funnels_query(
+            [
+                event_node("closer_confirm_text_clicked"),
+                event_node("confirm_app_switched"),
+            ],
+            window_days=1,
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+faq_video_trend = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "FAQ video intent by objection",
+        "Which of the 6 objection videos get the most click-intent. Rank tells "
+        "you which hesitations matter most to the people making it to the FAQ.",
+        trends_query(
+            [event_node("breakout_video_played")],
+            breakdown="video_key",
+            display="ActionsBarValue",
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+faq_engagement_funnel = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "FAQ funnel — visible → expand → video click",
+        "Drop-off through the FAQ. Visible = section scrolled into view, "
+        "Expand = they clicked the accordion, Video = they clicked a video tile.",
+        funnels_query(
+            [
+                event_node("confirmation_faq_visible"),
+                event_node("confirmation_faq_expanded"),
+                event_node("breakout_video_played"),
+            ]
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+sprout_completion = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Sproutvideo start vs complete",
+        "If Sproutvideo's player actually emits postMessage events, this shows "
+        "start-vs-complete for the FAQ videos. Will be empty if the player "
+        "isn't firing events — that's a signal to switch embed approach.",
+        trends_query(
+            [
+                event_node("sproutvideo_started"),
+                event_node("sproutvideo_completed"),
+            ]
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+phone_copy = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Phone-number copy events",
+        "People copying the displayed regional phone number. Good signal that "
+        "they're saving it to contacts manually (desktop) or for a manual text.",
+        trends_query(
+            [event_node("phone_number_copied")],
+            breakdown="region",
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
 print()
 print("Done.")
 print(f"Dashboard: {HOST}/project/{PROJECT_ID}/dashboard/{DASH_ID}")

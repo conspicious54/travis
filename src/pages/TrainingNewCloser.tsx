@@ -17,6 +17,13 @@ import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackCa
 import { detectRegion, PHONE_NUMBERS, type Region } from '../lib/regionPhone';
 import { getCloserPhone } from '../lib/closerPhones';
 import { PrepChecklistProvider, usePrepChecklist } from '../context/PrepChecklistContext';
+import {
+  useScrollDepth,
+  useDwellHeartbeat,
+  usePhoneCopyTracking,
+  useConfirmAppSwitch,
+  useSproutvideoTracking,
+} from '../lib/confirmationTracking';
 
 /* ───────────────────── closer-specific sections ──────────────────── */
 
@@ -529,6 +536,9 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
   const smsBody = encodeURIComponent(confirmationBody);
   const whatsappBody = encodeURIComponent(confirmationBody);
 
+  usePhoneCopyTracking(phone.display, 'closer', region);
+  const armAppSwitch = useConfirmAppSwitch('closer');
+
   const handleConfirmText = () => {
     trackEvent('closer_confirm_text_clicked', {
       region,
@@ -536,6 +546,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
       coach_first_name: coachFirstName,
       phone: phone.raw,
     });
+    armAppSwitch('sms', coachFirstName);
     markDone('microAsk');
   };
 
@@ -546,7 +557,13 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
       coach_first_name: coachFirstName,
       phone: phone.raw,
     });
+    armAppSwitch('whatsapp', coachFirstName);
     markDone('microAsk');
+  };
+
+  const handleRegionOverride = (r: Region) => {
+    setRegion(r);
+    trackEvent('wrong_region_clicked', { faq_location: 'closer', from: region, to: r });
   };
 
   return (
@@ -616,7 +633,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
                 <span key={r}>
                   {i > 0 && <span className="text-gray-300">/</span>}{' '}
                   <button
-                    onClick={() => setRegion(r)}
+                    onClick={() => handleRegionOverride(r)}
                     className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
                   >
                     {PHONE_NUMBERS[r].label}
@@ -698,6 +715,10 @@ export function TrainingNewCloser() {
   const [meeting, setMeeting] = useState<MeetingInfo | null>(null);
   const [firstName, setFirstName] = useState('');
   const [p, setP] = useState<Personalization | null>(null);
+
+  useScrollDepth('closer');
+  useDwellHeartbeat('closer');
+  useSproutvideoTracking('closer');
 
   useEffect(() => {
     const urlMeeting = parseMeetingInfo();

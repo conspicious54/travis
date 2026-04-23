@@ -14,6 +14,13 @@ import { CheckCircle, Phone, Star, Shield, MessageSquare, MessageCircle } from '
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackContactSaved, trackEvent } from '../lib/posthog';
 import { PrepChecklistProvider, usePrepChecklist } from '../context/PrepChecklistContext';
+import {
+  useScrollDepth,
+  useDwellHeartbeat,
+  usePhoneCopyTracking,
+  useConfirmAppSwitch,
+  useSproutvideoTracking,
+} from '../lib/confirmationTracking';
 
 /* ─────────────────── region & platform detection ─────────────────── */
 
@@ -124,6 +131,9 @@ function SetterConfirmationBanner({
   // Default to Jesse — he's the baseline assignee when nothing else resolves.
   const coachFirstName = 'Jesse';
 
+  usePhoneCopyTracking(phone.display, 'setter', region);
+  const armAppSwitch = useConfirmAppSwitch('setter');
+
   const handleSave = () => {
     downloadVCard(phone.raw);
     trackContactSaved(region, platform);
@@ -133,12 +143,19 @@ function SetterConfirmationBanner({
 
   const handleConfirmText = () => {
     trackEvent('setter_confirm_text_clicked', { region, coach_first_name: coachFirstName });
+    armAppSwitch('sms', coachFirstName);
     markDone('microAsk');
   };
 
   const handleConfirmWhatsapp = () => {
     trackEvent('setter_confirm_whatsapp_clicked', { region, coach_first_name: coachFirstName });
+    armAppSwitch('whatsapp', coachFirstName);
     markDone('microAsk');
+  };
+
+  const handleRegionOverride = (r: Region) => {
+    setRegion(r);
+    trackEvent('wrong_region_clicked', { faq_location: 'setter', from: region, to: r });
   };
 
   const smsBody = encodeURIComponent(`Hi Coach ${coachFirstName}, YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
@@ -199,7 +216,7 @@ function SetterConfirmationBanner({
                 <span key={r}>
                   {i > 0 && <span className="text-gray-300">/</span>}{' '}
                   <button
-                    onClick={() => setRegion(r)}
+                    onClick={() => handleRegionOverride(r)}
                     className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
                   >
                     {PHONE_NUMBERS[r].label}
@@ -296,6 +313,10 @@ function SetterFinalCTA({ firstName }: { firstName: string }) {
 
 export function TrainingNewSetter() {
   const [p, setP] = useState<Personalization | null>(null);
+
+  useScrollDepth('setter');
+  useDwellHeartbeat('setter');
+  useSproutvideoTracking('setter');
 
   useEffect(() => {
     const personalization = getPersonalization();
