@@ -8,6 +8,7 @@ import {
   ConfirmationExitPopup,
   MethodCheckIn,
   NextStepsList,
+  ConfirmationFAQ,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Phone, Star, Shield, MessageSquare, MessageCircle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -333,6 +334,7 @@ export function TrainingNewSetter() {
         <LowCapitalStrategies p={p} />
         <CreditCardQuiz p={p} />
         <SetterFinalCTA firstName={p?.firstName || ''} />
+        <ConfirmationFAQ p={p} />
         <SharedFooter />
         <ConfirmationExitPopup />
       </div>

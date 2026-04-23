@@ -9,6 +9,7 @@ import {
   MethodCheckIn,
   MeetYourCoach,
   NextStepsList,
+  ConfirmationFAQ,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -742,6 +743,7 @@ export function TrainingNewCloser() {
         <LowCapitalStrategies p={p} />
         <CreditCardQuiz p={p} />
         <CloserFinalCTA meeting={meeting} firstName={firstName} />
+        <ConfirmationFAQ p={p} />
         <SharedFooter />
         <ConfirmationExitPopup />
       </div>

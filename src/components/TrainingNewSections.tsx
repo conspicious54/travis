@@ -618,6 +618,128 @@ export function BreakoutVideos({ p }: { p?: Personalization | null }) {
   );
 }
 
+/* ─── ConfirmationFAQ ────────────────────────────────────────────
+   Collapsed-by-default section placed at the bottom of the setter
+   and closer confirmation pages. Uses the same 6 breakout videos as
+   /questions so people who still have doubts can watch without
+   leaving the page. */
+export function ConfirmationFAQ({ p }: { p?: Personalization | null }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const breakouts = [
+    {
+      key: 'saturated',
+      headline: "But isn't Amazon too saturated at this point?",
+      embed: 'https://videos.sproutvideo.com/embed/dc9adbb31513e1c056/9a833984ebbbd62f',
+    },
+    {
+      key: 'capital',
+      headline: "But what if I don't have a lot of money to start?",
+      embed: 'https://videos.sproutvideo.com/embed/8c9adbb31511eec506/80d1f8e8fb8fd47b',
+    },
+    {
+      key: 'time',
+      headline: "What if I'm already working full-time?",
+      embed: 'https://videos.sproutvideo.com/embed/8c9adbb31510e7cd06/6d5e29c2559707a4',
+    },
+    {
+      key: 'idea',
+      headline: "I don't even have a product idea yet. Is that okay?",
+      embed: 'https://videos.sproutvideo.com/embed/8c9adbb3181ee2cb06/c87808d62d097bd1',
+    },
+    {
+      key: 'trust',
+      headline: "How do I know I can actually trust this?",
+      embed: 'https://videos.sproutvideo.com/embed/ee9adbb31513e7c164/0e0d27cd2ae31e59',
+    },
+    {
+      key: 'wrong',
+      headline: "What if I pick the wrong product and lose my money?",
+      embed: 'https://videos.sproutvideo.com/embed/aa9adbb3181ee0c020/edb75f1300af4b4d',
+    },
+  ];
+
+  // Same personalization sort as BreakoutVideos — surface the most
+  // relevant video first so if someone does expand, the one matching
+  // their biggest hesitation is the first they see.
+  if (p) {
+    const priority: string[] = [];
+    if (p.capital === 'none' || p.capital === 'save') priority.push('capital');
+    if (p.situation === 'never_started') priority.push('idea');
+    if (p.situation === 'tried_failed') priority.push('trust', 'wrong');
+    if (p.situation === 'amazon_stuck') priority.push('wrong', 'saturated');
+    if (p.situation === 'researching') priority.push('saturated', 'trust');
+    if (p.travisHistory === 'never') priority.push('trust');
+    breakouts.sort((a, b) => {
+      const ai = priority.indexOf(a.key);
+      const bi = priority.indexOf(b.key);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }
+
+  const handleToggle = () => {
+    const next = !isOpen;
+    setIsOpen(next);
+    trackEvent(next ? 'confirmation_faq_expanded' : 'confirmation_faq_collapsed');
+  };
+
+  return (
+    <div className="bg-gradient-to-b from-gray-50 to-white py-14 md:py-20 border-t border-gray-100">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1]">
+            Do you understand how the <span className="text-orange-600">Passion Product Method</span> works?
+          </h2>
+          <p className="text-gray-600 text-base md:text-lg mt-4 max-w-2xl mx-auto">
+            If you still have questions, the answers are right here.
+          </p>
+        </div>
+
+        <button
+          onClick={handleToggle}
+          aria-expanded={isOpen}
+          className="w-full max-w-2xl mx-auto flex items-center justify-between gap-3 px-6 py-5 bg-white border-2 border-gray-200 hover:border-orange-300 rounded-2xl transition-all shadow-sm cursor-pointer"
+        >
+          <span className="text-lg md:text-xl font-bold text-gray-900 text-left">
+            Frequently Asked Questions
+          </span>
+          <ChevronDown
+            className={`w-6 h-6 text-orange-600 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {isOpen && (
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {breakouts.map((b) => (
+              <div
+                key={b.key}
+                className="group bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-orange-200 transition-all"
+              >
+                <div className="aspect-video bg-gray-900">
+                  <iframe
+                    src={b.embed}
+                    className="w-full h-full"
+                    frameBorder="0"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title={b.headline}
+                  />
+                </div>
+                <h3 className="font-bold text-gray-900 text-base md:text-lg p-5 group-hover:text-orange-700 transition-colors">
+                  {b.headline}
+                </h3>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function OpportunitySection() {
   return (
     <div className="bg-gradient-to-b from-white via-orange-50/30 to-white py-14 md:py-20 border-t border-gray-100">
