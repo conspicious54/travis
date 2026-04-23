@@ -119,6 +119,10 @@ function SetterConfirmationBanner({
   const phone = PHONE_NUMBERS[region];
   const isMobile = platform === 'ios' || platform === 'android';
 
+  // Setter flow has no booked meeting yet, so we can't know the coach.
+  // Default to Jesse — he's the baseline assignee when nothing else resolves.
+  const coachFirstName = 'Jesse';
+
   const handleSave = () => {
     downloadVCard(phone.raw);
     trackContactSaved(region, platform);
@@ -136,7 +140,7 @@ function SetterConfirmationBanner({
     markDone('microAsk');
   };
 
-  const smsBody = encodeURIComponent(`YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
+  const smsBody = encodeURIComponent(`Hi Coach ${coachFirstName}, YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
   const whatsappNumber = phone.raw.replace(/[^\d]/g, '');
 
   return (

@@ -505,14 +505,24 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
     .join(' ')
     .trim();
 
+  // Resolve the booked coach's first name so the confirmation text opens
+  // with "Hi Coach <Name>" — lets the coach auto-identify who's texting.
+  // Falls back to Jesse when HubSpot hasn't returned an owner or the
+  // owner is still the generic "Passion Product Team" placeholder.
+  const coachFirstName = (() => {
+    const organizer = meeting?.organizer?.trim();
+    if (!organizer || organizer === 'Passion Product Team') return 'Jesse';
+    return organizer.split(/\s+/)[0] || 'Jesse';
+  })();
+
   const confirmationBody = (() => {
     const hasRealTime = meeting && !meeting.startUnknown;
     const namePart = fullName ? ` - ${fullName}` : '';
     if (hasRealTime) {
       const when = `${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}`;
-      return `YES, I'm confirming my call on ${when}${namePart}`;
+      return `Hi Coach ${coachFirstName}, YES, I'm confirming my call on ${when}${namePart}`;
     }
-    return `YES, I'm confirming my call${namePart}`;
+    return `Hi Coach ${coachFirstName}, YES, I'm confirming my call${namePart}`;
   })();
 
   const smsBody = encodeURIComponent(confirmationBody);
