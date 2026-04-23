@@ -13,7 +13,13 @@ import {
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
-import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackCalendarAdded, trackEvent } from '../lib/posthog';
+import {
+  identifyUser,
+  setPersonProperties,
+  trackConfirmationPageViewed,
+  trackCalendarAdded,
+  trackEvent,
+} from '../lib/posthog';
 import { detectRegion, PHONE_NUMBERS, type Region } from '../lib/regionPhone';
 import { getCloserPhone } from '../lib/closerPhones';
 import { PrepChecklistProvider, usePrepChecklist } from '../context/PrepChecklistContext';
@@ -546,6 +552,11 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
       coach_first_name: coachFirstName,
       phone: phone.raw,
     });
+    setPersonProperties({
+      coach_first_name: coachFirstName,
+      coach_full_name: meeting?.organizer || null,
+      confirmed_via: 'sms',
+    });
     armAppSwitch('sms', coachFirstName);
     markDone('microAsk');
   };
@@ -556,6 +567,11 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
       owner: meeting?.organizer || null,
       coach_first_name: coachFirstName,
       phone: phone.raw,
+    });
+    setPersonProperties({
+      coach_first_name: coachFirstName,
+      coach_full_name: meeting?.organizer || null,
+      confirmed_via: 'whatsapp',
     });
     armAppSwitch('whatsapp', coachFirstName);
     markDone('microAsk');

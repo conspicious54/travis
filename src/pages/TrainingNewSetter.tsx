@@ -12,7 +12,13 @@ import {
 } from '../components/TrainingNewSections';
 import { CheckCircle, Phone, Star, Shield, MessageSquare, MessageCircle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
-import { identifyUser, setPersonProperties, trackConfirmationPageViewed, trackContactSaved, trackEvent } from '../lib/posthog';
+import {
+  identifyUser,
+  setPersonProperties,
+  trackConfirmationPageViewed,
+  trackContactSaved,
+  trackEvent,
+} from '../lib/posthog';
 import { PrepChecklistProvider, usePrepChecklist } from '../context/PrepChecklistContext';
 import {
   useScrollDepth,
@@ -143,12 +149,14 @@ function SetterConfirmationBanner({
 
   const handleConfirmText = () => {
     trackEvent('setter_confirm_text_clicked', { region, coach_first_name: coachFirstName });
+    setPersonProperties({ coach_first_name: coachFirstName, confirmed_via: 'sms' });
     armAppSwitch('sms', coachFirstName);
     markDone('microAsk');
   };
 
   const handleConfirmWhatsapp = () => {
     trackEvent('setter_confirm_whatsapp_clicked', { region, coach_first_name: coachFirstName });
+    setPersonProperties({ coach_first_name: coachFirstName, confirmed_via: 'whatsapp' });
     armAppSwitch('whatsapp', coachFirstName);
     markDone('microAsk');
   };

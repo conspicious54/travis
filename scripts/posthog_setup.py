@@ -168,7 +168,7 @@ def event_node(event, props=None):
     return n
 
 
-def trends_query(series, date_from="-30d", interval="day", breakdown=None, display="ActionsLineGraph"):
+def trends_query(series, date_from="-30d", interval="day", breakdown=None, display="ActionsLineGraph", breakdown_type="event"):
     q = {
         "kind": "TrendsQuery",
         "series": series,
@@ -177,7 +177,7 @@ def trends_query(series, date_from="-30d", interval="day", breakdown=None, displ
         "trendsFilter": {"display": display},
     }
     if breakdown:
-        q["breakdownFilter"] = {"breakdown_type": "event", "breakdown": breakdown}
+        q["breakdownFilter"] = {"breakdown_type": breakdown_type, "breakdown": breakdown}
     return q
 
 
@@ -429,6 +429,112 @@ phone_copy = upsert(
         trends_query(
             [event_node("phone_number_copied")],
             breakdown="region",
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+# ─── insights that depend on the HubSpot → PostHog loop ─────────
+# These stay empty until the hubspot-to-posthog Netlify scheduled
+# function starts firing events (setter_call_showed, closer_call_showed,
+# closer_enrolled, sale_closed, etc.).
+
+setter_showup_funnel = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Setter funnel with show-up (confirm → showed)",
+        "Did the confirm-click people actually show up to the setter call? "
+        "Compares SMS/WhatsApp confirm clicks against the HubSpot "
+        "'S2C Call Completed' stage transition.",
+        funnels_query(
+            [
+                event_node("setter_confirm_text_clicked"),
+                event_node("setter_call_showed"),
+            ],
+            window_days=14,
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+closer_showup_funnel = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Closer funnel with show-up (confirm → showed → enrolled → won)",
+        "Full closer flow: confirm click → show up → enrolled → sale. Each "
+        "drop-off is a lever. Biggest gap is usually confirm→show.",
+        funnels_query(
+            [
+                event_node("closer_confirm_text_clicked"),
+                event_node("closer_call_showed"),
+                event_node("closer_enrolled"),
+                event_node("sale_closed"),
+            ],
+            window_days=60,
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+faq_to_close_funnel = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "FAQ expanders who close",
+        "Of people who expanded the FAQ on the confirmation page, what % "
+        "eventually close? Tells you whether the FAQ converts skeptics or "
+        "just entertains them.",
+        funnels_query(
+            [
+                event_node("confirmation_faq_expanded"),
+                event_node("sale_closed"),
+            ],
+            window_days=60,
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+revenue_by_coach = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Revenue by coach (sale_closed sum by coach_first_name)",
+        "Sum of deal amount on sale_closed, broken down by the "
+        "coach_first_name Person property set at confirm time. Only includes "
+        "people who clicked a confirm button so we know which coach won them.",
+        {
+            "kind": "TrendsQuery",
+            "series": [
+                {
+                    "kind": "EventsNode",
+                    "event": "sale_closed",
+                    "name": "sale_closed",
+                    "math": "sum",
+                    "math_property": "amount",
+                }
+            ],
+            "dateRange": {"date_from": "-90d"},
+            "interval": "week",
+            "breakdownFilter": {
+                "breakdown_type": "person",
+                "breakdown": "coach_first_name",
+            },
+            "trendsFilter": {"display": "ActionsBarValue"},
+        },
+        dashboards=[DASH_ID],
+    ),
+)
+
+showup_by_confirm = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Show-up rate split by confirmed_via",
+        "Do people who confirmed via WhatsApp show up more than people who "
+        "confirmed via SMS, or vice versa? Person property confirmed_via is "
+        "set on the confirm click.",
+        trends_query(
+            [event_node("closer_call_showed")],
+            breakdown="confirmed_via",
+            breakdown_type="person",
         ),
         dashboards=[DASH_ID],
     ),
