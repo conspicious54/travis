@@ -530,12 +530,22 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
   const whatsappBody = encodeURIComponent(confirmationBody);
 
   const handleConfirmText = () => {
-    trackEvent('closer_confirm_text_clicked', { region, owner: meeting?.organizer || null, phone: phone.raw });
+    trackEvent('closer_confirm_text_clicked', {
+      region,
+      owner: meeting?.organizer || null,
+      coach_first_name: coachFirstName,
+      phone: phone.raw,
+    });
     markDone('microAsk');
   };
 
   const handleConfirmWhatsapp = () => {
-    trackEvent('closer_confirm_whatsapp_clicked', { region, owner: meeting?.organizer || null, phone: phone.raw });
+    trackEvent('closer_confirm_whatsapp_clicked', {
+      region,
+      owner: meeting?.organizer || null,
+      coach_first_name: coachFirstName,
+      phone: phone.raw,
+    });
     markDone('microAsk');
   };
 
@@ -743,7 +753,7 @@ export function TrainingNewCloser() {
         <LowCapitalStrategies p={p} />
         <CreditCardQuiz p={p} />
         <CloserFinalCTA meeting={meeting} firstName={firstName} />
-        <ConfirmationFAQ p={p} />
+        <ConfirmationFAQ p={p} location="closer" />
         <SharedFooter />
         <ConfirmationExitPopup />
       </div>

@@ -132,12 +132,12 @@ function SetterConfirmationBanner({
   };
 
   const handleConfirmText = () => {
-    trackEvent('setter_confirm_text_clicked', { region });
+    trackEvent('setter_confirm_text_clicked', { region, coach_first_name: coachFirstName });
     markDone('microAsk');
   };
 
   const handleConfirmWhatsapp = () => {
-    trackEvent('setter_confirm_whatsapp_clicked', { region });
+    trackEvent('setter_confirm_whatsapp_clicked', { region, coach_first_name: coachFirstName });
     markDone('microAsk');
   };
 
@@ -334,7 +334,7 @@ export function TrainingNewSetter() {
         <LowCapitalStrategies p={p} />
         <CreditCardQuiz p={p} />
         <SetterFinalCTA firstName={p?.firstName || ''} />
-        <ConfirmationFAQ p={p} />
+        <ConfirmationFAQ p={p} location="setter" />
         <SharedFooter />
         <ConfirmationExitPopup />
       </div>

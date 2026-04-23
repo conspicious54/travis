@@ -623,8 +623,37 @@ export function BreakoutVideos({ p }: { p?: Personalization | null }) {
    and closer confirmation pages. Uses the same 6 breakout videos as
    /questions so people who still have doubts can watch without
    leaving the page. */
-export function ConfirmationFAQ({ p }: { p?: Personalization | null }) {
+export function ConfirmationFAQ({
+  p,
+  location,
+}: {
+  p?: Personalization | null;
+  location: 'setter' | 'closer';
+}) {
   const [isOpen, setIsOpen] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const seenRef = useRef(false);
+
+  // Fire once when the FAQ section first enters the viewport. Gives us
+  // a denominator for "expand rate" separate from total page views.
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || seenRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting && !seenRef.current) {
+            seenRef.current = true;
+            trackEvent('confirmation_faq_visible', { faq_location: location });
+            observer.disconnect();
+          }
+        }
+      },
+      { threshold: 0.25 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [location]);
 
   const breakouts = [
     {
@@ -683,11 +712,24 @@ export function ConfirmationFAQ({ p }: { p?: Personalization | null }) {
   const handleToggle = () => {
     const next = !isOpen;
     setIsOpen(next);
-    trackEvent(next ? 'confirmation_faq_expanded' : 'confirmation_faq_collapsed');
+    trackEvent(next ? 'confirmation_faq_expanded' : 'confirmation_faq_collapsed', {
+      faq_location: location,
+    });
+  };
+
+  // Sproutvideo iframes are cross-origin so we can't listen to actual
+  // play events — but a click on the video tile is a strong intent
+  // signal. Good enough to rank which objection video draws attention.
+  const handleVideoIntent = (headline: string, key: string) => {
+    trackEvent('breakout_video_played', {
+      headline,
+      video_key: key,
+      faq_location: location,
+    });
   };
 
   return (
-    <div className="bg-gradient-to-b from-gray-50 to-white py-14 md:py-20 border-t border-gray-100">
+    <div ref={sectionRef} className="bg-gradient-to-b from-gray-50 to-white py-14 md:py-20 border-t border-gray-100">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-8">
           <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1]">
@@ -718,7 +760,10 @@ export function ConfirmationFAQ({ p }: { p?: Personalization | null }) {
                 key={b.key}
                 className="group bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-orange-200 transition-all"
               >
-                <div className="aspect-video bg-gray-900">
+                <div
+                  className="aspect-video bg-gray-900"
+                  onMouseDown={() => handleVideoIntent(b.headline, b.key)}
+                >
                   <iframe
                     src={b.embed}
                     className="w-full h-full"
