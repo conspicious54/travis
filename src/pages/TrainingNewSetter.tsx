@@ -27,6 +27,7 @@ import {
   useConfirmAppSwitch,
   useSproutvideoTracking,
 } from '../lib/confirmationTracking';
+import { markConfirmClicked } from '../lib/confirmFlow';
 
 /* ─────────────────── region & platform detection ─────────────────── */
 
@@ -148,16 +149,34 @@ function SetterConfirmationBanner({
   };
 
   const handleConfirmText = () => {
-    trackEvent('setter_confirm_text_clicked', { region, coach_first_name: coachFirstName });
-    setPersonProperties({ coach_first_name: coachFirstName, confirmed_via: 'sms' });
+    trackEvent('setter_confirm_text_clicked', {
+      region,
+      platform,
+      coach_first_name: coachFirstName,
+    });
+    setPersonProperties({
+      coach_first_name: coachFirstName,
+      confirmed_via: 'sms',
+      last_platform: platform,
+    });
     armAppSwitch('sms', coachFirstName);
+    markConfirmClicked();
     markDone('microAsk');
   };
 
   const handleConfirmWhatsapp = () => {
-    trackEvent('setter_confirm_whatsapp_clicked', { region, coach_first_name: coachFirstName });
-    setPersonProperties({ coach_first_name: coachFirstName, confirmed_via: 'whatsapp' });
+    trackEvent('setter_confirm_whatsapp_clicked', {
+      region,
+      platform,
+      coach_first_name: coachFirstName,
+    });
+    setPersonProperties({
+      coach_first_name: coachFirstName,
+      confirmed_via: 'whatsapp',
+      last_platform: platform,
+    });
     armAppSwitch('whatsapp', coachFirstName);
+    markConfirmClicked();
     markDone('microAsk');
   };
 
@@ -321,12 +340,15 @@ function SetterFinalCTA({ firstName }: { firstName: string }) {
 
 export function TrainingNewSetter() {
   const [p, setP] = useState<Personalization | null>(null);
+  const [popupRegion, setPopupRegion] = useState<Region>('us');
 
   useScrollDepth('setter');
   useDwellHeartbeat('setter');
   useSproutvideoTracking('setter');
 
   useEffect(() => {
+    setPopupRegion(detectRegion());
+
     const personalization = getPersonalization();
     setP(personalization);
 
@@ -352,6 +374,11 @@ export function TrainingNewSetter() {
     });
   }, []);
 
+  const popupCoach = 'Jesse';
+  const popupSmsBody = encodeURIComponent(
+    `Hi Coach ${popupCoach}, YES, confirming my call${p?.firstName ? ` - ${p.firstName}` : ''}`
+  );
+
   return (
     <PrepChecklistProvider>
       <div className="min-h-screen bg-white text-gray-900">
@@ -365,7 +392,12 @@ export function TrainingNewSetter() {
         <SetterFinalCTA firstName={p?.firstName || ''} />
         <ConfirmationFAQ p={p} location="setter" />
         <SharedFooter />
-        <ConfirmationExitPopup />
+        <ConfirmationExitPopup
+          location="setter"
+          coachFirstName={popupCoach}
+          phoneRaw={PHONE_NUMBERS[popupRegion].raw}
+          smsBody={popupSmsBody}
+        />
       </div>
     </PrepChecklistProvider>
   );

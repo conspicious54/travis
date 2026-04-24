@@ -30,6 +30,16 @@ import {
   useConfirmAppSwitch,
   useSproutvideoTracking,
 } from '../lib/confirmationTracking';
+import { markConfirmClicked } from '../lib/confirmFlow';
+
+type Platform = 'ios' | 'android' | 'desktop';
+function detectPlatform(): Platform {
+  if (typeof navigator === 'undefined') return 'desktop';
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
+  if (/Android/.test(ua)) return 'android';
+  return 'desktop';
+}
 
 /* ───────────────────── closer-specific sections ──────────────────── */
 
@@ -496,10 +506,12 @@ function formatHumanTime(d: Date): string {
 
 function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo | null; firstName: string }) {
   const [region, setRegion] = useState<Region>('us');
+  const [platform, setPlatform] = useState<Platform>('desktop');
   const { markDone } = usePrepChecklist();
 
   useEffect(() => {
     setRegion(detectRegion());
+    setPlatform(detectPlatform());
   }, []);
 
   // Look up the specific Kixie line for this meeting's owner and the
@@ -548,6 +560,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
   const handleConfirmText = () => {
     trackEvent('closer_confirm_text_clicked', {
       region,
+      platform,
       owner: meeting?.organizer || null,
       coach_first_name: coachFirstName,
       phone: phone.raw,
@@ -556,14 +569,17 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
       coach_first_name: coachFirstName,
       coach_full_name: meeting?.organizer || null,
       confirmed_via: 'sms',
+      last_platform: platform,
     });
     armAppSwitch('sms', coachFirstName);
+    markConfirmClicked();
     markDone('microAsk');
   };
 
   const handleConfirmWhatsapp = () => {
     trackEvent('closer_confirm_whatsapp_clicked', {
       region,
+      platform,
       owner: meeting?.organizer || null,
       coach_first_name: coachFirstName,
       phone: phone.raw,
@@ -572,8 +588,10 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
       coach_first_name: coachFirstName,
       coach_full_name: meeting?.organizer || null,
       confirmed_via: 'whatsapp',
+      last_platform: platform,
     });
     armAppSwitch('whatsapp', coachFirstName);
+    markConfirmClicked();
     markDone('microAsk');
   };
 
@@ -731,12 +749,14 @@ export function TrainingNewCloser() {
   const [meeting, setMeeting] = useState<MeetingInfo | null>(null);
   const [firstName, setFirstName] = useState('');
   const [p, setP] = useState<Personalization | null>(null);
+  const [popupRegion, setPopupRegion] = useState<Region>('us');
 
   useScrollDepth('closer');
   useDwellHeartbeat('closer');
   useSproutvideoTracking('closer');
 
   useEffect(() => {
+    setPopupRegion(detectRegion());
     const urlMeeting = parseMeetingInfo();
     setMeeting(urlMeeting);
 
@@ -792,7 +812,30 @@ export function TrainingNewCloser() {
         <CloserFinalCTA meeting={meeting} firstName={firstName} />
         <ConfirmationFAQ p={p} location="closer" />
         <SharedFooter />
-        <ConfirmationExitPopup />
+        {(() => {
+          const popupCoach = (() => {
+            const organizer = meeting?.organizer?.trim();
+            if (!organizer || organizer === 'Passion Product Team') return 'Jesse';
+            return organizer.split(/\s+/)[0] || 'Jesse';
+          })();
+          const popupPhone = getCloserPhone(meeting?.organizer, popupRegion);
+          const popupFullName = [
+            meeting?.firstName || firstName,
+            meeting?.lastName,
+          ].filter(Boolean).join(' ').trim();
+          const namePart = popupFullName ? ` - ${popupFullName}` : '';
+          const rawBody = meeting && !meeting.startUnknown
+            ? `Hi Coach ${popupCoach}, YES, I'm confirming my call on ${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}${namePart}`
+            : `Hi Coach ${popupCoach}, YES, I'm confirming my call${namePart}`;
+          return (
+            <ConfirmationExitPopup
+              location="closer"
+              coachFirstName={popupCoach}
+              phoneRaw={popupPhone.raw}
+              smsBody={encodeURIComponent(rawBody)}
+            />
+          );
+        })()}
       </div>
     </PrepChecklistProvider>
   );

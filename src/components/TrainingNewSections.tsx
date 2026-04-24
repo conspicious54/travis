@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users, CheckCircle, Check, Mail } from 'lucide-react';
+import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users, CheckCircle, Check, Mail, MessageSquare, MessageCircle } from 'lucide-react';
 import type { Personalization, Reason, Situation, ValuedFeature, Capital, TravisHistory, Region } from '../lib/personalization';
-import { trackTestimonialsExpanded, trackCreditQuizStarted, trackCreditQuizCompleted, trackCreditCardApplyClicked, trackEvent } from '../lib/posthog';
+import { trackTestimonialsExpanded, trackCreditQuizStarted, trackCreditQuizCompleted, trackCreditCardApplyClicked, trackEvent, setPersonProperties } from '../lib/posthog';
 import { usePrepChecklist } from '../context/PrepChecklistContext';
 import { getCoachByOwnerName, TRAVIS } from '../lib/coaches';
+import { hadRecentConfirmClick, markConfirmClicked } from '../lib/confirmFlow';
 
 /* ───────────────────────────── helpers ───────────────────────────── */
 
@@ -1624,15 +1625,34 @@ export function ResourceSection() {
 }
 
 /* ───────────── exit intent popup for confirmation pages ───────────
-   Triggers when the user's mouse leaves the viewport toward the top
-   (desktop) or when they switch tabs / press back (mobile via
-   visibilitychange). Only fires once per session.
+   Triggers on genuine exit intent:
+   - Desktop: cursor leaves viewport toward the top
+   - Mobile: tab hides (visibilitychange), unless the user just
+     clicked a confirm button (they're app-switching to Messages/
+     WhatsApp, not leaving)
+   - Mobile fallback: scrolled ≥60% then scrolled back near the top
+     after 20+ seconds on page — "I've seen enough, going back"
+   Only fires once per session.
 ──────────────────────────────────────────────────────────────────── */
 
-export function ConfirmationExitPopup() {
+interface ConfirmationExitPopupProps {
+  location: 'setter' | 'closer';
+  coachFirstName: string;
+  phoneRaw: string;
+  smsBody: string;
+  whatsappBody?: string;
+}
+
+export function ConfirmationExitPopup({
+  location,
+  coachFirstName,
+  phoneRaw,
+  smsBody,
+  whatsappBody,
+}: ConfirmationExitPopupProps) {
   const [show, setShow] = useState(false);
   const firedRef = useRef(false);
-  const { completed, isAllComplete } = usePrepChecklist();
+  const { completed, isAllComplete, markDone } = usePrepChecklist();
 
   // Snapshot the state at the moment the popup is triggered so the
   // content doesn't change if the user's state updates while it's open
@@ -1642,34 +1662,65 @@ export function ConfirmationExitPopup() {
     const STORAGE_FLAG = 'pp_exit_popup_shown';
     if (sessionStorage.getItem(STORAGE_FLAG)) return;
 
-    const trigger = () => {
+    const pageLoadedAt = Date.now();
+    let maxScrollPct = 0;
+
+    const trigger = (source: string) => {
       if (firedRef.current) return;
       firedRef.current = true;
       sessionStorage.setItem(STORAGE_FLAG, '1');
       setSnapshot({ ...completed });
       setShow(true);
       trackEvent('exit_popup_shown', {
+        source,
+        faq_location: location,
         microAsk: completed.microAsk,
         video: completed.video,
         principles: completed.principles,
         all_complete: isAllComplete(),
+        seconds_on_page: Math.floor((Date.now() - pageLoadedAt) / 1000),
       });
     };
 
     const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY <= 5) trigger();
+      if (e.clientY <= 5) trigger('mouseleave');
     };
     const handleVisibility = () => {
-      if (document.visibilityState === 'hidden') trigger();
+      if (document.visibilityState !== 'hidden') return;
+      // They just clicked a confirm button — they're switching to
+      // Messages/WhatsApp, not leaving the page. Suppress.
+      if (hadRecentConfirmClick(30_000)) return;
+      trigger('visibilitychange');
+    };
+
+    // Mobile "scrolled deep then came back up" trigger. Only fires
+    // after 20s on page and after reaching 60%+ depth.
+    const handleScroll = () => {
+      const doc = document.documentElement;
+      const scrollable = doc.scrollHeight - window.innerHeight;
+      if (scrollable <= 0) return;
+      const pct = (window.scrollY / scrollable) * 100;
+      if (pct > maxScrollPct) maxScrollPct = pct;
+      const timeOnPage = Date.now() - pageLoadedAt;
+      if (
+        maxScrollPct >= 60 &&
+        pct <= 10 &&
+        timeOnPage >= 20_000 &&
+        !hadRecentConfirmClick(30_000)
+      ) {
+        trigger('scroll_back_to_top');
+      }
     };
 
     document.addEventListener('mouseleave', handleMouseLeave);
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       document.removeEventListener('mouseleave', handleMouseLeave);
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('scroll', handleScroll);
     };
-  }, [completed, isAllComplete]);
+  }, [completed, isAllComplete, location]);
 
   if (!show || !snapshot) return null;
 
@@ -1758,9 +1809,9 @@ export function ConfirmationExitPopup() {
     body = "You've watched the video — nice. Now just check off the key principles so you walk into your call with the full picture. Takes a minute.";
     ctaLabel = 'Show me the principles';
   } else if (undone.microAsk) {
-    headline = "Don't forget to confirm.";
-    body = "You've done the work to prepare — now just tap Text or WhatsApp at the top so our team knows you'll be there. Takes 10 seconds.";
-    ctaLabel = 'Back to confirm';
+    headline = `One tap to tell Coach ${coachFirstName} you'll be there.`;
+    body = "You've prepped for the call — the last step is letting us know you'll show up. Hit one of the buttons below and tap send.";
+    ctaLabel = 'Back to the page';
   } else {
     headline = 'Before you go.';
     body = "Want to see exactly what doing this alone actually costs? It's not what most people think.";
@@ -1770,6 +1821,24 @@ export function ConfirmationExitPopup() {
   const backToPage = () => {
     setShow(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const whatsappNumber = phoneRaw.replace(/[^\d]/g, '');
+  const effectiveWhatsappBody = whatsappBody ?? smsBody;
+
+  const handlePopupConfirm = (channel: 'sms' | 'whatsapp') => {
+    trackEvent('exit_popup_confirm_clicked', {
+      faq_location: location,
+      channel,
+      coach_first_name: coachFirstName,
+    });
+    setPersonProperties({
+      coach_first_name: coachFirstName,
+      confirmed_via: channel,
+    });
+    markConfirmClicked();
+    markDone('microAsk');
+    setShow(false);
   };
 
   return (
@@ -1811,12 +1880,35 @@ export function ConfirmationExitPopup() {
           </ul>
         </div>
 
-        <button
-          onClick={backToPage}
-          className="w-full py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors cursor-pointer text-sm shadow-md"
-        >
-          {ctaLabel}
-        </button>
+        {undone.microAsk ? (
+          <div className="flex flex-col sm:flex-row items-stretch gap-2">
+            <a
+              href={`sms:${phoneRaw}?&body=${smsBody}`}
+              onClick={() => handlePopupConfirm('sms')}
+              className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-colors shadow-md cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Confirm via Text
+            </a>
+            <a
+              href={`https://wa.me/${whatsappNumber}?text=${effectiveWhatsappBody}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => handlePopupConfirm('whatsapp')}
+              className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-colors shadow-md cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Confirm via WhatsApp
+            </a>
+          </div>
+        ) : (
+          <button
+            onClick={backToPage}
+            className="w-full py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors cursor-pointer text-sm shadow-md"
+          >
+            {ctaLabel}
+          </button>
+        )}
 
         <button
           onClick={dismissToRealCost}

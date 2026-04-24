@@ -540,6 +540,97 @@ showup_by_confirm = upsert(
     ),
 )
 
+# ─── platform breakdown (mobile vs desktop completion) ─────────
+
+confirm_by_platform = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Confirm clicks by platform (iOS / Android / desktop)",
+        "Is confirmation completion different on mobile vs. desktop? If desktop "
+        "dominates, people on phones are getting stuck somewhere — likely the "
+        "tap-to-message handoff.",
+        trends_query(
+            [
+                event_node("closer_confirm_text_clicked"),
+                event_node("closer_confirm_whatsapp_clicked"),
+                event_node("setter_confirm_text_clicked"),
+                event_node("setter_confirm_whatsapp_clicked"),
+            ],
+            breakdown="platform",
+            display="ActionsBarValue",
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+confirmation_view_by_platform = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Confirmation-page views by device",
+        "Split confirmation_page_viewed by $device_type (PostHog auto-captures "
+        "this). Denominator for the platform-level confirm rate.",
+        trends_query(
+            [event_node("confirmation_page_viewed")],
+            breakdown="$device_type",
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+# ─── exit popup effectiveness ──────────────────────────────────
+
+exit_popup_funnel = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Exit popup → confirm click",
+        "Of people who saw the exit popup, how many tapped confirm from "
+        "inside the popup? Measures whether the inline SMS/WhatsApp buttons "
+        "actually rescue the drop-off.",
+        funnels_query(
+            [
+                event_node("exit_popup_shown"),
+                event_node("exit_popup_confirm_clicked"),
+            ],
+            window_days=1,
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+exit_popup_source = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Exit popup triggers by source",
+        "mouseleave = desktop, visibilitychange = tab hide, "
+        "scroll_back_to_top = mobile 'seen enough, leaving'. Tells you which "
+        "trigger is actually firing on mobile vs desktop.",
+        trends_query(
+            [event_node("exit_popup_shown")],
+            breakdown="source",
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
+# ─── confirm → show-up split by platform ───────────────────────
+
+showup_by_platform = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Show-up rate split by last_platform",
+        "Person property last_platform is set on the confirm click. This "
+        "shows whether mobile confirmers show up at a different rate than "
+        "desktop confirmers — answers the 'is the drop-off on mobile?' "
+        "question once HubSpot data flows in.",
+        trends_query(
+            [event_node("closer_call_showed")],
+            breakdown="last_platform",
+            breakdown_type="person",
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
 print()
 print("Done.")
 print(f"Dashboard: {HOST}/project/{PROJECT_ID}/dashboard/{DASH_ID}")
