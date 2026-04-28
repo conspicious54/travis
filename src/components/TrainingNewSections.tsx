@@ -1624,6 +1624,87 @@ export function ResourceSection() {
   );
 }
 
+/* ───────────── mobile sticky confirm bar ───────────────────────────
+   Always-visible bottom bar on mobile with the two confirm buttons.
+   Shows once the user scrolls past the hero (so it doesn't duplicate
+   the banner buttons) and disappears once the micro-ask is done.
+──────────────────────────────────────────────────────────────────── */
+
+interface MobileConfirmStickyBarProps {
+  location: 'setter' | 'closer';
+  coachFirstName: string;
+  phoneRaw: string;
+  smsBody: string;
+  whatsappBody?: string;
+}
+
+export function MobileConfirmStickyBar({
+  location,
+  coachFirstName,
+  phoneRaw,
+  smsBody,
+  whatsappBody,
+}: MobileConfirmStickyBarProps) {
+  const [show, setShow] = useState(false);
+  const { completed, markDone } = usePrepChecklist();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShow(window.scrollY > 250);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  if (completed.microAsk || !show) return null;
+
+  const whatsappNumber = phoneRaw.replace(/[^\d]/g, '');
+  const effectiveWhatsappBody = whatsappBody ?? smsBody;
+
+  const handleClick = (channel: 'sms' | 'whatsapp') => {
+    trackEvent('mobile_sticky_bar_clicked', {
+      faq_location: location,
+      channel,
+      coach_first_name: coachFirstName,
+    });
+    setPersonProperties({
+      coach_first_name: coachFirstName,
+      confirmed_via: channel,
+    });
+    markConfirmClicked();
+    markDone('microAsk');
+  };
+
+  return (
+    <div
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-orange-200 shadow-[0_-8px_20px_rgba(0,0,0,0.08)]"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <div className="px-3 pt-2.5 pb-2.5 flex gap-2">
+        <a
+          href={`sms:${phoneRaw}?&body=${smsBody}`}
+          onClick={() => handleClick('sms')}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer"
+        >
+          <MessageSquare className="w-4 h-4" />
+          Confirm via Text
+        </a>
+        <a
+          href={`https://wa.me/${whatsappNumber}?text=${effectiveWhatsappBody}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => handleClick('whatsapp')}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer"
+        >
+          <MessageCircle className="w-4 h-4" />
+          WhatsApp
+        </a>
+      </div>
+    </div>
+  );
+}
+
 /* ───────────── exit intent popup for confirmation pages ───────────
    Triggers on genuine exit intent:
    - Desktop: cursor leaves viewport toward the top
@@ -1665,8 +1746,16 @@ export function ConfirmationExitPopup({
     const pageLoadedAt = Date.now();
     let maxScrollPct = 0;
 
+    const MIN_SECONDS_ON_PAGE = 15_000;
+    const MIN_ENGAGED_SCROLL_PCT = 25;
+
     const trigger = (source: string) => {
       if (firedRef.current) return;
+      const elapsed = Date.now() - pageLoadedAt;
+      // Don't pop on people who haven't read anything yet — they bail
+      // for unrelated reasons (notification, switching apps, etc.) and
+      // the popup just adds friction.
+      if (elapsed < MIN_SECONDS_ON_PAGE) return;
       firedRef.current = true;
       sessionStorage.setItem(STORAGE_FLAG, '1');
       setSnapshot({ ...completed });
@@ -1678,7 +1767,8 @@ export function ConfirmationExitPopup({
         video: completed.video,
         principles: completed.principles,
         all_complete: isAllComplete(),
-        seconds_on_page: Math.floor((Date.now() - pageLoadedAt) / 1000),
+        seconds_on_page: Math.floor(elapsed / 1000),
+        max_scroll_pct: Math.round(maxScrollPct),
       });
     };
 
@@ -1690,6 +1780,9 @@ export function ConfirmationExitPopup({
       // They just clicked a confirm button — they're switching to
       // Messages/WhatsApp, not leaving the page. Suppress.
       if (hadRecentConfirmClick(30_000)) return;
+      // Tab-hide on a page they haven't engaged with is just normal
+      // app-switching noise — only fire if they've actually scrolled.
+      if (maxScrollPct < MIN_ENGAGED_SCROLL_PCT) return;
       trigger('visibilitychange');
     };
 

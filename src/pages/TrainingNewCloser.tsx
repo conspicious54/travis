@@ -10,6 +10,7 @@ import {
   MeetYourCoach,
   NextStepsList,
   ConfirmationFAQ,
+  MobileConfirmStickyBar,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -809,8 +810,8 @@ export function TrainingNewCloser() {
         <MeetYourCoach ownerName={meeting?.organizer} />
         <LowCapitalStrategies p={p} />
         <CreditCardQuiz p={p} />
-        <CloserFinalCTA meeting={meeting} firstName={firstName} />
         <ConfirmationFAQ p={p} location="closer" />
+        <CloserFinalCTA meeting={meeting} firstName={firstName} />
         <SharedFooter />
         {(() => {
           const popupCoach = (() => {
@@ -827,13 +828,22 @@ export function TrainingNewCloser() {
           const rawBody = meeting && !meeting.startUnknown
             ? `Hi Coach ${popupCoach}, YES, I'm confirming my call on ${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}${namePart}`
             : `Hi Coach ${popupCoach}, YES, I'm confirming my call${namePart}`;
+          const encodedBody = encodeURIComponent(rawBody);
           return (
-            <ConfirmationExitPopup
-              location="closer"
-              coachFirstName={popupCoach}
-              phoneRaw={popupPhone.raw}
-              smsBody={encodeURIComponent(rawBody)}
-            />
+            <>
+              <ConfirmationExitPopup
+                location="closer"
+                coachFirstName={popupCoach}
+                phoneRaw={popupPhone.raw}
+                smsBody={encodedBody}
+              />
+              <MobileConfirmStickyBar
+                location="closer"
+                coachFirstName={popupCoach}
+                phoneRaw={popupPhone.raw}
+                smsBody={encodedBody}
+              />
+            </>
           );
         })()}
       </div>

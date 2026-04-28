@@ -614,6 +614,21 @@ exit_popup_source = upsert(
 
 # ─── confirm → show-up split by platform ───────────────────────
 
+sticky_bar_clicks = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "Mobile sticky bar — confirms rescued",
+        "Counts mobile_sticky_bar_clicked by channel + faq_location. "
+        "If this number is >0, the sticky bar is rescuing confirms that "
+        "the inline banner buttons missed.",
+        trends_query(
+            [event_node("mobile_sticky_bar_clicked")],
+            breakdown="channel",
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
 showup_by_platform = upsert(
     INSIGHTS_PATH,
     build_insight(

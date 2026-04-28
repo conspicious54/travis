@@ -9,6 +9,7 @@ import {
   MethodCheckIn,
   NextStepsList,
   ConfirmationFAQ,
+  MobileConfirmStickyBar,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Phone, Star, Shield, MessageSquare, MessageCircle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -389,10 +390,16 @@ export function TrainingNewSetter() {
         <MethodCheckIn />
         <LowCapitalStrategies p={p} />
         <CreditCardQuiz p={p} />
-        <SetterFinalCTA firstName={p?.firstName || ''} />
         <ConfirmationFAQ p={p} location="setter" />
+        <SetterFinalCTA firstName={p?.firstName || ''} />
         <SharedFooter />
         <ConfirmationExitPopup
+          location="setter"
+          coachFirstName={popupCoach}
+          phoneRaw={PHONE_NUMBERS[popupRegion].raw}
+          smsBody={popupSmsBody}
+        />
+        <MobileConfirmStickyBar
           location="setter"
           coachFirstName={popupCoach}
           phoneRaw={PHONE_NUMBERS[popupRegion].raw}
