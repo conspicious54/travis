@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
 import { identifyUser, trackBookingPageViewed, trackBookingCompleted } from '../lib/posthog';
+import { syncContactTimezone } from '../lib/syncTimezone';
 
 /* ───── /book — embedded HubSpot closer scheduler ─────────────────
    Embeds the HubSpot meeting scheduler in an iframe and listens
@@ -128,6 +129,16 @@ export function Book() {
         const postResponse = bookingResponse.postResponse || {};
         const organizer = postResponse.organizer || bookingResponse.organizer || {};
         const contact = postResponse.contact || bookingResponse.contact || {};
+
+        // Push the visitor's IANA timezone (e.g. "America/New_York")
+        // onto their HubSpot contact so SMS/email automations can
+        // render meeting times in the recipient's local zone. Fire-
+        // and-forget; sendBeacon survives the redirect below.
+        const bookingEmail =
+          (contact.email as string | undefined) ||
+          new URLSearchParams(window.location.search).get('email') ||
+          '';
+        syncContactTimezone(bookingEmail, 'book_redirect');
 
         // dateString is an ISO timestamp like "2026-04-23T19:00:00.000Z"
         // OR just a bare "2026-04-23" in some versions. Only trust it

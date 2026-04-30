@@ -29,6 +29,7 @@ import {
   useSproutvideoTracking,
 } from '../lib/confirmationTracking';
 import { markConfirmClicked } from '../lib/confirmFlow';
+import { syncContactTimezone } from '../lib/syncTimezone';
 
 /* ─────────────────── region & platform detection ─────────────────── */
 
@@ -358,6 +359,10 @@ export function TrainingNewSetter() {
         first_name: personalization.firstName,
         last_name: personalization.lastName,
       });
+      // Fallback in case the /book page sync didn't fire (e.g. user
+      // landed here from a saved link). Deduped by email+tz so it's
+      // a no-op if Book.tsx already pushed.
+      syncContactTimezone(personalization.email, 'setter_confirmation');
     }
     setPersonProperties({
       region: personalization.region,

@@ -614,6 +614,24 @@ exit_popup_source = upsert(
 
 # ─── confirm → show-up split by platform ───────────────────────
 
+timezone_sync_health = upsert(
+    INSIGHTS_PATH,
+    build_insight(
+        "HubSpot timezone sync — success vs failure",
+        "Tracks contact_timezone_synced vs contact_timezone_sync_failed. "
+        "If failed > 0 and the reason is hubspot_error or token_not_set, "
+        "the Private App needs the crm.objects.contacts.write scope.",
+        trends_query(
+            [
+                event_node("contact_timezone_synced"),
+                event_node("contact_timezone_sync_failed"),
+            ],
+            breakdown="source",
+        ),
+        dashboards=[DASH_ID],
+    ),
+)
+
 sticky_bar_clicks = upsert(
     INSIGHTS_PATH,
     build_insight(
