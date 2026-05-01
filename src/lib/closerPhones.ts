@@ -42,6 +42,15 @@ const CLOSER_PHONES: Record<string, CloserPhoneMap> = {
     eu:   { display: '+44 7463 587844',  raw: '+447463587844', label: 'Jesse — UK' },
     aunz: { display: '+61 468 080 264',  raw: '+61468080264',  label: 'Jesse — AU' },
   },
+  // Zac — Kixie lines pending. While this map has no entries for him,
+  // getCloserPhone() falls through to the default regional number, so
+  // confirms still go somewhere sensible. Add per-region entries once
+  // his Kixie numbers are provisioned.
+  // 'zac lastname': {
+  //   us:   { display: '...', raw: '+1...', label: 'Zac — US' },
+  //   eu:   { display: '...', raw: '+44...', label: 'Zac — UK' },
+  //   aunz: { display: '...', raw: '+61...', label: 'Zac — AU' },
+  // },
 };
 
 /**

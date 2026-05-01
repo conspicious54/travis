@@ -136,9 +136,10 @@ function SetterConfirmationBanner({
   const phone = PHONE_NUMBERS[region];
   const isMobile = platform === 'ios' || platform === 'android';
 
-  // Setter flow has no booked meeting yet, so we can't know the coach.
-  // Default to Jesse — he's the baseline assignee when nothing else resolves.
-  const coachFirstName = 'Jesse';
+  // Setter flow has no booked meeting yet, so we can't know which
+  // coach will end up taking the call. Default to Santiago — he's
+  // currently the active setter doing the first outreach.
+  const coachFirstName = 'Santiago';
 
   usePhoneCopyTracking(phone.display, 'setter', region);
   const armAppSwitch = useConfirmAppSwitch('setter');
@@ -380,7 +381,7 @@ export function TrainingNewSetter() {
     });
   }, []);
 
-  const popupCoach = 'Jesse';
+  const popupCoach = 'Santiago';
   const popupSmsBody = encodeURIComponent(
     `Hi Coach ${popupCoach}, YES, confirming my call${p?.firstName ? ` - ${p.firstName}` : ''}`
   );
