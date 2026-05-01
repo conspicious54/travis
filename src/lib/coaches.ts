@@ -43,7 +43,7 @@ export const COACHES: Record<string, Coach> = {
     fullName: 'Matthew Kemp',
     role: 'Passion Product Lead Amazon Coach',
     tenure: 'On the Passion Product team',
-    photoUrl: '/coaches/matt.jpg',
+    photoUrl: '/coaches/matt.png',
     travisIntro:
       "Matt is one of my top in-house Amazon coaches at Passion Product. He's the kind of coach who takes your goals seriously and keeps you accountable to actually hitting them.",
     bio: "As part of our coaching team, he's helped hundreds of our students work through the Passion Product method — from spotting a winning niche to building a brand people actually want to buy from. On your call he'll break down exactly what the path looks like for your situation.",
@@ -65,7 +65,7 @@ export const COACHES: Record<string, Coach> = {
     fullName: 'Zac Solipsism',
     role: 'Passion Product Lead Amazon Coach',
     tenure: 'On the Passion Product team',
-    photoUrl: '/coaches/zac.jpg',
+    photoUrl: '/coaches/zac.png',
     travisIntro:
       "Zac is one of my newest in-house Amazon coaches at Passion Product, and he's already proving why I brought him on. Sharp, direct, and serious about helping you build something real.",
     bio: "He's been trained directly on the Passion Product method and is in the trenches with our students every week. On your call he'll get to the heart of what's actually going to move the needle for your situation.",
