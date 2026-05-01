@@ -59,13 +59,10 @@ export const COACHES: Record<string, Coach> = {
       "Jesse is one of my best in-house Amazon coaches at Passion Product. If you want someone who's going to be real with you and help you build something that actually works long-term, he's your guy.",
     bio: "He's deep in our method and has helped hundreds of Passion Product students move from 'I want to do this' to actually having a real brand on Amazon. On your call he'll help you see the clearest path forward for where you're at.",
   },
-  // Last name pending — update fullName + the lowercased map key once
-  // confirmed from HubSpot (the lookup matches first name alone, so this
-  // already works, but the key-by-full-name is stronger).
-  'zac': {
+  'zac solipsism': {
     id: 'zac',
     firstName: 'Zac',
-    fullName: 'Zac',
+    fullName: 'Zac Solipsism',
     role: 'Passion Product Lead Amazon Coach',
     tenure: 'On the Passion Product team',
     photoUrl: '/coaches/zac.jpg',
@@ -76,10 +73,10 @@ export const COACHES: Record<string, Coach> = {
   // Santiago is a setter — kept here so getCoachByOwnerName resolves him
   // if a HubSpot owner happens to use his name. Setter SMS confirmations
   // also reference this entry via firstName.
-  'santiago': {
+  'santiago espinoza': {
     id: 'santiago',
     firstName: 'Santiago',
-    fullName: 'Santiago',
+    fullName: 'Santiago Espinoza',
     role: 'Passion Product Setter',
     tenure: 'On the Passion Product team',
     photoUrl: '',

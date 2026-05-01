@@ -36,9 +36,9 @@ import { syncContactTimezone } from '../lib/syncTimezone';
 type Region = 'us' | 'eu' | 'aunz';
 
 const PHONE_NUMBERS: Record<Region, { display: string; raw: string; label: string }> = {
-  us:   { display: '(830) 357-7613',    raw: '+18303577613',  label: 'USA / Canada' },
-  eu:   { display: '+44 7853 306509',   raw: '+447853306509', label: 'UK / Europe' },
-  aunz: { display: '+61 489 089 374',   raw: '+61489089374',  label: 'Australia / NZ' },
+  us:   { display: '(661) 443-6480',    raw: '+16614436480',  label: 'USA / Canada' },
+  eu:   { display: '+44 7723 573445',   raw: '+447723573445', label: 'UK / Europe' },
+  aunz: { display: '+61 485 041 884',   raw: '+61485041884',  label: 'Australia / NZ' },
 };
 
 function detectRegion(): Region {
@@ -69,8 +69,8 @@ function generateVCard(phone: string): string {
   return [
     'BEGIN:VCARD',
     'VERSION:3.0',
-    'N:Marziani;Travis;;;',
-    'FN:Travis Marziani',
+    'N:Espinoza;Santiago;;;',
+    'FN:Santiago Espinoza',
     `TEL;TYPE=CELL:${phone}`,
     'NOTE:Save this contact so you recognize the number when we call.',
     'END:VCARD',
@@ -83,7 +83,7 @@ function downloadVCard(phone: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Travis-Marziani.vcf';
+  a.download = 'Santiago-Espinoza.vcf';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -208,7 +208,7 @@ function SetterConfirmationBanner({
           <span className="font-bold text-gray-900">{phone.display}</span>.
         </p>
         <p className="text-sm md:text-base text-gray-500 mb-10">
-          Save it as <span className="font-bold text-gray-700">"Travis Marziani"</span> so you know it's us when we call.
+          Save it as <span className="font-bold text-gray-700">"Santiago Espinoza"</span> so you know it's us when we call.
         </p>
 
         {/* Micro-ask: confirm via text or WhatsApp */}
@@ -268,7 +268,7 @@ function SetterConfirmationBanner({
             {saved ? (
               <div className="inline-flex items-center gap-2 bg-green-50 border-2 border-green-300 rounded-xl px-5 py-3 text-green-800 font-bold text-sm">
                 <CheckCircle className="w-5 h-5" />
-                Travis saved to your contacts.
+                Santiago saved to your contacts.
               </div>
             ) : (
               <button
@@ -276,7 +276,7 @@ function SetterConfirmationBanner({
                 className="inline-flex items-center gap-2 px-7 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors shadow-md text-sm md:text-base cursor-pointer"
               >
                 <Phone className="w-4 h-4" />
-                Save Travis to Contacts
+                Save Santiago to Contacts
               </button>
             )}
           </div>
@@ -287,7 +287,7 @@ function SetterConfirmationBanner({
             <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
               <li>Open Contacts</li>
               <li>Add <span className="font-mono font-bold">{phone.display}</span></li>
-              <li>Save as <span className="font-bold">"Travis Marziani"</span></li>
+              <li>Save as <span className="font-bold">"Santiago Espinoza"</span></li>
             </ol>
           </div>
         )}
