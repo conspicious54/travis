@@ -25,6 +25,7 @@ import { Darryl } from './pages/Darryl';
 import { ProductResearchBonus } from './pages/ProductResearchBonus';
 import { ProductScorecard } from './pages/ProductScorecard';
 import { ProductEstimator } from './pages/ProductEstimator';
+import { Migration } from './pages/Migration';
 import { VideoProgressProvider } from './context/VideoProgressContext';
 import { EmailCaptureProvider } from './context/EmailCaptureContext';
 import { ExitIntentProvider } from './context/ExitIntentContext';
@@ -63,6 +64,7 @@ function AppWrapper() {
                 <Route path="/productresearchbonus" element={<ProductResearchBonus />} />
                 <Route path="/productscorecard" element={<ProductScorecard />} />
                 <Route path="/productestimator" element={<ProductEstimator />} />
+                <Route path="/migration" element={<Migration />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>
