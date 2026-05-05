@@ -12,7 +12,7 @@ import {
   ConfirmationFAQ,
   MobileConfirmStickyBar,
 } from '../components/TrainingNewSections';
-import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle } from 'lucide-react';
+import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle, AlertTriangle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import {
   identifyUser,
@@ -659,6 +659,13 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
               <MessageCircle className="w-4 h-4" />
               Confirm via WhatsApp
             </a>
+          </div>
+
+          <div className="mt-5 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2.5 text-left max-w-lg mx-auto">
+            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" strokeWidth={2.25} />
+            <p className="text-sm text-gray-800 leading-snug">
+              <span className="font-bold text-red-600">NOTE:</span> If we don't see your "Yes" RSVP within 12 hours, we cancel the slot and pass it to someone on the waitlist. We only get on calls with people who actually show up.
+            </p>
           </div>
 
           <p className="text-xs text-gray-400 mt-4">
