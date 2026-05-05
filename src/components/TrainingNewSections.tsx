@@ -1647,10 +1647,9 @@ export function ScrollToNextButton({ location }: { location: 'setter' | 'closer'
 
   useEffect(() => {
     const update = () => {
-      const scrolled = window.scrollY > 200;
       const nearBottom =
         window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 120;
-      setShow(scrolled && !nearBottom);
+      setShow(!nearBottom);
     };
     window.addEventListener('scroll', update, { passive: true });
     update();
