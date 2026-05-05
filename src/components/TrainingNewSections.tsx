@@ -1635,6 +1635,72 @@ export function ResourceSection() {
   );
 }
 
+/* ───────────── scroll-to-next-section button ───────────────────────
+   Floating bottom-right button. Each click finds the next h2/h3
+   below the current scroll position and smooth-scrolls to it. Hides
+   on mobile (where MobileConfirmStickyBar lives in that spot) and
+   when the user is near the bottom of the page.
+──────────────────────────────────────────────────────────────────── */
+
+export function ScrollToNextButton({ location }: { location: 'setter' | 'closer' }) {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const update = () => {
+      const scrolled = window.scrollY > 200;
+      const nearBottom =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 120;
+      setShow(scrolled && !nearBottom);
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+    return () => window.removeEventListener('scroll', update);
+  }, []);
+
+  if (!show) return null;
+
+  const handleClick = () => {
+    // Find the next section heading below the current scroll position.
+    // h2 elements anchor major sections on these pages; h3 is the
+    // fallback for sections that title with h3.
+    const candidates = Array.from(
+      document.querySelectorAll<HTMLElement>('h2, h3')
+    );
+    const triggerOffset = window.scrollY + 120;
+    const next = candidates.find((el) => {
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      return top > triggerOffset;
+    });
+
+    if (next) {
+      next.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      trackEvent('next_step_button_clicked', {
+        faq_location: location,
+        target: (next.textContent || '').trim().slice(0, 80),
+      });
+    } else {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: 'smooth',
+      });
+      trackEvent('next_step_button_clicked', {
+        faq_location: location,
+        target: 'bottom',
+      });
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      aria-label="Scroll to next section"
+      className="hidden md:flex fixed bottom-6 right-6 z-30 items-center justify-center w-12 h-12 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer animate-bounce-gentle"
+    >
+      <ChevronDown className="w-6 h-6" strokeWidth={2.5} />
+    </button>
+  );
+}
+
 /* ───────────── mobile sticky confirm bar ───────────────────────────
    Always-visible bottom bar on mobile with the two confirm buttons.
    Shows once the user scrolls past the hero (so it doesn't duplicate

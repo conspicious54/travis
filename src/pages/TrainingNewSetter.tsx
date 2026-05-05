@@ -10,6 +10,7 @@ import {
   NextStepsList,
   ConfirmationFAQ,
   MobileConfirmStickyBar,
+  ScrollToNextButton,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Phone, Star, Shield, MessageSquare, MessageCircle, AlertTriangle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -421,6 +422,7 @@ export function TrainingNewSetter() {
           phoneRaw={PHONE_NUMBERS[popupRegion].raw}
           smsBody={popupSmsBody}
         />
+        <ScrollToNextButton location="setter" />
       </div>
     </PrepChecklistProvider>
   );

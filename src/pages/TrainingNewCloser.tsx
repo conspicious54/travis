@@ -11,6 +11,7 @@ import {
   NextStepsList,
   ConfirmationFAQ,
   MobileConfirmStickyBar,
+  ScrollToNextButton,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle, AlertTriangle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -857,6 +858,7 @@ export function TrainingNewCloser() {
                 phoneRaw={popupPhone.raw}
                 smsBody={encodedBody}
               />
+              <ScrollToNextButton location="closer" />
             </>
           );
         })()}
