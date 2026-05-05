@@ -1,26 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { Mail, GraduationCap, ArrowRight, BookOpen } from 'lucide-react';
+import { Mail, GraduationCap, ArrowRight, Sparkles, Search, Clock } from 'lucide-react';
 import { SharedFooter } from '../components/TrainingNewSections';
 import { trackEvent } from '../lib/posthog';
 
 /* ───── /migration ────────────────────────────────────────────────
-   Holding page for the passionproductformula.com → travismarziani.com
-   migration. Three audiences are routed differently here:
+   Three-option routing page for the passionproductformula.com →
+   travismarziani.com migration. Goal: someone landing here should
+   instantly see which of three buckets they're in and what to do.
 
    1. Former Passion Product members — find the migration email,
-      with a countdown to the access deadline.
+      with a live countdown to the access deadline.
    2. Prospects who never bought — sent to start.travismarziani.com.
    3. Passion Product Fast Track students — emailed access manually.
-
-   Eventually this page goes away and passionproductformula.com 301s
-   straight to travismarziani.com. Until then we need to soak up the
-   "where did my course go?" emails.
 ──────────────────────────────────────────────────────────────────── */
 
 const MIGRATION_DEADLINE_ISO = '2026-05-12T23:59:59-04:00';
 const MIGRATION_EMAIL_SUBJECT = '[Action Required] Update to Your Passion Product Account';
 const START_URL = 'http://start.travismarziani.com/?utm_source=ppfredirect';
 const SUPPORT_EMAIL = 'travis@passionproduct.com';
+const GMAIL_SEARCH_URL = `https://mail.google.com/mail/u/0/#search/${encodeURIComponent(`subject:"${MIGRATION_EMAIL_SUBJECT}"`)}`;
+const FAST_TRACK_MAILTO =
+  `mailto:${SUPPORT_EMAIL}` +
+  `?subject=${encodeURIComponent('Fast Track migration access')}` +
+  `&body=${encodeURIComponent("Hi Travis,\n\nI'm a Passion Product Fast Track student and need access to the new platform.\n\nThanks!")}`;
 
 function useCountdown(targetMs: number) {
   const [now, setNow] = useState(() => Date.now());
@@ -38,17 +40,8 @@ function useCountdown(targetMs: number) {
   };
 }
 
-function CountdownCell({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="flex flex-col items-center">
-      <div className="text-3xl md:text-5xl font-black tabular-nums text-gray-900">
-        {String(value).padStart(2, '0')}
-      </div>
-      <div className="text-[10px] md:text-xs uppercase tracking-[0.15em] text-gray-500 mt-1">
-        {label}
-      </div>
-    </div>
-  );
+function pad(n: number) {
+  return String(n).padStart(2, '0');
 }
 
 export function Migration() {
@@ -59,134 +52,155 @@ export function Migration() {
     trackEvent('migration_page_viewed');
   }, []);
 
-  const handleStartClick = () => trackEvent('migration_start_clicked');
-  const handleSupportClick = () => trackEvent('migration_support_email_clicked');
-
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <div className="max-w-2xl mx-auto px-5 pt-16 md:pt-24 pb-16 md:pb-24">
-        {/* Hero */}
-        <header className="mb-14 md:mb-16">
-          <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.18em] mb-3">
-            We've migrated
-          </p>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-4">
-            passionproductformula.com is moving.
-          </h1>
-          <p className="text-base md:text-lg text-gray-600 leading-relaxed">
-            Find the option below that matches you.
-          </p>
-        </header>
+    <div className="min-h-screen bg-gradient-to-b from-orange-50/50 via-white to-white">
+      {/* Hero — compact so the three options are above the fold */}
+      <header className="text-center pt-12 md:pt-20 pb-8 md:pb-12 px-5">
+        <p className="text-orange-600 text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-3">
+          We've migrated
+        </p>
+        <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-[1.05] mb-4 max-w-3xl mx-auto">
+          passionproductformula.com is{' '}
+          <span className="text-orange-600">moving.</span>
+        </h1>
+        <p className="text-base md:text-xl text-gray-600 max-w-xl mx-auto leading-relaxed">
+          Pick the option that's you. Takes 30 seconds.
+        </p>
+      </header>
 
-        {/* Option 1 — Former member */}
-        <section className="border-t border-gray-200 pt-10 md:pt-12 mb-12 md:mb-14">
-          <div className="flex items-center gap-2 mb-3">
-            <BookOpen className="w-4 h-4 text-gray-400" />
-            <p className="text-xs font-bold uppercase tracking-[0.15em] text-gray-500">
-              Former Passion Product member
-            </p>
-          </div>
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight mb-4">
-            Check your email for the migration link.
-          </h2>
-          <p className="text-gray-700 text-base md:text-lg leading-relaxed mb-5">
-            Search your inbox (and spam) for the subject line below. It has the steps for accessing
-            the new platform.
-          </p>
+      <main className="max-w-7xl mx-auto px-4 md:px-6 pb-16 md:pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 items-stretch">
 
-          <div className="bg-gray-50 rounded-lg px-4 py-3 mb-6">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
-              Subject line
-            </p>
-            <p className="font-bold text-gray-900 leading-snug break-words">
-              {MIGRATION_EMAIL_SUBJECT}
-            </p>
-          </div>
+          {/* ─── Card 1: Former member (urgent / orange) ──────────── */}
+          <div className="relative flex flex-col bg-white border-2 border-orange-300 rounded-3xl p-6 md:p-7 shadow-lg shadow-orange-100/50">
+            <div className="absolute -top-3 left-6 inline-flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
+              <Clock className="w-3 h-3" />
+              Time-sensitive
+            </div>
 
-          {c.expired ? (
-            <p className="text-gray-700 text-base leading-relaxed">
-              The migration window has closed. Email{' '}
-              <a
-                href={`mailto:${SUPPORT_EMAIL}`}
-                onClick={handleSupportClick}
-                className="font-bold text-orange-600 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
-              >
-                {SUPPORT_EMAIL}
-              </a>{' '}
-              and we'll help you out.
+            <div className="w-14 h-14 rounded-2xl bg-orange-100 border border-orange-200 flex items-center justify-center mb-5">
+              <Mail className="w-7 h-7 text-orange-600" strokeWidth={2.25} />
+            </div>
+
+            <h2 className="text-xl md:text-2xl font-black tracking-tight leading-tight text-gray-900 mb-3">
+              I'm a former Passion Product member.
+            </h2>
+            <p className="text-gray-700 leading-relaxed mb-5">
+              Find the migration email in your inbox to get access to the new platform.
             </p>
-          ) : (
-            <div>
-              <div className="flex items-end justify-start gap-5 md:gap-7 mb-3">
-                <CountdownCell value={c.days} label="Days" />
-                <CountdownCell value={c.hours} label="Hours" />
-                <CountdownCell value={c.minutes} label="Minutes" />
-                <CountdownCell value={c.seconds} label="Seconds" />
-              </div>
-              <p className="text-sm text-gray-500 leading-relaxed">
-                Access expires <span className="font-semibold text-gray-700">May 12, 2026</span>.
+
+            <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 mb-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-orange-700 mb-1">
+                Subject line
+              </p>
+              <p className="font-bold text-gray-900 text-sm md:text-base leading-snug break-words">
+                {MIGRATION_EMAIL_SUBJECT}
               </p>
             </div>
-          )}
-        </section>
 
-        {/* Option 2 — Not a student */}
-        <section className="border-t border-gray-200 pt-10 md:pt-12 mb-12 md:mb-14">
-          <div className="flex items-center gap-2 mb-3">
-            <ArrowRight className="w-4 h-4 text-gray-400" />
-            <p className="text-xs font-bold uppercase tracking-[0.15em] text-gray-500">
-              Not a student
-            </p>
-          </div>
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight mb-4">
-            Looking to learn about working with Travis?
-          </h2>
-          <p className="text-gray-700 text-base md:text-lg leading-relaxed mb-6">
-            Head to Travis's main site to see what the team is doing right now and how to get
-            started.
-          </p>
-          <a
-            href={START_URL}
-            onClick={handleStartClick}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors cursor-pointer"
-          >
-            Visit start.travismarziani.com
-            <ArrowRight className="w-4 h-4" />
-          </a>
-        </section>
+            {!c.expired ? (
+              <div className="bg-gray-900 text-white rounded-xl px-4 py-3 mb-5">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-orange-300 mb-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  Expires May 12, 2026
+                </div>
+                <div className="font-mono font-black tabular-nums text-lg md:text-xl">
+                  {pad(c.days)}d {pad(c.hours)}h {pad(c.minutes)}m {pad(c.seconds)}s
+                </div>
+              </div>
+            ) : (
+              <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 mb-5 text-sm leading-relaxed">
+                Migration window closed. Email{' '}
+                <span className="font-bold">{SUPPORT_EMAIL}</span> for help.
+              </div>
+            )}
 
-        {/* Option 3 — Fast Track */}
-        <section className="border-t border-gray-200 pt-10 md:pt-12">
-          <div className="flex items-center gap-2 mb-3">
-            <GraduationCap className="w-4 h-4 text-gray-400" />
-            <p className="text-xs font-bold uppercase tracking-[0.15em] text-gray-500">
-              Fast Track student
-            </p>
-          </div>
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight mb-4">
-            Email Travis directly for access.
-          </h2>
-          <p className="text-gray-700 text-base md:text-lg leading-relaxed mb-6">
-            Send a note to{' '}
             <a
-              href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Fast Track migration access')}&body=${encodeURIComponent("Hi Travis,\n\nI'm a Passion Product Fast Track student and need access to the new platform.\n\nThanks!")}`}
-              onClick={handleSupportClick}
-              className="font-bold text-gray-900 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
+              href={GMAIL_SEARCH_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent('migration_search_inbox_clicked')}
+              className="mt-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
             >
-              {SUPPORT_EMAIL}
-            </a>{' '}
-            and he'll grant you access to the new platform directly.
-          </p>
+              <Search className="w-4 h-4" />
+              Search my Gmail for it
+            </a>
+          </div>
+
+          {/* ─── Card 2: Prospect (blue) ──────────────────────────── */}
+          <div className="flex flex-col bg-white border-2 border-blue-200 rounded-3xl p-6 md:p-7 shadow-lg shadow-blue-100/40">
+            <div className="w-14 h-14 rounded-2xl bg-blue-100 border border-blue-200 flex items-center justify-center mb-5">
+              <Sparkles className="w-7 h-7 text-blue-600" strokeWidth={2.25} />
+            </div>
+
+            <h2 className="text-xl md:text-2xl font-black tracking-tight leading-tight text-gray-900 mb-3">
+              I'm new — I want to learn about working with Travis.
+            </h2>
+            <p className="text-gray-700 leading-relaxed mb-5">
+              Head to Travis's main site to see what the team is doing now and how to get started.
+            </p>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-5 text-sm text-gray-700 leading-relaxed">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-blue-700 mb-1">
+                You'll find
+              </p>
+              <p>Free training, the strategy call booking, and how the program works.</p>
+            </div>
+
+            <a
+              href={START_URL}
+              onClick={() => trackEvent('migration_start_clicked')}
+              className="mt-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
+            >
+              Visit start.travismarziani.com
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+
+          {/* ─── Card 3: Fast Track (emerald) ─────────────────────── */}
+          <div className="flex flex-col bg-white border-2 border-emerald-200 rounded-3xl p-6 md:p-7 shadow-lg shadow-emerald-100/40">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-100 border border-emerald-200 flex items-center justify-center mb-5">
+              <GraduationCap className="w-7 h-7 text-emerald-600" strokeWidth={2.25} />
+            </div>
+
+            <h2 className="text-xl md:text-2xl font-black tracking-tight leading-tight text-gray-900 mb-3">
+              I'm a Fast Track student.
+            </h2>
+            <p className="text-gray-700 leading-relaxed mb-5">
+              Email Travis directly and he'll grant you access to the new platform.
+            </p>
+
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-5 text-sm text-gray-700 leading-relaxed">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 mb-1">
+                Send to
+              </p>
+              <p className="font-bold text-gray-900 break-all">{SUPPORT_EMAIL}</p>
+            </div>
+
+            <a
+              href={FAST_TRACK_MAILTO}
+              onClick={() => trackEvent('migration_support_email_clicked')}
+              className="mt-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
+            >
+              <Mail className="w-4 h-4" />
+              Email Travis
+            </a>
+          </div>
+        </div>
+
+        {/* Catch-all */}
+        <p className="text-center text-sm text-gray-500 mt-10 md:mt-12 leading-relaxed px-4">
+          Not sure which one is you? Email{' '}
           <a
-            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Fast Track migration access')}&body=${encodeURIComponent("Hi Travis,\n\nI'm a Passion Product Fast Track student and need access to the new platform.\n\nThanks!")}`}
-            onClick={handleSupportClick}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm md:text-base transition-colors cursor-pointer"
+            href={`mailto:${SUPPORT_EMAIL}`}
+            onClick={() => trackEvent('migration_support_email_clicked')}
+            className="font-bold text-gray-700 hover:text-orange-600 underline underline-offset-2 cursor-pointer"
           >
-            <Mail className="w-4 h-4" />
-            Email {SUPPORT_EMAIL}
-          </a>
-        </section>
-      </div>
+            {SUPPORT_EMAIL}
+          </a>{' '}
+          and we'll point you in the right direction.
+        </p>
+      </main>
 
       <SharedFooter />
     </div>
