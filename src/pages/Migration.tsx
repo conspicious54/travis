@@ -23,8 +23,7 @@ import { trackEvent } from '../lib/posthog';
 const MIGRATION_DEADLINE_ISO = '2026-05-12T23:59:59-04:00';
 const MIGRATION_EMAIL_SUBJECT = '[Action Required] Update to Your Passion Product Account';
 
-const STAR_URL =
-  'https://star.travismarziani.com/?utm_source=passionproductformula&utm_medium=migration&utm_campaign=ppf_sunset';
+const STAR_URL = 'http://start.travismarziani.com/?utm_source=ppfredirect';
 const SUPPORT_EMAIL = 'travis@passionproduct.com';
 
 function useCountdown(targetMs: number) {
@@ -187,7 +186,7 @@ export function Migration() {
             onClick={handleStarClick}
             className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
           >
-            Visit travismarziani.com
+            Visit start.travismarziani.com
             <ArrowRight className="w-4 h-4" />
           </a>
         </section>
