@@ -509,7 +509,7 @@ function formatHumanTime(d: Date): string {
 function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo | null; firstName: string }) {
   const [region, setRegion] = useState<Region>('us');
   const [platform, setPlatform] = useState<Platform>('desktop');
-  const { markDone } = usePrepChecklist();
+  const { markDone, completed } = usePrepChecklist();
 
   useEffect(() => {
     setRegion(detectRegion());
@@ -605,9 +605,12 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
   return (
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
       <div className="max-w-3xl mx-auto px-4 pt-10 pb-10 md:pt-14 md:pb-14 text-center">
-        {/* Checkmark badge */}
-        <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-green-100 border-2 border-green-300 mb-6">
-          <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-green-600" strokeWidth={2.5} />
+        {/* Checkmark badge — pops in on mount with a single ring ripple */}
+        <div className="relative inline-flex items-center justify-center mb-6">
+          <span className="absolute inset-0 rounded-full animate-confirm-check-ring" aria-hidden="true" />
+          <div className="relative inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-green-100 border-2 border-green-300 animate-confirm-check-in">
+            <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-green-600" strokeWidth={2.5} />
+          </div>
         </div>
 
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-gray-900 tracking-tight leading-[1] mb-4">
@@ -644,7 +647,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
             <a
               href={`sms:${phone.raw}?&body=${smsBody}`}
               onClick={handleConfirmText}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
+              className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer ${completed.microAsk ? '' : 'animate-confirm-pulse-blue'}`}
             >
               <MessageSquare className="w-4 h-4" />
               Confirm via Text
@@ -654,7 +657,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
               target="_blank"
               rel="noopener noreferrer"
               onClick={handleConfirmWhatsapp}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
+              className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer ${completed.microAsk ? '' : 'animate-confirm-pulse-green'}`}
             >
               <MessageCircle className="w-4 h-4" />
               Confirm via WhatsApp
