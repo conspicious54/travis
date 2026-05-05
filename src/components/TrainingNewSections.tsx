@@ -490,6 +490,17 @@ export function NextStepsList({
             </div>
           </div>
         </div>
+
+        <div className="mt-5 bg-orange-50 border border-orange-200 rounded-xl px-4 md:px-5 py-4 space-y-3">
+          <p className="text-sm md:text-base leading-relaxed text-gray-800">
+            <span className="font-bold text-orange-600">Show up on time, with your camera on, in a distraction-free space.</span>{' '}
+            We'll do the same for you.
+          </p>
+          <p className="text-sm md:text-base leading-relaxed text-gray-800">
+            <span className="font-bold text-orange-600">If there is a significant other involved in your decision-making process,</span>{' '}
+            please make sure they are available to attend the call as well.
+          </p>
+        </div>
       </div>
     </div>
   );
