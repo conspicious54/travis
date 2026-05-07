@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Mail, GraduationCap, ArrowRight, Sparkles, Search, Clock } from 'lucide-react';
+import { Mail, GraduationCap, ArrowRight, Sparkles, Search, Clock, LogIn } from 'lucide-react';
 import { SharedFooter } from '../components/TrainingNewSections';
 import { trackEvent } from '../lib/posthog';
 
@@ -18,6 +18,7 @@ const MIGRATION_DEADLINE_ISO = '2026-05-12T23:59:59-04:00';
 const MIGRATION_EMAIL_SUBJECT = '[Action Required] Update to Your Passion Product Account';
 const START_URL = 'http://start.travismarziani.com/?utm_source=ppfredirect';
 const SUPPORT_EMAIL = 'travis@passionproduct.com';
+const FAST_TRACK_LOGIN_URL = 'https://passionproductformula.mykajabi.com/login';
 const GMAIL_SEARCH_URL = `https://mail.google.com/mail/u/0/#search/${encodeURIComponent(`subject:"${MIGRATION_EMAIL_SUBJECT}"`)}`;
 const FAST_TRACK_MAILTO =
   `mailto:${SUPPORT_EMAIL}` +
@@ -167,24 +168,37 @@ export function Migration() {
               I'm a Fast Track student.
             </h2>
             <p className="text-gray-700 leading-relaxed mb-5">
-              Email Travis directly and he'll grant you access to the new platform.
+              Log in to your Fast Track course on the Kajabi platform — your existing credentials still work.
             </p>
 
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-5 text-sm text-gray-700 leading-relaxed">
               <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 mb-1">
-                Send to
+                Login
               </p>
-              <p className="font-bold text-gray-900 break-all">{SUPPORT_EMAIL}</p>
+              <p className="font-bold text-gray-900 break-all">passionproductformula.mykajabi.com/login</p>
             </div>
 
             <a
-              href={FAST_TRACK_MAILTO}
-              onClick={() => trackEvent('migration_support_email_clicked')}
-              className="mt-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
+              href={FAST_TRACK_LOGIN_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent('migration_fasttrack_login_clicked')}
+              className="inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
             >
-              <Mail className="w-4 h-4" />
-              Email Travis
+              <LogIn className="w-4 h-4" />
+              Log in to Fast Track
             </a>
+
+            <p className="mt-auto pt-4 text-xs text-gray-500 text-center leading-relaxed">
+              Can't log in?{' '}
+              <a
+                href={FAST_TRACK_MAILTO}
+                onClick={() => trackEvent('migration_support_email_clicked')}
+                className="font-bold text-gray-700 hover:text-emerald-700 underline underline-offset-2 cursor-pointer"
+              >
+                Email {SUPPORT_EMAIL}
+              </a>
+            </p>
           </div>
         </div>
 
