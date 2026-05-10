@@ -6,7 +6,6 @@ import {
   LowCapitalStrategies,
   CreditCardQuiz,
   ConfirmationExitPopup,
-  MethodCheckIn,
   NextStepsList,
   ConfirmationFAQ,
   MobileConfirmStickyBar,
@@ -405,7 +404,6 @@ export function TrainingNewSetter() {
         <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
         <ConfirmationFAQ p={p} location="setter" />
         <TestimonialHighlights p={p} />
-        <MethodCheckIn />
         <LowCapitalStrategies p={p} />
         <CreditCardQuiz p={p} />
         <SetterFinalCTA firstName={p?.firstName || ''} />

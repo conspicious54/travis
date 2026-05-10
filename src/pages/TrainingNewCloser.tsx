@@ -6,7 +6,6 @@ import {
   LowCapitalStrategies,
   CreditCardQuiz,
   ConfirmationExitPopup,
-  MethodCheckIn,
   MeetYourCoach,
   NextStepsList,
   ConfirmationFAQ,
@@ -822,7 +821,6 @@ export function TrainingNewCloser() {
         <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
         <ConfirmationFAQ p={p} location="closer" />
         <TestimonialHighlights p={p} />
-        <MethodCheckIn />
         <MeetYourCoach ownerName={meeting?.organizer} />
         <LowCapitalStrategies p={p} />
         <CreditCardQuiz p={p} />

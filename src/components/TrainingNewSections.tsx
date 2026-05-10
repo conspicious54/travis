@@ -989,7 +989,7 @@ export function TestimonialHighlights({ p: _p }: { p?: Personalization | null })
         <ResultsSegment
           eyebrow="The standout outcomes"
           title="Best Case"
-          percent="(~9% Of Students)"
+          percent="(~14% Of Students)"
           subhead="Our top students have built 7-figure brands, exited businesses, or scaled past $1 million in revenue."
           accent="emerald"
           videos={BEST_CASE_VIDEOS}
@@ -998,7 +998,7 @@ export function TestimonialHighlights({ p: _p }: { p?: Personalization | null })
         <ResultsSegment
           eyebrow="What most students see"
           title="Average Case"
-          percent="(~89% Of Students)"
+          percent="(~84% Of Students)"
           subhead="Our average student is able to be on track for a $100,000/yr business within 6 months."
           accent="blue"
           videos={AVERAGE_CASE_VIDEOS}
