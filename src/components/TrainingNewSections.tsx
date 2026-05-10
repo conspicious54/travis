@@ -856,61 +856,172 @@ export function OpportunitySection() {
 
 const STUDENT_PLAYLIST_URL = 'https://www.youtube.com/playlist?list=PLGNIbsmRLMnt7DzERqhHjwxaSNKdBLbq0';
 
-export function TestimonialHighlights({ p }: { p?: Personalization | null }) {
-  // Featured video: swap based on situation so the first story resonates
-  let featured = { id: '9GSDrJRv2CE', name: 'AJ Rantz', revenue: '$1M', time: '3 years' };
-  if (p?.capital === 'none' || p?.capital === 'save') {
-    featured = { id: 'R-NmmLoh2jo', name: 'Mina', revenue: '$242K', time: '12 months' };
-  } else if (p?.situation === 'amazon_stuck') {
-    featured = { id: 'Vw9OrGVTGoI', name: 'Michael', revenue: '$310K', time: '12 months' };
-  } else if (p?.situation === 'never_started') {
-    featured = { id: '2X10mIm5eXc', name: 'Brent', revenue: '$293K', time: '12 months' };
-  }
+interface StudentVideo {
+  id: string;
+  name: string;
+  revenue: string;
+  time: string;
+  note?: string;
+}
 
-  let subhead = "Real students who were exactly where you are.";
-  if (p?.situation === 'amazon_stuck') {
-    subhead = "Watch how other sellers broke through the same plateau.";
-  } else if (p?.situation === 'never_started') {
-    subhead = "Students who had never started a business before.";
-  } else if (p?.capital === 'none' || p?.capital === 'save') {
-    subhead = "Students who started with very little capital.";
-  }
+const BEST_CASE_VIDEOS: StudentVideo[] = [
+  { id: 'ix6rLsCJqeQ', name: 'Rhett',            revenue: '$20M',  time: '7 years',  note: 'Built a multi-brand portfolio across multiple categories.' },
+  { id: 'UC-bOKUK3jk', name: 'Edgar',            revenue: '$15M',  time: '5 years',  note: 'Scaled a single-product win into a full brand.' },
+  { id: 'AQam5rsO7I8', name: 'JP',               revenue: '$10M',  time: '14 years', note: 'Long-term operator who kept reinvesting and stacking brands.' },
+  { id: 'sO9ne4DVaR4', name: 'Cheryl Rigdon',    revenue: '$5M',   time: '11 years', note: 'Built her brand into the dominant player in her niche.' },
+  { id: '-OA9kOOLCj0', name: 'Bradley Rice',     revenue: '$3.6M', time: '8 years',  note: 'Stuck with one brand and pushed it past 7 figures annually.' },
+  { id: '2eIf8HkISnM', name: 'Ryan',             revenue: '$3M',   time: '3 years',  note: 'Hit 7 figures in his first three years out of the gate.' },
+  { id: 'Xg-ELT32Hvs', name: 'Armand Ferranti',  revenue: '$2.7M', time: '4 years',  note: 'Built a brand fast and pushed it hard.' },
+  { id: 'r9Ra5KJEpiU', name: 'Eman',             revenue: '$2.6M', time: '7 years',  note: 'Compound growth from steady reinvestment.' },
+  { id: '9GSDrJRv2CE', name: 'AJ Rantz',         revenue: '$1M',   time: '3 years',  note: 'Crossed seven figures in three years.' },
+];
+
+const AVERAGE_CASE_VIDEOS: StudentVideo[] = [
+  { id: 'SH24ylGlT8k', name: 'Calvin',                revenue: '$400K', time: '12 months', note: 'Six-figure brand inside the first year.' },
+  { id: 'IRb5EpPGnRU', name: 'Andrew',                revenue: '$330K', time: '12 months', note: 'Hit $330K in his first 12 months on Amazon.' },
+  { id: 'IDgGFwK1H1o', name: 'Elena T. & Elena B.',   revenue: '$318K', time: '3 years',   note: 'Mother-daughter team building a sustainable brand.' },
+  { id: 'Vw9OrGVTGoI', name: 'Michael',               revenue: '$310K', time: '12 months', note: 'Restarted Amazon the right way and crossed six figures.' },
+  { id: '2X10mIm5eXc', name: 'Brent',                 revenue: '$293K', time: '12 months', note: 'Never run a business before — six figures in year one.' },
+  { id: 'TK6Qgd_UmRo', name: 'Troy',                  revenue: '$260K', time: '2 years',   note: 'Steady growth across his first two years.' },
+  { id: 'u0uTL3662Ic', name: 'Jenny',                 revenue: '$244K', time: '12 months', note: 'Mom-owned brand that hit six figures in year one.' },
+  { id: 'R-NmmLoh2jo', name: 'Mina',                  revenue: '$242K', time: '12 months', note: 'Started with very little capital.' },
+  { id: 'sWabSSwVsXg', name: 'Rafael',                revenue: '$238K', time: '6 months',  note: 'Six figures in six months from a standing start.' },
+  { id: 'gWGMmZqLr1w', name: 'Sydney',                revenue: '$173K', time: '2 years',   note: 'Built her brand on the side while working full time.' },
+  { id: 'TE9uGqS0tt0', name: 'Alyssa',                revenue: '$126K', time: '8 months',  note: 'Six figures in under a year as a first-time seller.' },
+  { id: 'ZRKOfZ1dhMQ', name: 'Juliana',               revenue: '$101K', time: '12 months', note: 'Crossed six figures in her first year.' },
+];
+
+const FAILURE_VIDEOS: StudentVideo[] = [
+  { id: 'rqatb8mOlF8', name: 'Logan & Leanne', revenue: 'Failure',  time: '3 months',  note: 'What went wrong, and what they\'d do differently next time.' },
+  { id: 'SvWcnRlXQqQ', name: 'Kammel',         revenue: '$913',     time: '11 months', note: 'A launch that didn\'t hit — the real story behind a tough month.' },
+  { id: 'Wi2sK5GjvFk', name: 'Brian',          revenue: '$6.2K',    time: '11 months', note: 'Honest look at the gap between effort and result.' },
+];
+
+interface ResultsSegmentProps {
+  eyebrow: string;
+  title: string;
+  percent: string;
+  accent: 'emerald' | 'blue' | 'gray';
+  videos: StudentVideo[];
+}
+
+function ResultsSegment({ eyebrow, title, percent, accent, videos }: ResultsSegmentProps) {
+  const accentClasses: Record<typeof accent, { tag: string; ring: string; pct: string }> = {
+    emerald: {
+      tag: 'bg-emerald-100 border-emerald-200 text-emerald-800',
+      ring: 'ring-emerald-100',
+      pct: 'text-emerald-700',
+    },
+    blue: {
+      tag: 'bg-blue-100 border-blue-200 text-blue-800',
+      ring: 'ring-blue-100',
+      pct: 'text-blue-700',
+    },
+    gray: {
+      tag: 'bg-gray-200 border-gray-300 text-gray-800',
+      ring: 'ring-gray-200',
+      pct: 'text-gray-700',
+    },
+  };
+  const cls = accentClasses[accent];
 
   return (
-    <div className="bg-white py-12 md:py-16 border-t border-gray-100">
-      <div className="max-w-3xl mx-auto px-4 text-center">
-        <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-2">
-          You're in good company
+    <div className="mb-14 md:mb-20 last:mb-0">
+      <div className="text-center max-w-3xl mx-auto mb-8 md:mb-10 px-4">
+        <span className={`inline-block text-[10px] md:text-xs font-bold uppercase tracking-[0.18em] px-3 py-1 rounded-full border ${cls.tag} mb-3`}>
+          {eyebrow}
         </span>
-        <h2 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight leading-[1.1] mb-3">
-          14,000+ students have<br className="md:hidden" /> taken this same call
-        </h2>
-        <p className="text-gray-600 text-sm md:text-base max-w-lg mx-auto mb-8">
-          {subhead}
-        </p>
+        <h3 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight leading-[1.1]">
+          {title}{' '}
+          <span className={`block md:inline ${cls.pct}`}>{percent}</span>
+        </h3>
+      </div>
 
-        {/* One featured video */}
-        <div className="rounded-2xl overflow-hidden shadow-lg ring-1 ring-gray-200 mb-5">
-          <YouTubeLazyEmbed videoId={featured.id} title={`${featured.name} student story`} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 px-4">
+        {videos.map((v) => (
+          <div
+            key={v.id}
+            className={`group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl ring-1 ${cls.ring} hover:-translate-y-1 transition-all duration-200`}
+          >
+            <YouTubeLazyEmbed videoId={v.id} title={`${v.name} student story`} />
+            <div className="p-4 md:p-5">
+              <div className="flex items-baseline justify-between gap-2 mb-1.5">
+                <p className="font-black text-gray-900 text-base md:text-lg leading-tight">
+                  {v.name}
+                </p>
+                <p className={`font-black text-sm md:text-base whitespace-nowrap ${cls.pct}`}>
+                  {v.revenue}
+                </p>
+              </div>
+              <p className="text-xs text-gray-500 font-medium mb-2">in {v.time}</p>
+              {v.note && (
+                <p className="text-sm text-gray-700 leading-snug">{v.note}</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function TestimonialHighlights({ p: _p }: { p?: Personalization | null }) {
+  return (
+    <div className="bg-gradient-to-b from-white via-gray-50/50 to-white py-14 md:py-20 border-t border-gray-100">
+      <div className="max-w-6xl mx-auto">
+        {/* Section heading */}
+        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16 px-4">
+          <span className="inline-block text-orange-600 text-xs md:text-sm font-bold uppercase tracking-[0.18em] mb-3">
+            You're in good company
+          </span>
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.05] mb-3">
+            Typical Student Results
+          </h2>
+          <p className="text-gray-600 text-base md:text-lg leading-relaxed">
+            14,000+ students have taken this same call. Here's the realistic breakdown of where they land.
+          </p>
         </div>
-        <p className="text-xs text-gray-500 mb-8">
-          <span className="font-bold text-gray-900">{featured.name}</span> &middot; <span className="font-bold text-orange-600">{featured.revenue}</span> in {featured.time}
-        </p>
+
+        <ResultsSegment
+          eyebrow="The standout outcomes"
+          title="Best Case"
+          percent="(~9% Of Students)"
+          accent="emerald"
+          videos={BEST_CASE_VIDEOS}
+        />
+
+        <ResultsSegment
+          eyebrow="What most students see"
+          title="Average Case"
+          percent="(~89% Of Students)"
+          accent="blue"
+          videos={AVERAGE_CASE_VIDEOS}
+        />
+
+        <ResultsSegment
+          eyebrow="The hard truths"
+          title="Failures and Lessons"
+          percent="(less than 1.8% of students)"
+          accent="gray"
+          videos={FAILURE_VIDEOS}
+        />
 
         {/* Playlist CTA */}
-        <a
-          href={STUDENT_PLAYLIST_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => trackEvent('student_playlist_clicked')}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer shadow-md"
-        >
-          <Play className="w-4 h-4" fill="currentColor" />
-          Watch more student stories on YouTube
-        </a>
-        <p className="text-xs text-gray-400 mt-3">
-          Full playlist of 60+ stories on Travis's channel
-        </p>
+        <div className="text-center px-4 mt-2">
+          <a
+            href={STUDENT_PLAYLIST_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackEvent('student_playlist_clicked')}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm transition-colors cursor-pointer shadow-md"
+          >
+            <Play className="w-4 h-4" fill="currentColor" />
+            Watch more student stories on YouTube
+          </a>
+          <p className="text-xs text-gray-400 mt-3">
+            Full playlist of 60+ stories on Travis's channel
+          </p>
+        </div>
       </div>
     </div>
   );
