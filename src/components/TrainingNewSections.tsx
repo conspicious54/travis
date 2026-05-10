@@ -1693,9 +1693,10 @@ export function ScrollToNextButton({ location }: { location: 'setter' | 'closer'
     <button
       onClick={handleClick}
       aria-label="Scroll to next section"
-      className="hidden md:flex fixed bottom-6 right-6 z-30 items-center justify-center w-12 h-12 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer animate-bounce-gentle"
+      className="hidden md:inline-flex fixed bottom-6 right-6 z-30 items-center gap-2 pl-5 pr-4 py-3 rounded-full bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold shadow-xl shadow-orange-500/40 ring-4 ring-orange-300/40 hover:ring-orange-400/50 transition-all cursor-pointer animate-bounce-gentle"
     >
-      <ChevronDown className="w-6 h-6" strokeWidth={2.5} />
+      <span>Next step</span>
+      <ChevronDown className="w-5 h-5" strokeWidth={2.75} />
     </button>
   );
 }
@@ -1726,7 +1727,7 @@ export function MobileConfirmStickyBar({
 
   useEffect(() => {
     const handleScroll = () => {
-      setShow(window.scrollY > 250);
+      setShow(window.scrollY > 80);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
