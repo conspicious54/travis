@@ -901,11 +901,12 @@ interface ResultsSegmentProps {
   eyebrow: string;
   title: string;
   percent: string;
+  subhead: string;
   accent: 'emerald' | 'blue' | 'gray';
   videos: StudentVideo[];
 }
 
-function ResultsSegment({ eyebrow, title, percent, accent, videos }: ResultsSegmentProps) {
+function ResultsSegment({ eyebrow, title, percent, subhead, accent, videos }: ResultsSegmentProps) {
   const accentClasses: Record<typeof accent, { tag: string; ring: string; pct: string }> = {
     emerald: {
       tag: 'bg-emerald-100 border-emerald-200 text-emerald-800',
@@ -931,10 +932,13 @@ function ResultsSegment({ eyebrow, title, percent, accent, videos }: ResultsSegm
         <span className={`inline-block text-[10px] md:text-xs font-bold uppercase tracking-[0.18em] px-3 py-1 rounded-full border ${cls.tag} mb-3`}>
           {eyebrow}
         </span>
-        <h3 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight leading-[1.1]">
+        <h3 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight leading-[1.1] mb-3 md:mb-4">
           {title}{' '}
           <span className={`block md:inline ${cls.pct}`}>{percent}</span>
         </h3>
+        <p className="text-gray-600 text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
+          {subhead}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 px-4">
@@ -986,6 +990,7 @@ export function TestimonialHighlights({ p: _p }: { p?: Personalization | null })
           eyebrow="The standout outcomes"
           title="Best Case"
           percent="(~9% Of Students)"
+          subhead="Our top students have built 7-figure brands, exited businesses, or scaled past $1 million in revenue."
           accent="emerald"
           videos={BEST_CASE_VIDEOS}
         />
@@ -994,6 +999,7 @@ export function TestimonialHighlights({ p: _p }: { p?: Personalization | null })
           eyebrow="What most students see"
           title="Average Case"
           percent="(~89% Of Students)"
+          subhead="Our average student is able to be on track for a $100,000/yr business within 6 months."
           accent="blue"
           videos={AVERAGE_CASE_VIDEOS}
         />
@@ -1002,6 +1008,7 @@ export function TestimonialHighlights({ p: _p }: { p?: Personalization | null })
           eyebrow="The hard truths"
           title="Failures and Lessons"
           percent="(less than 1.8% of students)"
+          subhead='"Failures" from launches. Students who didn’t follow through, and the mistakes and lessons they learned.'
           accent="gray"
           videos={FAILURE_VIDEOS}
         />
