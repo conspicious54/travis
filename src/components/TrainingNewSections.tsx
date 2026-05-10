@@ -631,10 +631,10 @@ export function BreakoutVideos({ p }: { p?: Personalization | null }) {
 }
 
 /* ─── ConfirmationFAQ ────────────────────────────────────────────
-   Collapsed-by-default section placed at the bottom of the setter
-   and closer confirmation pages. Uses the same 6 breakout videos as
-   /questions so people who still have doubts can watch without
-   leaving the page. */
+   Always-expanded section right under the prep checklist on the
+   setter and closer confirmation pages. Same 6 breakout videos as
+   /questions, sorted with the most relevant objection first based
+   on the visitor's personalization. */
 export function ConfirmationFAQ({
   p,
   location,
@@ -642,12 +642,11 @@ export function ConfirmationFAQ({
   p?: Personalization | null;
   location: 'setter' | 'closer';
 }) {
-  const [isOpen, setIsOpen] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
   const seenRef = useRef(false);
 
-  // Fire once when the FAQ section first enters the viewport. Gives us
-  // a denominator for "expand rate" separate from total page views.
+  // Fire once when the FAQ section first enters the viewport. Gives
+  // us a denominator for video-engagement rates and sproutvideo plays.
   useEffect(() => {
     const el = sectionRef.current;
     if (!el || seenRef.current) return;
@@ -721,14 +720,6 @@ export function ConfirmationFAQ({
     });
   }
 
-  const handleToggle = () => {
-    const next = !isOpen;
-    setIsOpen(next);
-    trackEvent(next ? 'confirmation_faq_expanded' : 'confirmation_faq_collapsed', {
-      faq_location: location,
-    });
-  };
-
   // Sproutvideo iframes are cross-origin so we can't listen to actual
   // play events — but a click on the video tile is a strong intent
   // signal. Good enough to rank which objection video draws attention.
@@ -742,56 +733,57 @@ export function ConfirmationFAQ({
 
   return (
     <div ref={sectionRef} className="bg-gradient-to-b from-gray-50 to-white py-14 md:py-20 border-t border-gray-100">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1]">
-            Do you understand how the <span className="text-orange-600">Passion Product Method</span> works?
+      <div className="max-w-5xl mx-auto px-4">
+        <div className="text-center mb-10 md:mb-12">
+          <p className="text-orange-600 text-xs md:text-sm font-bold uppercase tracking-[0.18em] mb-3">
+            Quick answers
+          </p>
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1] max-w-3xl mx-auto">
+            The Questions People Ask Most{' '}
+            <span className="text-orange-600">Before They Start Their Amazon FBA Business</span>
           </h2>
           <p className="text-gray-600 text-base md:text-lg mt-4 max-w-2xl mx-auto">
-            If you still have questions, the answers are right here.
+            Tap any question to watch Travis answer it in under two minutes.
           </p>
         </div>
 
-        <button
-          onClick={handleToggle}
-          aria-expanded={isOpen}
-          className="w-full max-w-2xl mx-auto flex items-center justify-between gap-3 px-6 py-5 bg-white border-2 border-gray-200 hover:border-orange-300 rounded-2xl transition-all shadow-sm cursor-pointer"
-        >
-          <span className="text-lg md:text-xl font-bold text-gray-900 text-left">
-            Frequently Asked Questions
-          </span>
-          <ChevronDown
-            className={`w-6 h-6 text-orange-600 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
-          />
-        </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
+          {breakouts.map((b, i) => (
+            <div
+              key={b.key}
+              className="group relative bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl hover:border-orange-300 hover:-translate-y-1 transition-all duration-200"
+            >
+              {/* Question number badge */}
+              <div className="absolute top-3 left-3 z-10 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/95 backdrop-blur-sm border border-orange-200 text-orange-600 text-xs font-black shadow-md">
+                {i + 1}
+              </div>
 
-        {isOpen && (
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {breakouts.map((b) => (
               <div
-                key={b.key}
-                className="group bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-orange-200 transition-all"
+                className="aspect-video bg-gray-900 relative overflow-hidden"
+                onMouseDown={() => handleVideoIntent(b.headline, b.key)}
               >
-                <div
-                  className="aspect-video bg-gray-900"
-                  onMouseDown={() => handleVideoIntent(b.headline, b.key)}
-                >
-                  <iframe
-                    src={b.embed}
-                    className="w-full h-full"
-                    frameBorder="0"
-                    allowFullScreen
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title={b.headline}
-                  />
-                </div>
-                <h3 className="font-bold text-gray-900 text-base md:text-lg p-5 group-hover:text-orange-700 transition-colors">
+                <iframe
+                  src={b.embed}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title={b.headline}
+                />
+              </div>
+
+              <div className="p-5 md:p-6">
+                <h3 className="font-bold text-gray-900 text-base md:text-lg leading-snug group-hover:text-orange-700 transition-colors">
                   {b.headline}
                 </h3>
+                <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-orange-600 opacity-70 group-hover:opacity-100 transition-opacity">
+                  <Play className="w-3 h-3 fill-current" />
+                  Watch the answer
+                </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

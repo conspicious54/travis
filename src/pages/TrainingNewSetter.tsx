@@ -403,11 +403,11 @@ export function TrainingNewSetter() {
         <SetterConfirmationBanner firstName={p?.firstName || ''} onSaved={() => {}} />
         <ResearchVideo />
         <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
+        <ConfirmationFAQ p={p} location="setter" />
         <TestimonialHighlights p={p} />
         <MethodCheckIn />
         <LowCapitalStrategies p={p} />
         <CreditCardQuiz p={p} />
-        <ConfirmationFAQ p={p} location="setter" />
         <SetterFinalCTA firstName={p?.firstName || ''} />
         <SharedFooter />
         <ConfirmationExitPopup

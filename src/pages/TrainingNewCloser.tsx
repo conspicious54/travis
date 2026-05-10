@@ -820,12 +820,12 @@ export function TrainingNewCloser() {
         <CloserConfirmationBanner meeting={meeting} firstName={firstName} />
         <ResearchVideo />
         <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
+        <ConfirmationFAQ p={p} location="closer" />
         <TestimonialHighlights p={p} />
         <MethodCheckIn />
         <MeetYourCoach ownerName={meeting?.organizer} />
         <LowCapitalStrategies p={p} />
         <CreditCardQuiz p={p} />
-        <ConfirmationFAQ p={p} location="closer" />
         <CloserFinalCTA meeting={meeting} firstName={firstName} />
         <SharedFooter />
         {(() => {
