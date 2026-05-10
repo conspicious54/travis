@@ -865,23 +865,23 @@ interface StudentVideo {
 }
 
 const BEST_CASE_VIDEOS: StudentVideo[] = [
-  { id: 'ix6rLsCJqeQ', name: 'Rhett',            revenue: '$20M',  time: '7 years',  note: 'Built a multi-brand portfolio across multiple categories.' },
-  { id: 'UC-bOKUK3jk', name: 'Edgar',            revenue: '$15M',  time: '5 years',  note: 'Scaled a single-product win into a full brand.' },
-  { id: 'AQam5rsO7I8', name: 'JP',               revenue: '$10M',  time: '14 years', note: 'Long-term operator who kept reinvesting and stacking brands.' },
-  { id: 'sO9ne4DVaR4', name: 'Cheryl Rigdon',    revenue: '$5M',   time: '11 years', note: 'Built her brand into the dominant player in her niche.' },
-  { id: '-OA9kOOLCj0', name: 'Bradley Rice',     revenue: '$3.6M', time: '8 years',  note: 'Stuck with one brand and pushed it past 7 figures annually.' },
-  { id: '2eIf8HkISnM', name: 'Ryan',             revenue: '$3M',   time: '3 years',  note: 'Hit 7 figures in his first three years out of the gate.' },
-  { id: 'Xg-ELT32Hvs', name: 'Armand Ferranti',  revenue: '$2.7M', time: '4 years',  note: 'Built a brand fast and pushed it hard.' },
-  { id: 'r9Ra5KJEpiU', name: 'Eman',             revenue: '$2.6M', time: '7 years',  note: 'Compound growth from steady reinvestment.' },
-  { id: '9GSDrJRv2CE', name: 'AJ Rantz',         revenue: '$1M',   time: '3 years',  note: 'Crossed seven figures in three years.' },
+  { id: '2X10mIm5eXc', name: 'Brent',             revenue: '$293K', time: '12 months', note: 'Six figures in his first year as a complete first-time business owner.' },
+  { id: '9GSDrJRv2CE', name: 'AJ Rantz',          revenue: '$1M',   time: '3 years',   note: 'Crossed seven figures in three years.' },
+  { id: 'SH24ylGlT8k', name: 'Calvin',            revenue: '$400K', time: '12 months', note: 'Six-figure brand inside his first year.' },
+  { id: 'ix6rLsCJqeQ', name: 'Rhett',             revenue: '$20M',  time: '7 years',   note: 'Built a multi-brand portfolio across multiple categories.' },
+  { id: 'UC-bOKUK3jk', name: 'Edgar',             revenue: '$15M',  time: '5 years',   note: 'Scaled a single-product win into a full brand.' },
+  { id: 'AQam5rsO7I8', name: 'JP',                revenue: '$10M',  time: '14 years',  note: 'Long-term operator who kept reinvesting and stacking brands.' },
+  { id: 'sO9ne4DVaR4', name: 'Cheryl Rigdon',     revenue: '$5M',   time: '11 years',  note: 'Built her brand into the dominant player in her niche.' },
+  { id: '-OA9kOOLCj0', name: 'Bradley Rice',      revenue: '$3.6M', time: '8 years',   note: 'Stuck with one brand and pushed it past 7 figures annually.' },
+  { id: '2eIf8HkISnM', name: 'Ryan',              revenue: '$3M',   time: '3 years',   note: 'Hit 7 figures in his first three years out of the gate.' },
+  { id: 'Xg-ELT32Hvs', name: 'Armand Ferranti',   revenue: '$2.7M', time: '4 years',   note: 'Built a brand fast and pushed it hard.' },
+  { id: 'r9Ra5KJEpiU', name: 'Eman',              revenue: '$2.6M', time: '7 years',   note: 'Compound growth from steady reinvestment.' },
 ];
 
 const AVERAGE_CASE_VIDEOS: StudentVideo[] = [
-  { id: 'SH24ylGlT8k', name: 'Calvin',                revenue: '$400K', time: '12 months', note: 'Six-figure brand inside the first year.' },
   { id: 'IRb5EpPGnRU', name: 'Andrew',                revenue: '$330K', time: '12 months', note: 'Hit $330K in his first 12 months on Amazon.' },
   { id: 'IDgGFwK1H1o', name: 'Elena T. & Elena B.',   revenue: '$318K', time: '3 years',   note: 'Mother-daughter team building a sustainable brand.' },
   { id: 'Vw9OrGVTGoI', name: 'Michael',               revenue: '$310K', time: '12 months', note: 'Restarted Amazon the right way and crossed six figures.' },
-  { id: '2X10mIm5eXc', name: 'Brent',                 revenue: '$293K', time: '12 months', note: 'Never run a business before — six figures in year one.' },
   { id: 'TK6Qgd_UmRo', name: 'Troy',                  revenue: '$260K', time: '2 years',   note: 'Steady growth across his first two years.' },
   { id: 'u0uTL3662Ic', name: 'Jenny',                 revenue: '$244K', time: '12 months', note: 'Mom-owned brand that hit six figures in year one.' },
   { id: 'R-NmmLoh2jo', name: 'Mina',                  revenue: '$242K', time: '12 months', note: 'Started with very little capital.' },
@@ -889,6 +889,7 @@ const AVERAGE_CASE_VIDEOS: StudentVideo[] = [
   { id: 'gWGMmZqLr1w', name: 'Sydney',                revenue: '$173K', time: '2 years',   note: 'Built her brand on the side while working full time.' },
   { id: 'TE9uGqS0tt0', name: 'Alyssa',                revenue: '$126K', time: '8 months',  note: 'Six figures in under a year as a first-time seller.' },
   { id: 'ZRKOfZ1dhMQ', name: 'Juliana',               revenue: '$101K', time: '12 months', note: 'Crossed six figures in her first year.' },
+  { id: 'eJiiN-dkRcI', name: 'James Graves',          revenue: '$28K',  time: '13 months', note: 'Steady early traction in his first year on Amazon.' },
 ];
 
 const FAILURE_VIDEOS: StudentVideo[] = [
