@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
 import { identifyUser, trackBookingPageViewed, trackBookingCompleted } from '../lib/posthog';
 import { syncContactTimezone } from '../lib/syncTimezone';
+import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 
 /* ───── /book — embedded HubSpot closer scheduler ─────────────────
    Embeds the HubSpot meeting scheduler in an iframe and listens
@@ -72,6 +73,10 @@ export function Book() {
 
   useEffect(() => {
     persistTypeformAnswers();
+    // Capture any utm_* params on the URL into sessionStorage so we
+    // still have them when meetingBookSucceeded fires after the user
+    // interacts with the HubSpot iframe.
+    persistUtmsFromUrl();
     trackBookingPageViewed('closer');
 
     // Identify user if we have their email
@@ -139,6 +144,9 @@ export function Book() {
           new URLSearchParams(window.location.search).get('email') ||
           '';
         syncContactTimezone(bookingEmail, 'book_redirect');
+        // Also push UTMs — server only writes empty fields, so
+        // first-touch attribution is preserved on returning contacts.
+        syncContactUtms(bookingEmail, 'book_redirect');
 
         // dateString is an ISO timestamp like "2026-04-23T19:00:00.000Z"
         // OR just a bare "2026-04-23" in some versions. Only trust it

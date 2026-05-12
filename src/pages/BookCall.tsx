@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
 import { identifyUser, trackBookingPageViewed, trackBookingCompleted } from '../lib/posthog';
+import { syncContactTimezone } from '../lib/syncTimezone';
+import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 
 /* ───── /bookacall — embedded HubSpot setter scheduler ─────────────
    Same flow as /book but for the setter team. Captures the booking
@@ -61,6 +63,9 @@ export function BookCall() {
 
   useEffect(() => {
     persistTypeformAnswers();
+    // Capture utm_* from the URL into sessionStorage so it survives
+    // the HubSpot iframe interaction.
+    persistUtmsFromUrl();
     trackBookingPageViewed('setter');
 
     const params = new URLSearchParams(window.location.search);
@@ -103,6 +108,15 @@ export function BookCall() {
           payload?.bookingResponse?.contact ||
           payload?.contact ||
           {};
+
+        const bookingEmail =
+          (contact.email as string | undefined) ||
+          new URLSearchParams(window.location.search).get('email') ||
+          '';
+        // Push timezone + UTMs to HubSpot. UTM sync respects existing
+        // values so first-touch attribution is preserved.
+        syncContactTimezone(bookingEmail, 'book_redirect');
+        syncContactUtms(bookingEmail, 'bookacall_redirect');
 
         const redirectParams = new URLSearchParams();
         if (contact.firstName) redirectParams.set('firstname', contact.firstName);
