@@ -173,27 +173,113 @@ async function getAssociatedContactEmail(
   token: string,
   dealId: string
 ): Promise<string | null> {
-  // Get the association IDs, then batch-read the first contact's email
-  const assocRes = await fetch(
-    `${HUBSPOT_BASE}/crm/v4/objects/deals/${dealId}/associations/contacts`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  if (!assocRes.ok) return null;
-  const assocData = (await assocRes.json()) as {
-    results?: { toObjectId: number }[];
-  };
-  const contactId = assocData.results?.[0]?.toObjectId;
-  if (!contactId) return null;
+  // Kept for back-compat; the batch path is preferred for backfills.
+  const m = await batchResolveEmails([dealId], token);
+  return m.get(dealId) || null;
+}
 
-  const contactRes = await fetch(
-    `${HUBSPOT_BASE}/crm/v3/objects/contacts/${contactId}?properties=email`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  if (!contactRes.ok) return null;
-  const contactData = (await contactRes.json()) as {
-    properties?: { email?: string };
-  };
-  return contactData.properties?.email?.toLowerCase() || null;
+/** Resolve deal IDs → contact email in two batch calls, with 429 retry.
+ *  Returns a Map keyed by deal id; missing entries = no contact email. */
+async function batchResolveEmails(
+  dealIds: string[],
+  token: string
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (dealIds.length === 0) return out;
+
+  // 1) Batch-read deal→contact associations (HubSpot caps at 100/req)
+  const dealToContactId = new Map<string, string>();
+  const allContactIds = new Set<string>();
+  for (let i = 0; i < dealIds.length; i += 100) {
+    const chunk = dealIds.slice(i, i + 100);
+    const data = await hubspotFetchJson<{
+      results?: Array<{ from: { id: string }; to: Array<{ toObjectId: string }> }>;
+    }>(
+      `${HUBSPOT_BASE}/crm/v4/associations/deals/contacts/batch/read`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ inputs: chunk.map((id) => ({ id })) }),
+      }
+    );
+    for (const r of data?.results || []) {
+      const cid = String(r.to?.[0]?.toObjectId || '');
+      if (cid) {
+        dealToContactId.set(String(r.from.id), cid);
+        allContactIds.add(cid);
+      }
+    }
+  }
+
+  // 2) Batch-read contact emails (cap 100/req)
+  const contactIdToEmail = new Map<string, string>();
+  const contactIds = [...allContactIds];
+  for (let i = 0; i < contactIds.length; i += 100) {
+    const chunk = contactIds.slice(i, i + 100);
+    const data = await hubspotFetchJson<{
+      results?: Array<{ id: string; properties?: { email?: string } }>;
+    }>(`${HUBSPOT_BASE}/crm/v3/objects/contacts/batch/read`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        properties: ['email'],
+        inputs: chunk.map((id) => ({ id })),
+      }),
+    });
+    for (const r of data?.results || []) {
+      const email = r.properties?.email?.toLowerCase().trim();
+      if (email) contactIdToEmail.set(r.id, email);
+    }
+  }
+
+  // 3) Combine
+  for (const dealId of dealIds) {
+    const cid = dealToContactId.get(dealId);
+    if (cid) {
+      const email = contactIdToEmail.get(cid);
+      if (email) out.set(dealId, email);
+    }
+  }
+  return out;
+}
+
+/** Fetch JSON with retry on 429 + 5xx. Returns null on persistent failure. */
+async function hubspotFetchJson<T>(url: string, init: RequestInit): Promise<T | null> {
+  const RETRY_DELAYS_MS = [0, 600, 1500, 3000];
+  for (const delay of RETRY_DELAYS_MS) {
+    if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+    let res: Response;
+    try {
+      res = await fetch(url, init);
+    } catch (err) {
+      console.warn(`[hs→ph] fetch error ${url}`, err);
+      continue;
+    }
+    if (res.ok) {
+      try {
+        return (await res.json()) as T;
+      } catch {
+        return null;
+      }
+    }
+    if (res.status === 429 || res.status >= 500) {
+      console.warn(`[hs→ph] retryable ${res.status} on ${url}`);
+      continue;
+    }
+    // Non-retryable error — log body and bail
+    let body = '';
+    try { body = (await res.text()).slice(0, 200); } catch { /* no-op */ }
+    console.warn(`[hs→ph] non-retryable ${res.status} on ${url}: ${body}`);
+    return null;
+  }
+  console.warn(`[hs→ph] exhausted retries on ${url}`);
+  return null;
 }
 
 async function sendToPostHog(
@@ -296,14 +382,19 @@ export const handler = schedule('*/5 * * * *', async (event) => {
     }
   });
 
-  // Process at moderate concurrency to avoid hammering HubSpot — they
-  // rate-limit at ~100 req/sec for Private Apps. 10 concurrent is safe.
-  const CONCURRENCY = 10;
-  for (let i = 0; i < work.length; i += CONCURRENCY) {
-    const batch = work.slice(i, i + CONCURRENCY);
+  // Resolve all emails in two batch calls instead of 2N individual
+  // fetches. HubSpot's batch endpoints cap at 100 IDs per request.
+  const uniqueDealIds = [...new Set(work.map((w) => w.deal.id))];
+  const dealToEmail = await batchResolveEmails(uniqueDealIds, token);
+
+  // Now fire PostHog captures with bounded concurrency. PostHog
+  // ingest is fast and tolerates higher concurrency than HubSpot.
+  const POSTHOG_CONCURRENCY = 20;
+  for (let i = 0; i < work.length; i += POSTHOG_CONCURRENCY) {
+    const batch = work.slice(i, i + POSTHOG_CONCURRENCY);
     await Promise.all(
       batch.map(async ({ stage, deal, enteredAt }) => {
-        const email = await getAssociatedContactEmail(token, deal.id);
+        const email = dealToEmail.get(deal.id);
         if (!email) {
           totalSkipped++;
           console.log(`[hs→ph] skip ${deal.id} (${stage.stageLabel}) — no email`);
