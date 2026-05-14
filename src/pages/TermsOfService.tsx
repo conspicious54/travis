@@ -25,14 +25,6 @@ export function TermsOfService() {
         </p>
 
         <Section title="1. Passion Product Refund Policy">
-          <P>
-            Any Client can get a full refund if asked before 14 days have passed since the
-            purchase of the Passion Product Formula. Do this by sending an email to:{' '}
-            <a href="mailto:travis@passionproduct.com" className="text-orange-600 underline">
-              travis@passionproduct.com
-            </a>
-            .
-          </P>
           <P className="font-semibold">
             For purchasers of the Passion Product Accelerator Program (the "Accelerator Program"):
           </P>
@@ -83,6 +75,18 @@ export function TermsOfService() {
             SFC financing will be reviewed on a case-by-case basis at the Company's sole
             discretion. Any refund granted may be subject to additional terms required to settle
             the third-party loan.
+          </P>
+
+          <h3 className="text-lg md:text-xl font-bold text-gray-900 mt-8 mb-3">
+            Passion Product Formula Course
+          </h3>
+          <P>
+            Any Client can get a full refund if asked before 14 days have passed since the
+            purchase of the Passion Product Formula. Do this by sending an email to{' '}
+            <a href="mailto:travis@passionproduct.com" className="text-orange-600 underline">
+              travis@passionproduct.com
+            </a>
+            .
           </P>
         </Section>
 
