@@ -28,8 +28,8 @@ export function TermsOfService() {
           <P>
             Any Client can get a full refund if asked before 14 days have passed since the
             purchase of the Passion Product Formula. Do this by sending an email to:{' '}
-            <a href="mailto:Travis@passionproduct.com" className="text-orange-600 underline">
-              Travis@passionproduct.com
+            <a href="mailto:travis@passionproduct.com" className="text-orange-600 underline">
+              travis@passionproduct.com
             </a>
             .
           </P>
@@ -170,48 +170,44 @@ export function TermsOfService() {
           </UL>
         </Section>
 
-        <Section title="Passion Product Formula Course Completion Refund Policy">
+        <Section title="Passion Product 365 Guarantee">
           <P>
-            By purchasing the Passion Product Formula Course ($1997), you will be eligible for a
-            refund as long as you have taken action, put in full effort, and actually launched a
-            product and tried to reach success, being able to prove that this product hasn't
-            generated $1997 in profit during the first year since launching the product.
+            We back our program with the Passion Product 365 Guarantee. If you go through all the
+            steps of launching your product in accordance with our advice, and after at least one
+            (1) year of continuous selling you have not generated back in revenue the amount you
+            paid into the program, we will refund the program cost.
           </P>
-          <P>You will not receive a refund if you did not even attempt to take any action.</P>
-          <P>
-            Refund eligibility is entirely at our discretion, but since we have our students' best
-            interests in mind, and we completely stand by our programs, we want YOU to succeed, and
-            we stand by our Zero Risk Guarantee which offers a refund of the course.
-          </P>
-          <P>
-            Please note that the amount refunded back to you will be net of any processing fees
-            that Passion Product LLC incurs, and can only be refunded back via the original
-            payment method (i.e. original credit card).
-          </P>
-          <P className="font-semibold">To be eligible for a refund:</P>
+          <P className="font-semibold">To be eligible for a refund under the 365 Guarantee:</P>
           <UL>
-            <li>You must have viewed 100% of the course lessons</li>
-            <li>You must have launched a product on Amazon FBA</li>
             <li>
-              You must have been active in the student Facebook community, and have a solid history
-              of interaction and asking questions.
+              You must have followed each step of the launch process in accordance with the
+              guidance provided in the program.
             </li>
-            <li>You must have completed all the "Take Action" activities on all modules and be able to prove it</li>
-            <li>You must prove that your product has not generated at least $1997 since its launch</li>
-            <li>One full year must have passed since launching the product</li>
+            <li>
+              You must maintain continuous selling of your launched product for at least one (1)
+              year from its launch date.
+            </li>
+            <li>
+              You must be able to demonstrate that, over that period of continuous selling, your
+              product has not generated revenue at least equal to the amount you paid into the
+              program.
+            </li>
           </UL>
           <P>
-            To get a refund, you can submit your request to{' '}
-            <a href="mailto:travis@effectiveecommerce.com" className="text-orange-600 underline">
-              travis@effectiveecommerce.com
-            </a>{' '}
-            with the following subject:{' '}
-            <span className="font-semibold">Passion Product Formula Refund Request</span>
+            You will not be eligible for a refund if you did not attempt to launch or did not
+            follow the program's guidance. Refund eligibility is at our discretion. Any refund
+            issued will be net of processing fees incurred by Passion Product LLC and returned via
+            the original payment method.
           </P>
           <P>
-            In your request, please describe your situation, experience with the program, and
-            attach proof that you have actually put in effort into the course and launched a
-            product on Amazon or Shopify.
+            To request a refund under the 365 Guarantee, email{' '}
+            <a href="mailto:travis@passionproduct.com" className="text-orange-600 underline">
+              travis@passionproduct.com
+            </a>{' '}
+            with the subject{' '}
+            <span className="font-semibold">Passion Product 365 Guarantee Refund Request</span>
+            . Include a description of your launch, documentation showing you followed the
+            program's guidance, and a record of the revenue your product has generated.
           </P>
         </Section>
 
@@ -745,8 +741,8 @@ export function TermsOfService() {
             </a>{' '}
             for details. Passion Product LLC's Copyright Agent for notice of claims of
             copyright infringement or counter notices can be reached at:{' '}
-            <a href="mailto:travis@effectiveecommerce.com" className="text-orange-600 underline">
-              travis@effectiveecommerce.com
+            <a href="mailto:travis@passionproduct.com" className="text-orange-600 underline">
+              travis@passionproduct.com
             </a>
             .
           </P>
@@ -769,8 +765,8 @@ export function TermsOfService() {
             discretion. If we should update this policy, we will post the updates to this page on
             our Website. If you have any questions or concerns regarding our privacy policy please
             direct them to:{' '}
-            <a href="mailto:travis@effectiveecommerce.com" className="text-orange-600 underline">
-              travis@effectiveecommerce.com
+            <a href="mailto:travis@passionproduct.com" className="text-orange-600 underline">
+              travis@passionproduct.com
             </a>
             .
           </P>
