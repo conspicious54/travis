@@ -58,6 +58,31 @@ export function TermsOfService() {
               window. The refund period begins on the date the first call is scheduled to occur.
             </li>
           </UL>
+
+          <h3 className="text-lg md:text-xl font-bold text-gray-900 mt-8 mb-3">
+            Additional Terms Based on Payment Method
+          </h3>
+          <P>
+            The following terms apply in addition to the general refund policy above. Where a
+            payment-method-specific deadline is earlier than the 48-hour window, the earlier
+            deadline controls.
+          </P>
+          <P>
+            <span className="font-semibold">Elective.</span> If you enrolled using Elective as
+            your payment method, your refund request must be received by the Company within the
+            same calendar week — Monday through Sunday — in which your payment was received. For
+            example, if a payment is received on a Tuesday, the refund request must reach us no
+            later than the following Sunday. This deadline applies even if your first scheduled
+            Program call has not yet occurred.
+          </P>
+          <P>
+            <span className="font-semibold">SFC.</span> If you enrolled using SFC, your enrollment
+            is financed through a separate third-party loan between you and SFC. Because issuing
+            a refund would require the Company to buy out that loan, all refund requests involving
+            SFC financing will be reviewed on a case-by-case basis at the Company's sole
+            discretion. Any refund granted may be subject to additional terms required to settle
+            the third-party loan.
+          </P>
         </Section>
 
         <Section title="2. Installment Plans Are Not Subscriptions">
@@ -159,7 +184,7 @@ export function TermsOfService() {
           </P>
           <P>
             Please note that the amount refunded back to you will be net of any processing fees
-            that Passionproductformula.com incurs, and can only be refunded back via the original
+            that Passion Product LLC incurs, and can only be refunded back via the original
             payment method (i.e. original credit card).
           </P>
           <P className="font-semibold">To be eligible for a refund:</P>
@@ -191,14 +216,16 @@ export function TermsOfService() {
 
         <Section title="General">
           <P>
-            This website (the "Site") is owned and operated by Passionproductformula
-            ("Passionproductformula.com" "we" or "us"). By using the Site, you agree to be bound by
-            these Terms of Service and to use the Site in accordance with these Terms of Service,
-            our Privacy Policy and any additional terms and conditions that may apply to specific
-            sections of the Site or to products and services available through the Site or from
-            Passionproductformula.com. Accessing the Site, in any manner, whether automated or
-            otherwise, constitutes use of the Site and your agreement to be bound by these Terms of
-            Service.
+            These Terms of Service apply to every website operated by Passion Product LLC
+            (collectively, the "Site"; Passion Product LLC, "we," "our," or "us"), including but
+            not limited to travisfba.com, travismarziani.com, start.travismarziani.com,
+            passionproductformula.com, and any other domain we own or operate from time to time. By
+            using the Site, you agree to be bound by these Terms of Service and to use the Site in
+            accordance with these Terms of Service, our Privacy Policy and any additional terms
+            and conditions that may apply to specific sections of the Site or to products and
+            services available through the Site or from Passion Product LLC. Accessing the Site,
+            in any manner, whether automated or otherwise, constitutes use of the Site and your
+            agreement to be bound by these Terms of Service.
           </P>
           <P>
             We reserve the right to change these Terms of Service or to impose new conditions on
@@ -257,14 +284,14 @@ export function TermsOfService() {
             be deemed a "work made for hire" when the work performed is within the scope of the
             definition of a work made for hire in Section 101 of the United States Copyright Law,
             as amended. As such, the copyrights in those works shall belong to
-            Passionproductformula.com from their creation. Thus, Passionproductformula.com shall be
+            Passion Product LLC from their creation. Thus, Passion Product LLC shall be
             deemed the author and exclusive owner thereof and shall have the right to exploit any
             or all of the results and proceeds in any and all media, now known or hereafter
             devised, throughout the universe, in perpetuity, in all languages, as
-            Passionproductformula.com determines. In the event that any of the results and
+            Passion Product LLC determines. In the event that any of the results and
             proceeds of your submissions hereunder are not deemed a "work made for hire" under
             Section 101 of the Copyright Act, as amended, you hereby, without additional
-            compensation, irrevocably assign, convey and transfer to Passionproductformula.com all
+            compensation, irrevocably assign, convey and transfer to Passion Product LLC all
             proprietary rights, including without limitation, all copyrights and trademarks
             throughout the universe, in perpetuity in every medium, whether now known or hereafter
             devised, to such material and any and all right, title and interest in and to all such
@@ -273,9 +300,9 @@ export function TermsOfService() {
             by you shall be co-owned by us.
           </P>
           <P>
-            You acknowledge that Passionproductformula.com has the right but not the obligation to
+            You acknowledge that Passion Product LLC has the right but not the obligation to
             use and display any postings or contributions of any kind and that
-            Passionproductformula.com may elect to cease the use and display of any such materials
+            Passion Product LLC may elect to cease the use and display of any such materials
             (or any portion thereof), at any time for any reason whatsoever.
           </P>
           <P className="italic text-gray-600">
@@ -292,7 +319,7 @@ export function TermsOfService() {
 
         <Section title="Program/Service">
           <P>
-            Passionproductformula.com agrees to provide educational training (herein referred to as
+            Passion Product LLC agrees to provide educational training (herein referred to as
             "Program") in the fields of online business, eCommerce and marketing. The Client agrees
             to abide by all policies and procedures as outlined in this agreement as a condition of
             their participation in the Program.
@@ -308,10 +335,10 @@ export function TermsOfService() {
             services. If these Terms of Use are inconsistent with the guidelines, terms and
             agreements applicable to those services, these Terms of Use will control. When we say
             Travis Marziani, we mean any and all companies affiliated with Travis Marziani,
-            including but not limited to: Passionproductformula.com or Passionproductformula.
+            including but not limited to Passion Product LLC and any of the domains it operates.
           </P>
           <P>
-            Passionproductformula.com, and all affiliated companies currently provides users with
+            Passion Product LLC, and all affiliated companies currently provides users with
             access to sales training resources (training videos, training books, educational
             software, etc.), various reference and communication tools (newsletters, blogs,
             articles, etc.), forums, shopping services, advertising and marketing services, social
@@ -320,14 +347,14 @@ export function TermsOfService() {
             advertisements.
           </P>
           <P>
-            Any and all Passionproductformula.com services shall be subject to the Terms of Use.
+            Any and all Passion Product LLC services shall be subject to the Terms of Use.
             You understand and agree that any and all Service is provided "AS-IS" and that
-            Passionproductformula.com assumes no responsibility for the timeliness, deletion,
+            Passion Product LLC assumes no responsibility for the timeliness, deletion,
             delivery problems or failure to store any user communications or personalization
             settings.
           </P>
           <P>
-            Passionproductformula.com is an online educational course for learning how to start an
+            Passion Product LLC is an online educational course for learning how to start an
             online business. You will be charged for any materials that you wish to purchase from
             us. Prices may vary. You are responsible for obtaining access to the Service and that
             access may involve third party fees (such as Internet service provider or airtime
@@ -350,16 +377,16 @@ export function TermsOfService() {
             If applicable, any opinions, advice, statements, services, offers, or other information
             or content expressed or made available by third parties, including information
             providers, are those of the respective authors or distributors, and not
-            Passionproductformula.com. Neither Passionproductformula.com nor any third-party
+            Passion Product LLC. Neither Passion Product LLC nor any third-party
             provider of information guarantees the accuracy, completeness, or usefulness of any
-            content. Furthermore, Passionproductformula.com neither endorses nor is responsible for
+            content. Furthermore, Passion Product LLC neither endorses nor is responsible for
             the accuracy and reliability of any opinion, advice, or statement made on any of the
-            Sites by anyone other than an authorized Passionproductformula.com representative while
+            Sites by anyone other than an authorized Passion Product LLC representative while
             acting in his/her official capacity.
           </P>
           <P className="text-xs uppercase tracking-wide">
             THE INFORMATION, PRODUCTS AND SERVICES OFFERED ON OR THROUGH THE SITE AND BY
-            PASSIONPRODUCTFORMULA.COM AND ANY THIRD-PARTY SITES ARE PROVIDED "AS IS" AND WITHOUT
+            PASSION PRODUCT LLC AND ANY THIRD-PARTY SITES ARE PROVIDED "AS IS" AND WITHOUT
             WARRANTIES OF ANY KIND EITHER EXPRESS OR IMPLIED. TO THE FULLEST EXTENT PERMISSIBLE
             PURSUANT TO APPLICABLE LAW, WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING,
             BUT NOT LIMITED TO, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -374,7 +401,7 @@ export function TermsOfService() {
             CORRECTNESS, ACCURACY, TIMELINESS, RELIABILITY OR OTHERWISE.
           </P>
           <P>
-            You agree at all times to defend, indemnify and hold harmless Passionproductformula.com
+            You agree at all times to defend, indemnify and hold harmless Passion Product LLC
             its affiliates, their successors, transferees, assignees and licensees and their
             respective parent and subsidiary companies, agents, associates, officers, directors,
             shareholders and employees of each from and against any and all claims, causes of
@@ -409,7 +436,7 @@ export function TermsOfService() {
             or through our Site, regarding payment and delivery of specific goods and services, and
             any other terms, conditions, representations or warranties associated with such
             dealings, are solely between you and such third party. You agree that
-            Passionproductformula.com shall not be responsible or liable for any loss, damage, or
+            Passion Product LLC shall not be responsible or liable for any loss, damage, or
             other matters of any sort incurred as the result of such dealings.
           </P>
           <P>
@@ -449,22 +476,22 @@ export function TermsOfService() {
           <P>
             The content contained on this Website (collectively, "Content"), such as logos, artwork,
             text and graphics, widgets, icons, images, audio and video clips, digital downloads,
-            data compilations, and software, is the property of Passionproductformula.com, or the
+            data compilations, and software, is the property of Passion Product LLC, or the
             property of our licensors or licensees, and the compilation of the Content on the
-            Website is the exclusive property of Passionproductformula.com, and protected by United
+            Website is the exclusive property of Passion Product LLC, and protected by United
             States and international copyright laws, treaties and conventions. All software used on
-            the Website is also the property of Passionproductformula.com, or the property of our
+            the Website is also the property of Passion Product LLC, or the property of our
             software suppliers and protected by United States and international copyright laws,
             treaties and conventions.
           </P>
           <P>
             Any and all logos, service marks, page headers, graphics, trademarks, service marks,
             widgets, icons, scripts and trade names (each, a "Mark") contained on the Website are
-            proprietary to Passionproductformula.com, or our licensors or licensees. Permission is
+            proprietary to Passion Product LLC, or our licensors or licensees. Permission is
             NOT granted to use any of the Marks in connection with any product or service that is
             not ours or, in any manner that is likely to cause confusion among users or that
             disparages or discredits us or anyone else. If you see any other Marks not owned by
-            Passionproductformula.com, that appear on the Website are the property of their
+            Passion Product LLC, that appear on the Website are the property of their
             respective owners, who may or may not be affiliated with, connected to, or sponsored
             by us.
           </P>
@@ -561,27 +588,27 @@ export function TermsOfService() {
             <li>Gather for marketing purposes any email addresses or other personal information that has been posted by other users of the Site.</li>
           </UL>
           <P>
-            Passionproductformula.com may host message boards, chats and other public forums on its
+            Passion Product LLC may host message boards, chats and other public forums on its
             Sites. Any user failing to comply with the terms and conditions of this Agreement may
             be expelled from and refused continued access to, the message boards, chats or other
-            public forums in the future. Passionproductformula.com or its designated agents may
+            public forums in the future. Passion Product LLC or its designated agents may
             remove or alter any user-created content at any time for any reason. Message boards,
             chats and other public forums are intended to serve as discussion centers for users and
             subscribers. Information and content posted within these public forums may be provided
-            by Passionproductformula.com staff, Passionproductformula.com's outside contributors,
-            or by users not connected with Passionproductformula.com, some of whom may employ
-            anonymous user names. Passionproductformula.com expressly disclaims all responsibility
+            by Passion Product LLC staff, Passion Product LLC's outside contributors,
+            or by users not connected with Passion Product LLC, some of whom may employ
+            anonymous user names. Passion Product LLC expressly disclaims all responsibility
             and endorsement and makes no representation as to the validity of any opinion, advice,
             information or statement made or displayed in these forums by third parties, nor are we
             responsible for any errors or omissions in such postings, or for hyperlinks embedded in
             any messages. Under no circumstances will we, our affiliates, suppliers or agents be
             liable for any loss or damage caused by your reliance on information obtained through
             these forums. The opinions expressed in these forums are solely the opinions of the
-            participants, and do not reflect the opinions of Passionproductformula.com or any of
+            participants, and do not reflect the opinions of Passion Product LLC or any of
             its subsidiaries or affiliates.
           </P>
           <P>
-            Passionproductformula.com has no obligation whatsoever to monitor any of the content or
+            Passion Product LLC has no obligation whatsoever to monitor any of the content or
             postings on the message boards, chat rooms or other public forums on the Sites.
             However, you acknowledge and agree that we have the absolute right to monitor the same
             at our sole discretion. In addition, we reserve the right to alter, edit, refuse to
@@ -646,7 +673,7 @@ export function TermsOfService() {
             OR ILLEGAL CONDUCT OF ANY USER. IF YOU ARE DISSATISFIED WITH THE SITE, ANY MATERIALS,
             PRODUCTS, OR SERVICES ON THE SITE, OR WITH ANY OF THE SITE'S TERMS AND CONDITIONS, YOUR
             SOLE AND EXCLUSIVE REMEDY IS TO DISCONTINUE USING THE SITE AND THE PRODUCTS, SERVICES
-            AND/OR MATERIALS. PASSIONPRODUCTFORMULA.COM IS NOT AN INVESTMENT ADVISORY SERVICE, IS
+            AND/OR MATERIALS. PASSION PRODUCT LLC IS NOT AN INVESTMENT ADVISORY SERVICE, IS
             NOT AN INVESTMENT ADVISER, AND DOES NOT PROVIDE PERSONALIZED FINANCIAL ADVICE OR ACT AS
             A FINANCIAL ADVISOR.
           </P>
@@ -655,7 +682,7 @@ export function TermsOfService() {
             HEREIN AND IN OUR PRODUCTS AND SERVICES ARE FOR GENERAL INFORMATIONAL PURPOSES ONLY.
             NONE OF THE INFORMATION PROVIDED BY US IS INTENDED AS INVESTMENT, TAX, ACCOUNTING OR
             LEGAL ADVICE, AS AN OFFER OR SOLICITATION OF AN OFFER TO BUY OR SELL, OR AS AN
-            ENDORSEMENT, RECOMMENDATION OR SPONSORSHIP OF ANY PASSIONPRODUCTFORMULA.COM, SECURITY,
+            ENDORSEMENT, RECOMMENDATION OR SPONSORSHIP OF ANY PASSION PRODUCT LLC, SECURITY,
             OR FUND. OUR INFORMATION SHOULD NOT BE RELIED UPON FOR PURPOSES OF TRANSACTING IN
             SECURITIES OR OTHER INVESTMENTS.
           </P>
@@ -663,9 +690,9 @@ export function TermsOfService() {
             WE DO NOT OFFER OR PROVIDE TAX, LEGAL OR INVESTMENT ADVICE AND YOU ARE RESPONSIBLE FOR
             CONSULTING TAX, LEGAL, OR FINANCIAL PROFESSIONALS BEFORE ACTING ON ANY INFORMATION
             PROVIDED BY US. THIS SITE IS CONTINUALLY UNDER DEVELOPMENT AND
-            PASSIONPRODUCTFORMULA.COM MAKES NO WARRANTY OF ANY KIND, IMPLIED OR EXPRESS, AS TO ITS
+            PASSION PRODUCT LLC MAKES NO WARRANTY OF ANY KIND, IMPLIED OR EXPRESS, AS TO ITS
             ACCURACY, COMPLETENESS OR APPROPRIATENESS FOR ANY PURPOSE. YOU acknowledge and agree
-            that no representation has been made by Passionproductformula.com OR ITS AFFILIATES and
+            that no representation has been made by Passion Product LLC OR ITS AFFILIATES and
             relied upon as to the future income, expenses, sales volume or potential profitability
             that may be derived from the participation in THIS PROGRAM.
           </P>
@@ -697,14 +724,14 @@ export function TermsOfService() {
             The Digital Millennium Copyright Act of 1998 (the "DMCA") provides recourse for
             copyright owners who believe that material appearing on the Internet infringes their
             rights under the U.S. copyright law. If you believe in good faith that materials hosted
-            by Passionproductformula.com infringe your copyright, you, or your agent may send to
-            Passionproductformula.com a notice requesting that the material be removed or access to
+            by Passion Product LLC infringe your copyright, you, or your agent may send to
+            Passion Product LLC a notice requesting that the material be removed or access to
             it be blocked. Any notification by a copyright owner or a person authorized to act on
             its behalf that fails to comply with requirements of the DMCA shall not be considered
-            sufficient notice and shall not be deemed to confer upon Passionproductformula.com
+            sufficient notice and shall not be deemed to confer upon Passion Product LLC
             actual knowledge of facts or circumstances from which infringing material or acts are
             evident. If you believe in good faith that a notice of copyright infringement has been
-            wrongly filed against you, the DMCA permits you to send to Passionproductformula.com a
+            wrongly filed against you, the DMCA permits you to send to Passion Product LLC a
             counter-notice. All notices and counter notices must meet the then current statutory
             requirements imposed by the DMCA; see{' '}
             <a
@@ -715,7 +742,7 @@ export function TermsOfService() {
             >
               http://www.loc.gov/copyright
             </a>{' '}
-            for details. Passionproductformula.com's Copyright Agent for notice of claims of
+            for details. Passion Product LLC's Copyright Agent for notice of claims of
             copyright infringement or counter notices can be reached at:{' '}
             <a href="mailto:travis@effectiveecommerce.com" className="text-orange-600 underline">
               travis@effectiveecommerce.com
@@ -724,11 +751,11 @@ export function TermsOfService() {
           </P>
           <P>
             This Agreement shall be binding upon and inure to the benefit of
-            Passionproductformula.com and our respective assigns, successors, heirs, and legal
+            Passion Product LLC and our respective assigns, successors, heirs, and legal
             representatives. Neither this Agreement nor any rights hereunder may be assigned
-            without the prior written consent of Passionproductformula.com. Notwithstanding the
+            without the prior written consent of Passion Product LLC. Notwithstanding the
             foregoing, all rights and obligations under this Agreement may be freely assigned by
-            Passionproductformula.com to any affiliated entity or any of its wholly owned
+            Passion Product LLC to any affiliated entity or any of its wholly owned
             subsidiaries. If any provision of this agreement shall be unlawful, void or for any
             reason unenforceable, then that provision shall be deemed severable from this agreement
             and shall not affect the validity and enforceability of any remaining provisions.

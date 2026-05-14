@@ -19,18 +19,21 @@ export function PrivacyPolicy() {
 
         <div className="space-y-4 text-gray-700 leading-relaxed text-[15px] md:text-base mb-10">
           <p>
-            Passionproductformula.com understands that your privacy is important to you. We are
+            Passion Product LLC understands that your privacy is important to you. We are
             committed to protecting the privacy of your personally-identifiable information as you
-            use this website. This Privacy Policy tells you how we protect and use information that
-            we gather from you. By using this website, you consent to the terms described in the
-            most recent version of this Privacy Policy. You should also read our{' '}
+            use any of our websites. This Privacy Policy applies to every website operated by
+            Passion Product LLC — including but not limited to travisfba.com, travismarziani.com,
+            start.travismarziani.com, passionproductformula.com, and any other domain we own or
+            operate from time to time — and tells you how we protect and use information that we
+            gather from you. By using any of our websites, you consent to the terms described in
+            the most recent version of this Privacy Policy. You should also read our{' '}
             <a href="/termsofservice" className="text-orange-600 underline">
               Terms of Use
             </a>{' '}
-            to understand the general rules about your use of this website, and any additional
-            terms that may apply when you access particular services or materials on certain areas
-            of this website. "We," "our" means Passionproductformula.com and its affiliates. "You,"
-            "your," visitor," or "user" means the individual accessing this site.
+            to understand the general rules about your use of these websites, and any additional
+            terms that may apply when you access particular services or materials. "We," "our"
+            means Passion Product LLC and its affiliates. "You," "your," "visitor," or "user"
+            means the individual accessing these sites.
           </p>
         </div>
 
@@ -76,10 +79,10 @@ export function PrivacyPolicy() {
             the domain that issued the cookie to you. One of the primary purposes of cookies is to
             provide a convenience feature to save you time. The purpose of a cookie is to tell the
             Web server that you have returned to a specific page. For example, if you register with
-            us, a cookie helps Passionproductformula.com to recall your specific information on
+            us, a cookie helps Passion Product LLC to recall your specific information on
             subsequent visits. This simplifies the process of recording your personal information,
             such as billing addresses, shipping addresses, and so on. When you return to the same
-            Passionproductformula.com website, the information you previously provided can be
+            Passion Product LLC website, the information you previously provided can be
             retrieved, so you can easily use the features that you customized.
           </P>
           <P>
@@ -113,7 +116,7 @@ export function PrivacyPolicy() {
           <P>
             To help measure and improve the effectiveness of our e-mail communications, the third
             party sets cookies. All data collected by this third party on behalf of
-            Passionproductformula.com is used solely by or on behalf of Passionproductformula.com
+            Passion Product LLC is used solely by or on behalf of Passion Product LLC
             and is shared externally only on an anonymous, aggregated basis. From time to time we
             may allow third parties to post advertisements on our web site, and those third-party
             advertisements may include a cookie or web beacon served by the third party. This
@@ -130,7 +133,7 @@ export function PrivacyPolicy() {
             You have the ability to accept or decline cookies. Most Web browsers automatically
             accept cookies, but you can usually modify your browser setting to decline cookies if
             you prefer. If you choose to decline cookies, you may not be able to fully experience
-            the interactive features of the Passionproductformula.com websites you visit.
+            the interactive features of the Passion Product LLC websites you visit.
           </P>
         </Section>
 
@@ -298,9 +301,9 @@ export function PrivacyPolicy() {
           </P>
         </Section>
 
-        <Section title="How Does Passionproductformula.com Use Personal Information?">
+        <Section title="How Does Passion Product LLC Use Personal Information?">
           <P>
-            Passionproductformula.com may keep and use personal information we collect from or
+            Passion Product LLC may keep and use personal information we collect from or
             about you to provide you with access to this web site or other products or services, to
             respond to your requests, to bill you for products/services you purchased, and to
             provide ongoing service and support, to contact you with information that might be of
@@ -321,7 +324,7 @@ export function PrivacyPolicy() {
           </P>
         </Section>
 
-        <Section title="Does Passionproductformula.com Share Personal Information With Others?">
+        <Section title="Does Passion Product LLC Share Personal Information With Others?">
           <P>
             We will not share your personal information collected from this web site with an
             unrelated third party without your permission, except as otherwise provided in this
