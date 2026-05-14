@@ -38,24 +38,25 @@ export function TermsOfService() {
           </P>
           <UL>
             <li>
-              You are entitled to a risk-free period beginning on the date of your first scheduled
-              coaching call.
+              You are entitled to a risk-free period beginning on the date of your scheduled
+              onboarding call.
             </li>
             <li>
-              You may request a full refund within seven (7) calendar days following your first
-              coaching call. Refund requests must be submitted in writing to{' '}
+              You may request a full refund within forty-eight (48) hours following your
+              onboarding call. Refund requests must be submitted in writing to{' '}
               <a href="mailto:travis@passionproduct.com" className="text-orange-600 underline">
                 travis@passionproduct.com
               </a>{' '}
               (or designated support email).
             </li>
             <li>
-              If a refund request is not received within seven (7) calendar days following your
-              first coaching call, the purchase becomes final, binding, and non-refundable.
+              If a refund request is not received within forty-eight (48) hours following your
+              onboarding call, the purchase becomes final, binding, and non-refundable.
             </li>
             <li>
-              Failure to attend your scheduled first call does not extend or delay the refund
-              window. The refund period begins on the date the first call is scheduled to occur.
+              Failure to attend your scheduled onboarding call does not extend or delay the
+              refund window. The refund period begins on the date the onboarding call is
+              scheduled to occur.
             </li>
           </UL>
 
@@ -104,7 +105,7 @@ export function TermsOfService() {
               expires.
             </li>
             <li>
-              Once the seven (7) day refund window has passed, the full balance of the program is
+              Once the forty-eight (48) hour refund window has passed, the full balance of the program is
               contractually owed, regardless of participation level, usage, or completion status.
             </li>
           </UL>
