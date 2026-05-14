@@ -112,7 +112,7 @@ async function searchDealsEnteredStage(
   cutoffIso: string
 ): Promise<DealResult[]> {
   // The property that holds "when did this deal enter <stage>"
-  const enteredProp = `hs_date_entered_${stage.stageId}`;
+  const enteredProp = `hs_v2_date_entered_${stage.stageId}`;
   const body = {
     filterGroups: [
       {
@@ -221,7 +221,7 @@ function transitionUuid(dealId: string, stageId: string, enteredAtIso: string) {
   ].join('-');
 }
 
-export const handler = schedule('*/5 * * * *', async () => {
+export const handler = schedule('*/5 * * * *', async (event) => {
   const token = process.env.HUBSPOT_TOKEN;
   const projectKey = process.env.POSTHOG_PROJECT_KEY;
   if (!token || !projectKey) {
@@ -229,7 +229,17 @@ export const handler = schedule('*/5 * * * *', async () => {
     return { statusCode: 500, body: 'missing env' };
   }
 
-  const cutoff = new Date(Date.now() - LOOKBACK_MINUTES * 60_000);
+  // Allow ?minutes=10080 on manual invocations to backfill a longer
+  // window. Scheduled runs (event is empty) use the default LOOKBACK.
+  // PostHog dedupes on our deterministic UUID, so replays are no-ops.
+  const overrideRaw = event?.queryStringParameters?.minutes;
+  const overrideMinutes = overrideRaw ? parseInt(overrideRaw, 10) : NaN;
+  const minutes =
+    Number.isFinite(overrideMinutes) && overrideMinutes > 0 && overrideMinutes <= 43_200
+      ? overrideMinutes
+      : LOOKBACK_MINUTES;
+
+  const cutoff = new Date(Date.now() - minutes * 60_000);
   const cutoffIso = cutoff.toISOString();
 
   let totalFired = 0;
@@ -241,7 +251,7 @@ export const handler = schedule('*/5 * * * *', async () => {
 
     for (const deal of deals) {
       const enteredAt =
-        deal.properties[`hs_date_entered_${stage.stageId}`] ||
+        deal.properties[`hs_v2_date_entered_${stage.stageId}`] ||
         deal.properties.hs_lastmodifieddate;
       if (!enteredAt) continue;
 
@@ -270,7 +280,7 @@ export const handler = schedule('*/5 * * * *', async () => {
     }
   }
 
-  const summary = `fired=${totalFired} skipped=${totalSkipped} window=${LOOKBACK_MINUTES}m`;
+  const summary = `fired=${totalFired} skipped=${totalSkipped} window=${minutes}m`;
   console.log(`[hs→ph] done: ${summary}`);
   return { statusCode: 200, body: summary };
 });
