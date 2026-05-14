@@ -106,12 +106,11 @@ interface DealResult {
   properties: Record<string, string | null | undefined>;
 }
 
-async function searchDealsEnteredStage(
+async function searchDealsEnteredStageDebug(
   token: string,
   stage: StageMap,
   cutoffIso: string
-): Promise<DealResult[]> {
-  // The property that holds "when did this deal enter <stage>"
+): Promise<{ deals: DealResult[]; status: number; total: number; errorBody?: string }> {
   const enteredProp = `hs_v2_date_entered_${stage.stageId}`;
   const body = {
     filterGroups: [
@@ -134,20 +133,40 @@ async function searchDealsEnteredStage(
     limit: 100,
   };
 
-  const res = await fetch(`${HUBSPOT_BASE}/crm/v3/objects/deals/search`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    console.warn(`[hs→ph] deal search failed for stage ${stage.stageLabel}: ${res.status}`);
-    return [];
+  let res: Response;
+  try {
+    res = await fetch(`${HUBSPOT_BASE}/crm/v3/objects/deals/search`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    return { deals: [], status: 0, total: 0, errorBody: `fetch error: ${String(err)}` };
   }
-  const data = (await res.json()) as { results?: DealResult[] };
-  return data.results || [];
+  if (!res.ok) {
+    let errBody = '';
+    try {
+      errBody = await res.text();
+    } catch {
+      /* no-op */
+    }
+    console.warn(`[hs→ph] deal search failed for stage ${stage.stageLabel}: ${res.status} ${errBody.slice(0, 200)}`);
+    return { deals: [], status: res.status, total: 0, errorBody: errBody };
+  }
+  const data = (await res.json()) as { results?: DealResult[]; total?: number };
+  return { deals: data.results || [], status: res.status, total: data.total || 0 };
+}
+
+async function searchDealsEnteredStage(
+  token: string,
+  stage: StageMap,
+  cutoffIso: string
+): Promise<DealResult[]> {
+  const r = await searchDealsEnteredStageDebug(token, stage, cutoffIso);
+  return r.deals;
 }
 
 async function getAssociatedContactEmail(
@@ -241,12 +260,25 @@ export const handler = schedule('*/5 * * * *', async (event) => {
 
   const cutoff = new Date(Date.now() - minutes * 60_000);
   const cutoffIso = cutoff.toISOString();
+  const debug = event?.queryStringParameters?.debug === '1';
 
   let totalFired = 0;
   let totalSkipped = 0;
+  const debugLog: Array<Record<string, unknown>> = [];
 
   for (const stage of STAGES) {
-    const deals = await searchDealsEnteredStage(token, stage, cutoffIso);
+    const searchResult = await searchDealsEnteredStageDebug(token, stage, cutoffIso);
+    if (debug) {
+      debugLog.push({
+        stage: stage.stageLabel,
+        stageId: stage.stageId,
+        status: searchResult.status,
+        total: searchResult.total,
+        firstError: searchResult.errorBody ? searchResult.errorBody.slice(0, 200) : undefined,
+        firstHit: searchResult.deals[0]?.id,
+      });
+    }
+    const deals = searchResult.deals;
     if (!deals.length) continue;
 
     for (const deal of deals) {
@@ -282,5 +314,12 @@ export const handler = schedule('*/5 * * * *', async (event) => {
 
   const summary = `fired=${totalFired} skipped=${totalSkipped} window=${minutes}m`;
   console.log(`[hs→ph] done: ${summary}`);
+  if (debug) {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary, stages: debugLog }, null, 2),
+    };
+  }
   return { statusCode: 200, body: summary };
 });
