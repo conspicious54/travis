@@ -266,50 +266,66 @@ export const handler = schedule('*/5 * * * *', async (event) => {
   let totalSkipped = 0;
   const debugLog: Array<Record<string, unknown>> = [];
 
-  for (const stage of STAGES) {
-    const searchResult = await searchDealsEnteredStageDebug(token, stage, cutoffIso);
+  // Stage searches in parallel — 8 cheap GETs, no reason to serialize
+  const searchResults = await Promise.all(
+    STAGES.map((s) => searchDealsEnteredStageDebug(token, s, cutoffIso))
+  );
+
+  // Flatten into a single list of {stage, deal} tuples we can process
+  // with bounded concurrency. Each tuple needs an associated-contact
+  // lookup + a PostHog capture.
+  type Work = { stage: StageMap; deal: DealResult; enteredAt: string };
+  const work: Work[] = [];
+  searchResults.forEach((result, i) => {
+    const stage = STAGES[i];
     if (debug) {
       debugLog.push({
         stage: stage.stageLabel,
         stageId: stage.stageId,
-        status: searchResult.status,
-        total: searchResult.total,
-        firstError: searchResult.errorBody ? searchResult.errorBody.slice(0, 200) : undefined,
-        firstHit: searchResult.deals[0]?.id,
+        status: result.status,
+        total: result.total,
+        firstError: result.errorBody ? result.errorBody.slice(0, 200) : undefined,
+        firstHit: result.deals[0]?.id,
       });
     }
-    const deals = searchResult.deals;
-    if (!deals.length) continue;
-
-    for (const deal of deals) {
+    for (const deal of result.deals) {
       const enteredAt =
         deal.properties[`hs_v2_date_entered_${stage.stageId}`] ||
         deal.properties.hs_lastmodifieddate;
-      if (!enteredAt) continue;
-
-      const email = await getAssociatedContactEmail(token, deal.id);
-      if (!email) {
-        totalSkipped++;
-        console.log(`[hs→ph] skip ${deal.id} (${stage.stageLabel}) — no email`);
-        continue;
-      }
-
-      const uuid = transitionUuid(deal.id, stage.stageId, String(enteredAt));
-      const amountStr = deal.properties.amount;
-      const amount = amountStr != null && amountStr !== '' ? Number(amountStr) : undefined;
-
-      await sendToPostHog(projectKey, email, stage.eventName, String(enteredAt), uuid, {
-        deal_id: deal.id,
-        deal_name: deal.properties.dealname || null,
-        pipeline_id: stage.pipelineId,
-        pipeline_label: stage.pipelineLabel,
-        stage_id: stage.stageId,
-        stage_label: stage.stageLabel,
-        amount,
-        hs_entered_at: enteredAt,
-      });
-      totalFired++;
+      if (enteredAt) work.push({ stage, deal, enteredAt: String(enteredAt) });
     }
+  });
+
+  // Process at moderate concurrency to avoid hammering HubSpot — they
+  // rate-limit at ~100 req/sec for Private Apps. 10 concurrent is safe.
+  const CONCURRENCY = 10;
+  for (let i = 0; i < work.length; i += CONCURRENCY) {
+    const batch = work.slice(i, i + CONCURRENCY);
+    await Promise.all(
+      batch.map(async ({ stage, deal, enteredAt }) => {
+        const email = await getAssociatedContactEmail(token, deal.id);
+        if (!email) {
+          totalSkipped++;
+          console.log(`[hs→ph] skip ${deal.id} (${stage.stageLabel}) — no email`);
+          return;
+        }
+        const uuid = transitionUuid(deal.id, stage.stageId, enteredAt);
+        const amountStr = deal.properties.amount;
+        const amount =
+          amountStr != null && amountStr !== '' ? Number(amountStr) : undefined;
+        await sendToPostHog(projectKey, email, stage.eventName, enteredAt, uuid, {
+          deal_id: deal.id,
+          deal_name: deal.properties.dealname || null,
+          pipeline_id: stage.pipelineId,
+          pipeline_label: stage.pipelineLabel,
+          stage_id: stage.stageId,
+          stage_label: stage.stageLabel,
+          amount,
+          hs_entered_at: enteredAt,
+        });
+        totalFired++;
+      })
+    );
   }
 
   const summary = `fired=${totalFired} skipped=${totalSkipped} window=${minutes}m`;
