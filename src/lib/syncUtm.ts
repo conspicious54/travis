@@ -84,14 +84,35 @@ let lastSyncedKey = '';
  */
 export function syncContactUtms(
   email: string | null | undefined,
-  source: 'book_redirect' | 'bookacall_redirect'
+  source:
+    | 'book_redirect'
+    | 'bookacall_redirect'
+    | 'setter_confirmation'
+    | 'closer_confirmation'
 ) {
-  if (!email || !email.includes('@')) return;
+  // Observability: fire one attempt event so we can see invocation rate
+  // independent of whether the sync succeeded. Diagnostics for the
+  // "why is contact_utm_synced near zero" investigation.
+  trackEvent('contact_utm_sync_attempted', {
+    source,
+    has_email: !!email && email.includes('@'),
+  });
+
+  if (!email || !email.includes('@')) {
+    trackEvent('contact_utm_sync_skipped', { source, reason: 'no_email' });
+    return;
+  }
   const utms = readPersistedUtms();
-  if (Object.keys(utms).length === 0) return;
+  if (Object.keys(utms).length === 0) {
+    trackEvent('contact_utm_sync_skipped', { source, reason: 'no_utms_in_storage' });
+    return;
+  }
 
   const key = `${email.trim().toLowerCase()}|${JSON.stringify(utms)}`;
-  if (key === lastSyncedKey) return;
+  if (key === lastSyncedKey) {
+    trackEvent('contact_utm_sync_skipped', { source, reason: 'duplicate_in_session' });
+    return;
+  }
   lastSyncedKey = key;
 
   const payload = JSON.stringify({ email, source, ...utms });

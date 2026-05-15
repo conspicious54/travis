@@ -33,6 +33,7 @@ import {
 } from '../lib/confirmationTracking';
 import { markConfirmClicked } from '../lib/confirmFlow';
 import { syncContactTimezone } from '../lib/syncTimezone';
+import { syncContactUtms } from '../lib/syncUtm';
 
 type Platform = 'ios' | 'android' | 'desktop';
 function detectPlatform(): Platform {
@@ -795,6 +796,9 @@ export function TrainingNewCloser() {
       // Fallback timezone sync — primary call is from /book on
       // booking success. Deduped by email+tz inside syncContactTimezone.
       syncContactTimezone(personalization.email, 'closer_confirmation');
+      // UTM fallback: sessionStorage from /book is still alive on this
+      // same domain. Catches cases where the booking-page sync dropped.
+      syncContactUtms(personalization.email, 'closer_confirmation');
     }
     setPersonProperties({
       region: personalization.region,

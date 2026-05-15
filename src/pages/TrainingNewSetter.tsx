@@ -30,6 +30,7 @@ import {
 } from '../lib/confirmationTracking';
 import { markConfirmClicked } from '../lib/confirmFlow';
 import { syncContactTimezone } from '../lib/syncTimezone';
+import { syncContactUtms } from '../lib/syncUtm';
 
 /* ─────────────────── region & platform detection ─────────────────── */
 
@@ -374,6 +375,10 @@ export function TrainingNewSetter() {
       // landed here from a saved link). Deduped by email+tz so it's
       // a no-op if Book.tsx already pushed.
       syncContactTimezone(personalization.email, 'setter_confirmation');
+      // UTM fallback: sessionStorage from /bookacall is still alive on
+      // this same domain. If the booking-page sync silently dropped
+      // (e.g., HubSpot postMessage missed email), we still get the UTM.
+      syncContactUtms(personalization.email, 'setter_confirmation');
     }
     setPersonProperties({
       region: personalization.region,
