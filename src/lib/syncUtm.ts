@@ -146,7 +146,6 @@ export function syncContactUtms(
           trackEvent('contact_utm_synced', {
             source,
             written: Object.keys(data.written || {}),
-            preserved: Object.keys(data.preserved || {}),
           });
         } else {
           trackEvent('contact_utm_sync_failed', { source, reason: data?.reason });
