@@ -28,6 +28,7 @@ import { ProductEstimator } from './pages/ProductEstimator';
 import { Migration } from './pages/Migration';
 import { TermsOfService } from './pages/TermsOfService';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
+import { LiveTraining } from './pages/LiveTraining';
 import { VideoProgressProvider } from './context/VideoProgressContext';
 import { EmailCaptureProvider } from './context/EmailCaptureContext';
 import { ExitIntentProvider } from './context/ExitIntentContext';
@@ -69,6 +70,7 @@ function AppWrapper() {
                 <Route path="/migration" element={<Migration />} />
                 <Route path="/termsofservice" element={<TermsOfService />} />
                 <Route path="/privacypolicy" element={<PrivacyPolicy />} />
+                <Route path="/live-training" element={<LiveTraining />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>
