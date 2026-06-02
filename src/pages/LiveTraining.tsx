@@ -120,13 +120,14 @@ export function LiveTraining() {
       is_member: isMember,
       email_prefilled: !!emailFromUrl(),
     });
-    // Detect country in the background — used for downstream Zapier
-    // routing (AC for target markets, Mailchimp for everywhere else).
+    // Detect country in the background — classifies into target /
+    // non_target buckets that Zapier routes (AC vs Mailchimp).
     getCountry().then((info) => {
       setCountry(info);
       trackEvent('live_training_country_detected', {
         country_code: info.code || 'unknown',
         country_name: info.name || 'unknown',
+        audience: info.audience,
         source: info.source,
       });
     });
@@ -153,10 +154,12 @@ export function LiveTraining() {
     // Make sure we have country resolved before submit. If still
     // in-flight, await it; if it never resolves we ship without it.
     const countryInfo = country ?? (await getCountry().catch(() => null));
+    const audience = countryInfo?.audience ?? 'non_target';
     identifyUser(cleanEmail, {
       live_training_stage: stage,
       country_code: countryInfo?.code,
       country_name: countryInfo?.name,
+      audience,
     });
     trackEvent('live_training_registered', {
       stage,
@@ -164,6 +167,7 @@ export function LiveTraining() {
       has_phone: !!phone.trim(),
       country_code: countryInfo?.code || 'unknown',
       country_name: countryInfo?.name || 'unknown',
+      audience,
     });
 
     try {
@@ -177,6 +181,7 @@ export function LiveTraining() {
           is_member: isMember,
           country_code: countryInfo?.code || '',
           country_name: countryInfo?.name || '',
+          audience,
         }),
       });
       const data = await res.json().catch(() => ({}));

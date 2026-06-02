@@ -40,6 +40,15 @@ interface RegisterPayload {
   is_member?: boolean;
   country_code?: string;
   country_name?: string;
+  audience?: 'target' | 'non_target';
+}
+
+// Server-side fallback in case the client didn't send audience —
+// must mirror the TARGET_COUNTRIES set in src/lib/detectCountry.ts.
+const TARGET_COUNTRIES = new Set(['US', 'CA', 'GB', 'AU', 'NZ', 'IE']);
+function classifyAudience(code: string): 'target' | 'non_target' {
+  if (!code) return 'non_target';
+  return TARGET_COUNTRIES.has(code.toUpperCase()) ? 'target' : 'non_target';
 }
 
 export const handler: Handler = async (event: HandlerEvent) => {
@@ -73,12 +82,18 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
   const countryCode = (body.country_code || '').trim().toUpperCase();
   const countryName = (body.country_name || '').trim();
+  // Trust the client's audience if it sent one, otherwise classify
+  // server-side from the country code. Either way we have a value.
+  const audience: 'target' | 'non_target' = body.audience === 'target' || body.audience === 'non_target'
+    ? body.audience
+    : classifyAudience(countryCode);
 
   const properties: Record<string, string> = {
     webinar_registered: 'true',
     webinar_launch_stage: stage,
     webinar_registration_source: body.is_member ? 'list' : 'cold',
     webinar_registered_at: new Date().toISOString(),
+    webinar_audience: audience,
   };
   if (countryCode) properties.webinar_country_code = countryCode;
   if (countryName) properties.webinar_country = countryName;
@@ -120,15 +135,16 @@ export const handler: Handler = async (event: HandlerEvent) => {
     });
   }
 
-  // Forward the registration to Zapier so Zapier can route it to
-  // ActiveCampaign (target countries) or Mailchimp (others) using
-  // country_code. Single env var lets you swap which Zap receives
-  // webhooks per webinar without redeploying.
+  // Forward the registration to Zapier. Zapier just needs the
+  // single `audience` field to branch on — we already did the
+  // country → bucket classification here. Zapier never needs to
+  // know the country list.
   const zapResult = await forwardToZapier({
     email,
     phone,
     stage,
     is_member: !!body.is_member,
+    audience,
     country_code: countryCode,
     country_name: countryName,
     submitted_at: new Date().toISOString(),
@@ -136,13 +152,14 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
   console.log(
     `[register-webinar] ok email=${email} stage="${stage}" ` +
-    `country=${countryCode || '?'} source=${properties.webinar_registration_source} ` +
+    `audience=${audience} country=${countryCode || '?'} source=${properties.webinar_registration_source} ` +
     `zap_ok=${zapResult.ok} zap_reason=${zapResult.reason || ''}`
   );
   return json(200, {
     ok: true,
     email,
     stage,
+    audience,
     country_code: countryCode || null,
     zapier: zapResult,
   });
@@ -153,6 +170,7 @@ interface ZapierPayload {
   phone: string;
   stage: string;
   is_member: boolean;
+  audience: 'target' | 'non_target';
   country_code: string;
   country_name: string;
   submitted_at: string;

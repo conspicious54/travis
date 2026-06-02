@@ -14,9 +14,32 @@
 
 const STORAGE_KEY = 'pp_country_data';
 
+export type Audience = 'target' | 'non_target';
+
+/* ─── Target countries for webinar / list routing ─────────────────
+   Anything in this set goes to the "target" audience bucket (which
+   our Zapier webhook routes to ActiveCampaign). Anything else is
+   "non_target" (routed to Mailchimp). Edit this list — and only
+   this list — to change routing. No code changes needed elsewhere.
+──────────────────────────────────────────────────────────────────── */
+const TARGET_COUNTRIES = new Set([
+  'US', // United States
+  'CA', // Canada
+  'GB', // United Kingdom
+  'AU', // Australia
+  'NZ', // New Zealand
+  'IE', // Ireland
+]);
+
+export function classifyAudience(countryCode: string): Audience {
+  if (!countryCode) return 'non_target';
+  return TARGET_COUNTRIES.has(countryCode.toUpperCase()) ? 'target' : 'non_target';
+}
+
 export interface CountryInfo {
   code: string;          // "US"
   name: string;          // "United States" (best-effort)
+  audience: Audience;    // "target" | "non_target"
   source: 'cache' | 'api' | 'fallback';
 }
 
@@ -82,7 +105,14 @@ function readCache(): CountryInfo | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed.code === 'string') {
-      return { ...parsed, source: 'cache' } as CountryInfo;
+      // Always recompute audience on read in case the target list
+      // changed between page loads.
+      return {
+        code: parsed.code,
+        name: parsed.name || parsed.code,
+        audience: classifyAudience(parsed.code),
+        source: 'cache',
+      };
     }
   } catch { /* no-op */ }
   return null;
@@ -117,12 +147,13 @@ export function getCountry(): Promise<CountryInfo> {
       const info: CountryInfo = {
         code,
         name: ISO_TO_NAME[code] || code,
+        audience: classifyAudience(code),
         source: 'api',
       };
       writeCache(info);
       return info;
     } catch (err) {
-      return { code: '', name: '', source: 'fallback' as const };
+      return { code: '', name: '', audience: 'non_target' as const, source: 'fallback' as const };
     } finally {
       inflight = null;
     }
