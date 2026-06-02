@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Calendar, Clock, CheckCircle, Star, ArrowRight, BookmarkPlus, ChevronDown, Sparkles, Bell, Phone, Youtube, Video, AlertTriangle, Wifi, MonitorSmartphone } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
+import { getCountry, type CountryInfo } from '../lib/detectCountry';
 
 /* ───── /live-training — webinar opt-in ───────────────────────────
    Single page with two form variants:
@@ -111,12 +112,23 @@ export function LiveTraining() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [registered, setRegistered] = useState(false);
+  const [country, setCountry] = useState<CountryInfo | null>(null);
 
   useEffect(() => {
     document.title = `Live Training — ${WEBINAR_TITLE}`;
     trackEvent('live_training_page_viewed', {
       is_member: isMember,
       email_prefilled: !!emailFromUrl(),
+    });
+    // Detect country in the background — used for downstream Zapier
+    // routing (AC for target markets, Mailchimp for everywhere else).
+    getCountry().then((info) => {
+      setCountry(info);
+      trackEvent('live_training_country_detected', {
+        country_code: info.code || 'unknown',
+        country_name: info.name || 'unknown',
+        source: info.source,
+      });
     });
   }, []);
 
@@ -138,11 +150,20 @@ export function LiveTraining() {
     }
 
     setSubmitting(true);
-    identifyUser(cleanEmail, { live_training_stage: stage });
+    // Make sure we have country resolved before submit. If still
+    // in-flight, await it; if it never resolves we ship without it.
+    const countryInfo = country ?? (await getCountry().catch(() => null));
+    identifyUser(cleanEmail, {
+      live_training_stage: stage,
+      country_code: countryInfo?.code,
+      country_name: countryInfo?.name,
+    });
     trackEvent('live_training_registered', {
       stage,
       is_member: isMember,
       has_phone: !!phone.trim(),
+      country_code: countryInfo?.code || 'unknown',
+      country_name: countryInfo?.name || 'unknown',
     });
 
     try {
@@ -154,6 +175,8 @@ export function LiveTraining() {
           phone: phone.trim() || undefined,
           stage,
           is_member: isMember,
+          country_code: countryInfo?.code || '',
+          country_name: countryInfo?.name || '',
         }),
       });
       const data = await res.json().catch(() => ({}));
