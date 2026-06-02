@@ -400,7 +400,9 @@ export function LiveTraining() {
                 If you already know you're serious about building your Amazon brand, you can book a call with my team to discuss working together — no need to wait for the webinar.
               </p>
               <a
-                href="/book"
+                href="https://start.travismarziani.com/?utm_source=live_training&utm_medium=webinar_confirmation"
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => trackEvent('live_training_book_call_clicked')}
                 className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-lg shadow-orange-500/30 cursor-pointer"
               >
@@ -420,20 +422,73 @@ export function LiveTraining() {
   /* ────── form state ────── */
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/60 via-white to-white text-gray-900">
-      <div className="max-w-xl mx-auto px-5 pt-12 md:pt-20 pb-16">
-        <header className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 bg-orange-100 border border-orange-200 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-orange-700 mb-5">
-            <Sparkles className="w-3.5 h-3.5" />
-            Free Live Training with Travis
+      <div className="max-w-xl mx-auto px-5 pt-10 md:pt-16 pb-16">
+        <header className="text-center mb-8 md:mb-10">
+          {/* Pulsing LIVE badge */}
+          <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-[0.15em] text-red-700 mb-6">
+            <span className="relative inline-flex items-center justify-center w-2 h-2">
+              <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-75"></span>
+              <span className="relative inline-block w-2 h-2 rounded-full bg-red-600"></span>
+            </span>
+            Free live training with Travis Marziani
           </div>
+
           <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-[1.05] mb-4">
             {WEBINAR_TITLE}
           </h1>
-          <p className="text-base md:text-lg text-gray-700 leading-snug mb-2">
+          <p className="text-base md:text-lg text-gray-700 leading-snug mb-1">
+            One hour. Live. No replay.
+          </p>
+          <p className="text-sm md:text-base text-gray-500">
             {formatHumanDate(start)} · {formatHumanTime(start)}
           </p>
-          <p className="text-sm text-gray-500">Live and free. Save your spot below.</p>
         </header>
+
+        {/* What you'll learn — curiosity bullets */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm mb-8">
+          <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-4">
+            What you'll walk away with
+          </p>
+          <ul className="space-y-3 text-sm md:text-base text-gray-800 leading-relaxed">
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+              <span>
+                The exact framework Travis uses today to find products that hit{' '}
+                <span className="font-bold text-gray-900">$100K+ in their first year</span>
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+              <span>
+                Why the "Amazon is saturated" story is{' '}
+                <span className="font-bold text-gray-900">wrong</span> — and where the real opportunity is in 2026
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+              <span>
+                The launch playbook Travis used on his last 5 product launches —{' '}
+                <span className="font-bold text-gray-900">every one recouped its cost in month one</span>
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+              <span>
+                <span className="font-bold text-gray-900">Live Q&amp;A</span> — bring your hardest question, Travis answers live
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Form intro */}
+        <div className="text-center mb-5">
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-gray-500 mb-1">
+            Limited Q&amp;A spots — save yours
+          </p>
+          <h2 className="text-xl md:text-2xl font-black text-gray-900 leading-tight">
+            Grab your seat below
+          </h2>
+        </div>
 
         <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm space-y-5">
           {/* Email */}
@@ -508,19 +563,28 @@ export function LiveTraining() {
             disabled={submitting}
             className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-300 text-white font-black rounded-xl text-base md:text-lg transition-colors shadow-md cursor-pointer"
           >
-            {submitting ? 'Saving your spot…' : 'Save my spot'}
+            {submitting ? 'Saving your spot…' : 'Save my spot — it\'s free'}
             {!submitting && <ArrowRight className="w-5 h-5" />}
           </button>
 
           <p className="text-xs text-gray-500 text-center leading-relaxed">
-            Free training. We'll send the join link to your inbox.
+            We'll send the join link to your inbox an hour before we go live.
           </p>
         </form>
 
+        {/* Travis byline + social proof */}
+        <div className="mt-10 text-center">
+          <p className="text-gray-700 text-sm md:text-base leading-relaxed max-w-md mx-auto">
+            <span className="font-bold text-gray-900">Travis Marziani</span> has helped{' '}
+            <span className="font-bold text-orange-600">14,000+ students</span> launch their Amazon brands. This is the same playbook he uses today.
+          </p>
+        </div>
+
         {/* Trust bar */}
-        <div className="flex flex-wrap items-center justify-center gap-5 mt-10 text-sm text-gray-500">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-6 text-xs md:text-sm text-gray-500">
           <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-orange-500" /> 14,000+ students taught</span>
           <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-green-500" /> 100% free</span>
+          <span className="flex items-center gap-1.5"><Video className="w-4 h-4 text-red-500" /> Live — no replay</span>
         </div>
       </div>
     </div>
