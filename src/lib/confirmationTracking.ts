@@ -137,7 +137,7 @@ export function usePhoneCopyTracking(
 /**
  * Returns a fn to call at the moment a confirm button is clicked.
  * If the tab blurs within 15 seconds, we fire
- * `confirm_app_switched` — a proxy for "they actually opened
+ * `confirm_app_switched` - a proxy for "they actually opened
  * Messages/WhatsApp instead of just clicking and bailing". If they
  * stay on the page, we fire `confirm_app_stayed`. Either way, one
  * outcome event per click.
@@ -197,7 +197,7 @@ export function useConfirmAppSwitch(location: Location) {
  * Listens for postMessage events from Sproutvideo iframes and
  * forwards them as PostHog events. Call once near the root of a
  * page that embeds Sproutvideo players. Cross-origin, so we can't
- * inspect the iframes themselves — this just reacts to whatever the
+ * inspect the iframes themselves - this just reacts to whatever the
  * player posts.
  *
  * Observed Sproutvideo message shapes include keys like `type` or

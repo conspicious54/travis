@@ -43,12 +43,12 @@ const schedule = [
     day: 'Day 2',
     label: 'Core Training',
     events: [
-      { time: '9:00 AM', title: 'Opening Keynote — The Mindset of 7-Figure Sellers', desc: 'What separates the people who build real businesses from everyone else' },
+      { time: '9:00 AM', title: 'Opening Keynote - The Mindset of 7-Figure Sellers', desc: 'What separates the people who build real businesses from everyone else' },
       { time: '10:00 AM', title: 'Product Research & Validation in 2026', desc: 'How to find winning niches using AI tools, Helium 10, and real search data' },
       { time: '11:00 AM', title: 'Manufacturing & Sourcing', desc: 'Finding reliable suppliers, negotiating, and avoiding costly mistakes' },
       { time: '12:00 PM', title: 'Lunch Break' },
       { time: '1:00 PM', title: 'The TikTok → Amazon Flywheel', desc: 'How one TikTok creator can explode your Amazon sales overnight' },
-      { time: '2:00 PM', title: 'Building a Brand That Sells for 7 Figures', desc: 'How to build an asset — not just a product — that someone will pay millions for' },
+      { time: '2:00 PM', title: 'Building a Brand That Sells for 7 Figures', desc: 'How to build an asset - not just a product - that someone will pay millions for' },
       { time: '3:00 PM', title: 'Amazon PPC Masterclass', desc: 'Advanced PPC strategies from the team running millions in ad spend' },
       { time: '5:00 PM', title: 'VIP Dinner', desc: 'Exclusive dinner for VIP & Accelerator members' },
     ],
@@ -57,12 +57,12 @@ const schedule = [
     day: 'Day 3',
     label: 'Advanced Strategies & Action',
     events: [
-      { time: '9:00 AM', title: 'Kickstarter & Crowdfunding — Launch for $0', desc: 'How to fund your entire first product before spending a dollar' },
+      { time: '9:00 AM', title: 'Kickstarter & Crowdfunding - Launch for $0', desc: 'How to fund your entire first product before spending a dollar' },
       { time: '10:00 AM', title: 'Listing Optimization & Conversion', desc: 'The listing elements that actually move the needle on sales' },
-      { time: '11:00 AM', title: 'Scaling to Multi-Channel', desc: 'Walmart, TikTok Shop, Shopify — expanding beyond Amazon' },
+      { time: '11:00 AM', title: 'Scaling to Multi-Channel', desc: 'Walmart, TikTok Shop, Shopify - expanding beyond Amazon' },
       { time: '12:00 PM', title: 'Lunch & Networking' },
-      { time: '1:00 PM', title: 'Hot Seat Sessions', desc: 'Bring your product, your listing, your questions — get live feedback from the speakers' },
-      { time: '3:00 PM', title: 'Closing Keynote — Your 90-Day Action Plan', desc: 'Walk out with a clear plan for exactly what to do when you get home' },
+      { time: '1:00 PM', title: 'Hot Seat Sessions', desc: 'Bring your product, your listing, your questions - get live feedback from the speakers' },
+      { time: '3:00 PM', title: 'Closing Keynote - Your 90-Day Action Plan', desc: 'Walk out with a clear plan for exactly what to do when you get home' },
     ],
   },
 ];
@@ -83,7 +83,7 @@ function Hero() {
       <div className="relative max-w-5xl mx-auto px-4 py-16 md:py-24 text-center">
         <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-blue-300 mb-6">
           <Calendar className="w-3.5 h-3.5" />
-          Fall 2026 — Miami, Florida
+          Fall 2026 - Miami, Florida
         </div>
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight mb-5 leading-[1.1]">
           Passion Product<br /><span className="text-blue-400">Live 2026</span>
@@ -235,9 +235,9 @@ function Location() {
         <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 text-center">
           <MapPin className="w-8 h-8 text-blue-600 mx-auto mb-3" />
           <h3 className="font-bold text-gray-900 text-lg mb-1">Venue TBA</h3>
-          <p className="text-sm text-gray-500 mb-4">Miami, FL — Fall 2026</p>
+          <p className="text-sm text-gray-500 mb-4">Miami, FL - Fall 2026</p>
           <p className="text-sm text-gray-600 max-w-md mx-auto">
-            Exact venue and dates will be announced soon. Get your ticket now to lock in the early price — you'll be the first to know when details drop.
+            Exact venue and dates will be announced soon. Get your ticket now to lock in the early price - you'll be the first to know when details drop.
           </p>
         </div>
       </div>
@@ -327,7 +327,7 @@ function Guarantee() {
           7-Day Money Back Guarantee
         </h2>
         <p className="text-gray-600 leading-relaxed max-w-lg mx-auto">
-          After you get your ticket, you have 7 days to change your mind — no questions asked. I just want committed people in the room, so take advantage and secure your spot now.
+          After you get your ticket, you have 7 days to change your mind - no questions asked. I just want committed people in the room, so take advantage and secure your spot now.
         </p>
       </div>
     </div>

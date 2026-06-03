@@ -90,7 +90,7 @@ export function Refund() {
         {/* CTA: Talk to expert (the "save" path) */}
         <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 md:p-8 mb-6 text-center">
           <Calendar className="w-10 h-10 text-blue-600 mx-auto mb-3" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Before You Decide — Talk to an Expert</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Before You Decide - Talk to an Expert</h2>
           <p className="text-gray-600 text-sm mb-5 max-w-md mx-auto">
             A free, no-pressure call with someone on our team who can help you work through whatever's holding you back. Most people who take this call end up glad they did.
           </p>
@@ -105,7 +105,7 @@ export function Refund() {
           </a>
         </div>
 
-        {/* Refund path — collapsed by default for friction */}
+        {/* Refund path - collapsed by default for friction */}
         {!showRefundForm ? (
           <div className="text-center">
             <button
@@ -187,7 +187,7 @@ export function Refund() {
                   />
                 </div>
 
-                {/* Agreement checkboxes — all 3 required */}
+                {/* Agreement checkboxes - all 3 required */}
                 <div className="space-y-4 bg-gray-50 rounded-xl p-5 border border-gray-200">
                   <p className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2">Required Acknowledgments</p>
 
@@ -211,7 +211,7 @@ export function Refund() {
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-0.5 shrink-0"
                     />
                     <span className="text-xs text-gray-700 leading-relaxed">
-                      I agree to the Non-Disparagement &amp; Disclosure Clause — to not discuss, slander, or talk about the contents of PPF in a way that could damage or disclose the contents of the program or business.
+                      I agree to the Non-Disparagement &amp; Disclosure Clause - to not discuss, slander, or talk about the contents of PPF in a way that could damage or disclose the contents of the program or business.
                     </span>
                   </label>
 

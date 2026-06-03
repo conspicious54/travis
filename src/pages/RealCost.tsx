@@ -234,7 +234,7 @@ function Stage({
   return (
     <div className="bg-[#faf7f2] border-b-4 border-black">
       <div className="max-w-6xl mx-auto">
-        {/* Stage header — newspaper style */}
+        {/* Stage header - newspaper style */}
         <div className="border-b-2 border-black px-4 py-5 md:py-7 flex items-baseline gap-4 md:gap-6">
           <span className={`${IMPACT} text-5xl md:text-7xl leading-none text-black/20`}>
             {num}

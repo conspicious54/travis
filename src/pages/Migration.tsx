@@ -8,10 +8,10 @@ import { trackEvent } from '../lib/posthog';
    travismarziani.com migration. Goal: someone landing here should
    instantly see which of three buckets they're in and what to do.
 
-   1. Former Passion Product members — find the migration email,
+   1. Former Passion Product members - find the migration email,
       with a live countdown to the access deadline.
-   2. Prospects who never bought — sent to start.travismarziani.com.
-   3. Passion Product Fast Track students — emailed access manually.
+   2. Prospects who never bought - sent to start.travismarziani.com.
+   3. Passion Product Fast Track students - emailed access manually.
 ──────────────────────────────────────────────────────────────────── */
 
 const MIGRATION_DEADLINE_ISO = '2026-05-12T23:59:59-04:00';
@@ -55,7 +55,7 @@ export function Migration() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/50 via-white to-white">
-      {/* Hero — compact so the three options are above the fold */}
+      {/* Hero - compact so the three options are above the fold */}
       <header className="text-center pt-12 md:pt-20 pb-8 md:pb-12 px-5">
         <p className="text-orange-600 text-xs md:text-sm font-bold uppercase tracking-[0.2em] mb-3">
           We've migrated
@@ -135,7 +135,7 @@ export function Migration() {
             </div>
 
             <h2 className="text-xl md:text-2xl font-black tracking-tight leading-tight text-gray-900 mb-3">
-              I'm new — I want to learn about working with Travis.
+              I'm new - I want to learn about working with Travis.
             </h2>
             <p className="text-gray-700 leading-relaxed mb-5">
               Head to Travis's main site to see what the team is doing now and how to get started.
@@ -168,7 +168,7 @@ export function Migration() {
               I'm a Fast Track student.
             </h2>
             <p className="text-gray-700 leading-relaxed mb-5">
-              Log in to your Fast Track course on the Kajabi platform — your existing credentials still work.
+              Log in to your Fast Track course on the Kajabi platform - your existing credentials still work.
             </p>
 
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-5 text-sm text-gray-700 leading-relaxed">

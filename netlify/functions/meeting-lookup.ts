@@ -187,7 +187,7 @@ async function findLatestAppointmentForContact(
   token: string,
   trace: DebugEntry[]
 ): Promise<{ id: string; properties: Record<string, unknown>; source: string } | null> {
-  // Properties to request — HubSpot ignores ones that don't exist
+  // Properties to request - HubSpot ignores ones that don't exist
   const properties = [
     'hs_appointment_start',
     'hs_appointment_end',
@@ -222,7 +222,7 @@ async function findLatestAppointmentForContact(
       .filter(Boolean);
     if (ids.length === 0) return null;
 
-    // Batch read — returns properties for all associated records
+    // Batch read - returns properties for all associated records
     const batchUrl = `https://api.hubapi.com/crm/v3/objects/${encodeURIComponent(objectType)}/batch/read`;
     const batchRes = await hubspotFetch(
       batchUrl,

@@ -1,5 +1,5 @@
 /* ───── coach profiles ─────────────────────────────────────────────
-   Keyed by lowercased HubSpot owner name. Matching is forgiving —
+   Keyed by lowercased HubSpot owner name. Matching is forgiving -
    "Matthew Kemp" will match if HubSpot returns "Matt Kemp".
 ──────────────────────────────────────────────────────────────────── */
 
@@ -24,7 +24,7 @@ export const COACHES: Record<string, Coach> = {
     photoUrl: 'https://ca.slack-edge.com/T03TC8Y0CUB-U0ANQG6P1E3-e99b626cb26d-512',
     travisIntro:
       "Sharlee is one of my sharpest in-house Amazon coaches here at Passion Product. She's been side-by-side with hundreds of our students as they built real brands, and she's the person I trust to cut through the noise and tell you what's actually worth your time.",
-    bio: "As part of the Passion Product coaching team, she's walked students through every stage of our method — from picking the right product to launching on Amazon and scaling past six figures. On your call she'll look at your situation, figure out where you are, and give you the exact next steps.",
+    bio: "As part of the Passion Product coaching team, she's walked students through every stage of our method - from picking the right product to launching on Amazon and scaling past six figures. On your call she'll look at your situation, figure out where you are, and give you the exact next steps.",
   },
   'jorge rodriguez': {
     id: 'jorge',
@@ -34,7 +34,7 @@ export const COACHES: Record<string, Coach> = {
     tenure: 'On the Passion Product team',
     photoUrl: 'https://ca.slack-edge.com/T03TC8Y0CUB-U0AJF7S2RA9-9f8571abcc34-512',
     travisIntro:
-      "Jorge is one of my best in-house Amazon coaches at Passion Product. He's the guy I'd want in my corner if I were starting over today — sharp, direct, and focused on getting you results.",
+      "Jorge is one of my best in-house Amazon coaches at Passion Product. He's the guy I'd want in my corner if I were starting over today - sharp, direct, and focused on getting you results.",
     bio: "He's one of the coaches we've trained directly on the Passion Product method, and he's guided hundreds of our students through finding their first product, nailing their branding, and hitting a successful launch. On your call he'll get straight to what's going to move the needle for you.",
   },
   'matthew kemp': {
@@ -46,7 +46,7 @@ export const COACHES: Record<string, Coach> = {
     photoUrl: '/coaches/matt.png',
     travisIntro:
       "Matt is one of my top in-house Amazon coaches at Passion Product. He's the kind of coach who takes your goals seriously and keeps you accountable to actually hitting them.",
-    bio: "As part of our coaching team, he's helped hundreds of our students work through the Passion Product method — from spotting a winning niche to building a brand people actually want to buy from. On your call he'll break down exactly what the path looks like for your situation.",
+    bio: "As part of our coaching team, he's helped hundreds of our students work through the Passion Product method - from spotting a winning niche to building a brand people actually want to buy from. On your call he'll break down exactly what the path looks like for your situation.",
   },
   'jesse saunders': {
     id: 'jesse',
@@ -70,7 +70,7 @@ export const COACHES: Record<string, Coach> = {
       "Zac is one of my newest in-house Amazon coaches at Passion Product, and he's already proving why I brought him on. Sharp, direct, and serious about helping you build something real.",
     bio: "He's been trained directly on the Passion Product method and is in the trenches with our students every week. On your call he'll get to the heart of what's actually going to move the needle for your situation.",
   },
-  // Santiago is a setter — kept here so getCoachByOwnerName resolves him
+  // Santiago is a setter - kept here so getCoachByOwnerName resolves him
   // if a HubSpot owner happens to use his name. Setter SMS confirmations
   // also reference this entry via firstName.
   'santiago espinoza': {

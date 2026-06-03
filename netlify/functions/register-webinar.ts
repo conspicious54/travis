@@ -33,7 +33,7 @@ interface RegisterPayload {
   audience?: 'target' | 'non_target';
 }
 
-// Server-side fallback in case the client didn't send audience —
+// Server-side fallback in case the client didn't send audience -
 // must mirror the TARGET_COUNTRIES set in src/lib/detectCountry.ts.
 const TARGET_COUNTRIES = new Set(['US', 'CA', 'GB', 'AU', 'NZ', 'IE']);
 function classifyAudience(code: string): 'target' | 'non_target' {

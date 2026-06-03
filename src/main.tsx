@@ -44,7 +44,7 @@ try {
     });
   }
 } catch {
-  /* no-op — don't break app init if this fails */
+  /* no-op - don't break app init if this fails */
 }
 
 createRoot(document.getElementById('root')!).render(

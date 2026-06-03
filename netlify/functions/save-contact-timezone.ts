@@ -57,7 +57,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
     return json(200, { ok: false, reason: 'email_missing' });
   }
   if (!timezone || !timezone.includes('/')) {
-    // Reject obvious junk — IANA names always contain a slash
+    // Reject obvious junk - IANA names always contain a slash
     // (e.g. America/New_York). UTC and the like aren't useful here.
     return json(200, { ok: false, reason: 'timezone_invalid', timezone });
   }
@@ -78,7 +78,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
       return json(200, { ok: true, email, timezone, source });
     }
     if (res.status === 404) {
-      // contact not found yet — wait and retry
+      // contact not found yet - wait and retry
       continue;
     }
     // Real error (auth/scope/validation). Log and bail.
@@ -112,7 +112,7 @@ async function patchContactTimezone(
   timezone: string,
   token: string
 ): Promise<PatchResult> {
-  // Update by email using HubSpot's idProperty parameter — saves us a
+  // Update by email using HubSpot's idProperty parameter - saves us a
   // separate "find contact by email" call.
   const url = `${HUBSPOT_BASE}/crm/v3/objects/contacts/${encodeURIComponent(
     email

@@ -48,7 +48,7 @@ function ConfirmationBanner() {
         <div className="flex items-center justify-center gap-2">
           <CheckCircle className="w-5 h-5 text-green-600" />
           <h1 className="text-lg md:text-xl font-bold text-gray-900">
-            Your Call is Booked — Now Complete Step 2
+            Your Call is Booked - Now Complete Step 2
           </h1>
         </div>
       </div>
@@ -64,7 +64,7 @@ function FinalCTA() {
           You've Already Taken the Hardest Step
         </h2>
         <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">
-          Most people think about starting an Amazon business for months — or years. You actually booked the call. Now show up, and let's build your plan together.
+          Most people think about starting an Amazon business for months - or years. You actually booked the call. Now show up, and let's build your plan together.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-6 text-blue-100 text-sm">

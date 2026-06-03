@@ -3,17 +3,17 @@ import { Calendar, Clock, CheckCircle, Star, ArrowRight, BookmarkPlus, ChevronDo
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
 
-/* ───── /live-training — webinar opt-in ───────────────────────────
+/* ───── /live-training - webinar opt-in ───────────────────────────
    Single page with two form variants:
    - Default: full form (email + phone + intent)
    - ?member=1 or ?from=email: shortened form (email + intent only)
    After submit, the page swaps to a confirmation state with the
    webinar details + add-to-calendar buttons.
 
-   Webinar details are constants at the top — update before each run.
+   Webinar details are constants at the top - update before each run.
 ──────────────────────────────────────────────────────────────────── */
 
-/* ─── Webinar config — UPDATE THESE BEFORE GOING LIVE ───────────── */
+/* ─── Webinar config - UPDATE THESE BEFORE GOING LIVE ───────────── */
 const WEBINAR_TITLE = 'How to Find and Launch Your First Passion Product';
 // ISO 8601 with timezone. Used for the Date object, ICS file, and
 // Google Calendar link. Pick the actual datetime when you set the date.
@@ -25,7 +25,7 @@ const WEBINAR_DESCRIPTION =
 /* ─────────────────────────────────────────────────────────────── */
 
 const STAGE_OPTIONS = [
-  { value: 'not_started', label: "I haven't started yet — still learning" },
+  { value: 'not_started', label: "I haven't started yet - still learning" },
   { value: 'have_idea', label: 'I have a product idea, planning next steps' },
   { value: 'launching', label: 'I am actively working on launching my first product' },
   { value: 'scaling', label: "I've already launched and want to grow / scale" },
@@ -63,7 +63,7 @@ function buildGoogleCalendarUrl(start: Date, durationMin: number): string {
     text: WEBINAR_TITLE,
     dates: `${fmt(start)}/${fmt(end)}`,
     details: [WEBINAR_DESCRIPTION, WEBINAR_JOIN_URL ? `Join: ${WEBINAR_JOIN_URL}` : ''].filter(Boolean).join('\n\n'),
-    location: WEBINAR_JOIN_URL || 'Online — link will be emailed before the training',
+    location: WEBINAR_JOIN_URL || 'Online - link will be emailed before the training',
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
@@ -81,7 +81,7 @@ function buildIcs(start: Date, durationMin: number): string {
     `DTEND:${fmt(end)}`,
     `SUMMARY:${WEBINAR_TITLE.replace(/,/g, '\\,')}`,
     `DESCRIPTION:${WEBINAR_DESCRIPTION.replace(/,/g, '\\,').replace(/\n/g, '\\n')}`,
-    `LOCATION:${(WEBINAR_JOIN_URL || 'Online — link will be emailed before the training').replace(/,/g, '\\,')}`,
+    `LOCATION:${(WEBINAR_JOIN_URL || 'Online - link will be emailed before the training').replace(/,/g, '\\,')}`,
     'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Live training in 1 day', 'TRIGGER:-P1D', 'END:VALARM',
     'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Live training in 1 hour', 'TRIGGER:-PT1H', 'END:VALARM',
     'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Live training starting now', 'TRIGGER:PT0M', 'END:VALARM',
@@ -115,12 +115,12 @@ export function LiveTraining() {
   const [country, setCountry] = useState<CountryInfo | null>(null);
 
   useEffect(() => {
-    document.title = `Live Training — ${WEBINAR_TITLE}`;
+    document.title = `Live Training - ${WEBINAR_TITLE}`;
     trackEvent('live_training_page_viewed', {
       is_member: isMember,
       email_prefilled: !!emailFromUrl(),
     });
-    // Detect country in the background — classifies into target /
+    // Detect country in the background - classifies into target /
     // non_target buckets that Zapier routes (AC vs Mailchimp).
     getCountry().then((info) => {
       setCountry(info);
@@ -186,7 +186,7 @@ export function LiveTraining() {
       });
       const data = await res.json().catch(() => ({}));
       if (!data?.ok) {
-        // Don't block the user — registration succeeded client-side
+        // Don't block the user - registration succeeded client-side
         // even if the CRM hiccup'd. Log it.
         trackEvent('live_training_register_warning', { reason: data?.reason || 'unknown' });
       }
@@ -214,7 +214,7 @@ export function LiveTraining() {
             <p className="text-base md:text-lg text-gray-700 leading-snug max-w-lg mx-auto">
               We'll send the join link to{' '}
               <span className="font-bold text-gray-900 break-all">{email.trim().toLowerCase()}</span>{' '}
-              an hour before we go live. Until then — read every step on this page so you don't miss it.
+              an hour before we go live. Until then - read every step on this page so you don't miss it.
             </p>
           </div>
 
@@ -240,12 +240,12 @@ export function LiveTraining() {
             <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 flex items-start gap-2 text-sm">
               <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
               <p className="text-red-800 leading-snug">
-                <span className="font-bold">This is LIVE</span> — there's no replay. If you miss it, you miss it.
+                <span className="font-bold">This is LIVE</span> - there's no replay. If you miss it, you miss it.
               </p>
             </div>
           </div>
 
-          {/* Add to calendar — THE primary action */}
+          {/* Add to calendar - THE primary action */}
           <section className="bg-white border-2 border-orange-300 rounded-2xl p-6 md:p-7 shadow-lg shadow-orange-100/50 mb-6">
             <h3 className="text-lg md:text-xl font-black text-gray-900 leading-tight mb-2">
               Add it to your calendar right now
@@ -293,14 +293,14 @@ export function LiveTraining() {
               <span className="truncate">{WEBINAR_JOIN_URL}</span>
             </a>
             <p className="text-sm text-gray-700 leading-relaxed">
-              <span className="font-bold">Open it now and hit the bell icon</span> — YouTube will ping you the moment Travis goes live.
+              <span className="font-bold">Open it now and hit the bell icon</span> - YouTube will ping you the moment Travis goes live.
               {phone.trim()
                 ? ` We'll also text ${phone.trim()} an hour before.`
                 : " We'll also email you an hour before."}
             </p>
           </section>
 
-          {/* How to show up — consolidated checklist */}
+          {/* How to show up - consolidated checklist */}
           <section className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm mb-6">
             <h3 className="text-lg md:text-xl font-black text-gray-900 leading-tight mb-4">
               How to show up ready
@@ -308,24 +308,24 @@ export function LiveTraining() {
             <ul className="space-y-3 text-sm md:text-base text-gray-800 leading-relaxed">
               <li className="flex items-start gap-3">
                 <MonitorSmartphone className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <span>Use a <span className="font-semibold">desktop or laptop</span> if you can — easier to follow along and take notes.</span>
+                <span>Use a <span className="font-semibold">desktop or laptop</span> if you can - easier to follow along and take notes.</span>
               </li>
               <li className="flex items-start gap-3">
                 <Wifi className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <span>Be on a <span className="font-semibold">stable internet connection</span> — YouTube live can buffer on cellular.</span>
+                <span>Be on a <span className="font-semibold">stable internet connection</span> - YouTube live can buffer on cellular.</span>
               </li>
               <li className="flex items-start gap-3">
                 <Video className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <span>Have a <span className="font-semibold">notepad ready</span> — Travis moves fast and the actionable stuff comes early.</span>
+                <span>Have a <span className="font-semibold">notepad ready</span> - Travis moves fast and the actionable stuff comes early.</span>
               </li>
               <li className="flex items-start gap-3">
                 <Clock className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <span>Block the <span className="font-semibold">full hour</span> on your calendar — no half-attention, no multitasking.</span>
+                <span>Block the <span className="font-semibold">full hour</span> on your calendar - no half-attention, no multitasking.</span>
               </li>
             </ul>
           </section>
 
-          {/* Bookmark — small note */}
+          {/* Bookmark - small note */}
           <p className="text-xs text-gray-500 text-center leading-relaxed mb-10 flex items-center justify-center gap-2">
             <BookmarkPlus className="w-4 h-4 text-gray-400" />
             Bookmark this page (
@@ -333,7 +333,7 @@ export function LiveTraining() {
             ) so you can come back when it's time.
           </p>
 
-          {/* Bottom CTA — ready ASAP */}
+          {/* Bottom CTA - ready ASAP */}
           <section className="bg-gradient-to-br from-gray-950 via-slate-900 to-orange-950 rounded-3xl p-7 md:p-8 text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-orange-900/30 via-transparent to-transparent" />
             <div className="relative">
@@ -344,7 +344,7 @@ export function LiveTraining() {
                 Ready to take action <span className="text-orange-400">right now?</span>
               </h3>
               <p className="text-slate-300 text-sm md:text-base leading-relaxed mb-6 max-w-md mx-auto">
-                If you already know you're serious about building your Amazon brand, you can book a call with my team to discuss working together — no need to wait for the webinar.
+                If you already know you're serious about building your Amazon brand, you can book a call with my team to discuss working together - no need to wait for the webinar.
               </p>
               <a
                 href="https://start.travismarziani.com/?utm_source=live_training&utm_medium=webinar_confirmation"
@@ -391,7 +391,7 @@ export function LiveTraining() {
           </p>
         </header>
 
-        {/* FORM — primary action, sits right under the header */}
+        {/* FORM - primary action, sits right under the header */}
         <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm space-y-5">
           {/* Email */}
           <div>
@@ -410,7 +410,7 @@ export function LiveTraining() {
             />
           </div>
 
-          {/* Phone — only for non-list members */}
+          {/* Phone - only for non-list members */}
           {!isMember && (
             <div>
               <label htmlFor="phone" className="block text-sm font-bold text-gray-900 mb-1.5">
@@ -465,7 +465,7 @@ export function LiveTraining() {
             disabled={submitting}
             className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-300 text-white font-black rounded-xl text-base md:text-lg transition-colors shadow-md cursor-pointer"
           >
-            {submitting ? 'Saving your spot…' : 'Save my spot — it\'s free'}
+            {submitting ? 'Saving your spot…' : 'Save my spot - it\'s free'}
             {!submitting && <ArrowRight className="w-5 h-5" />}
           </button>
 
@@ -474,7 +474,7 @@ export function LiveTraining() {
           </p>
         </form>
 
-        {/* What you'll walk away with — reinforcement after the form */}
+        {/* What you'll walk away with - reinforcement after the form */}
         <div className="mt-10">
           <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.18em] mb-4 text-center">
             What you'll walk away with
@@ -491,20 +491,20 @@ export function LiveTraining() {
               <CheckCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
               <span>
                 Why the "Amazon is saturated" story is{' '}
-                <span className="font-bold text-gray-900">wrong</span> — and where the real opportunity is in 2026
+                <span className="font-bold text-gray-900">wrong</span> - and where the real opportunity is in 2026
               </span>
             </li>
             <li className="flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
               <span>
-                The launch playbook Travis used on his last 5 product launches —{' '}
+                The launch playbook Travis used on his last 5 product launches -{' '}
                 <span className="font-bold text-gray-900">every one recouped its cost in month one</span>
               </span>
             </li>
             <li className="flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
               <span>
-                <span className="font-bold text-gray-900">Live Q&amp;A</span> — bring your hardest question, Travis answers live
+                <span className="font-bold text-gray-900">Live Q&amp;A</span> - bring your hardest question, Travis answers live
               </span>
             </li>
           </ul>
@@ -522,7 +522,7 @@ export function LiveTraining() {
         <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-5 text-xs md:text-sm text-gray-500">
           <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-orange-500" /> 14,000+ students taught</span>
           <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-green-500" /> 100% free</span>
-          <span className="flex items-center gap-1.5"><Video className="w-4 h-4 text-red-500" /> Live — no replay</span>
+          <span className="flex items-center gap-1.5"><Video className="w-4 h-4 text-red-500" /> Live - no replay</span>
         </div>
       </div>
     </div>

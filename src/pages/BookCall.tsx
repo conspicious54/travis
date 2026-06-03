@@ -4,7 +4,7 @@ import { identifyUser, trackBookingPageViewed, trackBookingCompleted } from '../
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 
-/* ───── /bookacall — embedded HubSpot setter scheduler ─────────────
+/* ───── /bookacall - embedded HubSpot setter scheduler ─────────────
    Same flow as /book but for the setter team. Captures the booking
    payload in localStorage and redirects to /trainingnew/setter.
 ────────────────────────────────────────────────────────────────── */
@@ -181,7 +181,7 @@ export function BookCall() {
           </div>
 
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.05] mb-4">
-            Congrats — You're In.<br />
+            Congrats - You're In.<br />
             <span className="text-orange-600">Now Pick Your Time.</span>
           </h1>
 
@@ -196,7 +196,7 @@ export function BookCall() {
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
               <Sparkles className="w-4 h-4 text-orange-600" />
-              <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below — spots fill up fast</p>
+              <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below - spots fill up fast</p>
             </div>
             <div
               ref={containerRef}
@@ -209,7 +209,7 @@ export function BookCall() {
         {/* Reassurance below the embed */}
         <div className="text-center mt-8 max-w-xl mx-auto">
           <p className="text-sm text-gray-500">
-            After you book, you'll get a confirmation page with everything you need to prepare for your call — plus stories from real students who started exactly where you are.
+            After you book, you'll get a confirmation page with everything you need to prepare for your call - plus stories from real students who started exactly where you are.
           </p>
         </div>
       </div>

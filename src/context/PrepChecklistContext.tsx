@@ -90,7 +90,7 @@ export function PrepChecklistProvider({ children }: { children: React.ReactNode 
 export function usePrepChecklist(): PrepChecklistValue {
   const ctx = useContext(PrepChecklistContext);
   if (!ctx) {
-    // Safe fallback if provider is missing — returns no-op stubs
+    // Safe fallback if provider is missing - returns no-op stubs
     return {
       completed: { microAsk: false, video: false, principles: false },
       markDone: () => {},

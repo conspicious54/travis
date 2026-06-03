@@ -80,7 +80,7 @@ let lastSyncedKey = '';
 /**
  * Fire-and-forget POST to /.netlify/functions/save-contact-utm.
  * Never blocks the booking flow. Server respects "don't override
- * existing values" — only fills in UTM properties that are empty.
+ * existing values" - only fills in UTM properties that are empty.
  */
 export function syncContactUtms(
   email: string | null | undefined,

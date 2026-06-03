@@ -168,7 +168,7 @@ export function Router() {
         if (ALLOWED_COUNTRIES.includes(country)) {
           doRedirect(GROUP_A_URL, { result: 'qualified', country });
         } else {
-          // DQ country — ask the capital question first
+          // DQ country - ask the capital question first
           setState('dq-question');
         }
       } catch (error) {

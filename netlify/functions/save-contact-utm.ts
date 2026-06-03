@@ -29,7 +29,7 @@ const CORS = {
 
 const HUBSPOT_BASE = 'https://api.hubapi.com';
 
-// Order matters only for diagnostic logging — all fields handled the same
+// Order matters only for diagnostic logging - all fields handled the same
 const UTM_FIELDS = [
   'utm_source',
   'utm_medium',
@@ -80,7 +80,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
     return json(200, { ok: false, reason: 'token_not_set' });
   }
 
-  // Two-pass retry — HubSpot sometimes takes a moment to index a
+  // Two-pass retry - HubSpot sometimes takes a moment to index a
   // brand-new contact created by the booking flow.
   for (const delayMs of [0, 2000]) {
     if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
@@ -93,7 +93,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
       return json(200, { ok: true, written: incoming });
     }
     if (writeRes.status === 404) {
-      // contact not indexed yet — wait and retry
+      // contact not indexed yet - wait and retry
       continue;
     }
     console.warn(

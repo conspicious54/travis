@@ -7,7 +7,7 @@ import { HeaderLight } from '../components/HeaderLight';
 
 export function PrivacyPolicy() {
   useEffect(() => {
-    document.title = 'Privacy Policy — Passion Product';
+    document.title = 'Privacy Policy - Passion Product';
   }, []);
 
   return (
@@ -22,9 +22,9 @@ export function PrivacyPolicy() {
             Passion Product LLC understands that your privacy is important to you. We are
             committed to protecting the privacy of your personally-identifiable information as you
             use any of our websites. This Privacy Policy applies to every website operated by
-            Passion Product LLC — including but not limited to travisfba.com, travismarziani.com,
+            Passion Product LLC - including but not limited to travisfba.com, travismarziani.com,
             start.travismarziani.com, passionproductformula.com, and any other domain we own or
-            operate from time to time — and tells you how we protect and use information that we
+            operate from time to time - and tells you how we protect and use information that we
             gather from you. By using any of our websites, you consent to the terms described in
             the most recent version of this Privacy Policy. You should also read our{' '}
             <a href="/termsofservice" className="text-orange-600 underline">
@@ -185,7 +185,7 @@ export function PrivacyPolicy() {
             </a>
           </P>
           <P>
-            Google also recommends installing the Google Analytics Opt-out Browser Add-on —{' '}
+            Google also recommends installing the Google Analytics Opt-out Browser Add-on -{' '}
             <a
               href="https://tools.google.com/dlpage/gaoptout"
               target="_blank"
@@ -194,7 +194,7 @@ export function PrivacyPolicy() {
             >
               https://tools.google.com/dlpage/gaoptout
             </a>{' '}
-            — for your web browser. Google Analytics Opt-out Browser Add-on provides visitors with
+            - for your web browser. Google Analytics Opt-out Browser Add-on provides visitors with
             the ability to prevent their data from being collected and used by Google Analytics.
           </P>
           <P>

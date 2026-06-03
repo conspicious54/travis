@@ -12,14 +12,14 @@ import { createHash } from 'crypto';
       stage in the last LOOKBACK_MINUTES
    2) fetches the associated contact's email (PostHog distinct_id)
    3) POSTs one deterministic-UUID event per transition to the
-      PostHog capture endpoint — dedupe is handled by PostHog's
+      PostHog capture endpoint - dedupe is handled by PostHog's
       UUID ingest rule so replaying the same transition is a no-op
 
    Required env vars:
-     HUBSPOT_TOKEN          — Private App token with
+     HUBSPOT_TOKEN          - Private App token with
                               crm.objects.deals.read,
                               crm.objects.contacts.read
-     POSTHOG_PROJECT_KEY    — the phc_... project token (safe to
+     POSTHOG_PROJECT_KEY    - the phc_... project token (safe to
                               embed server-side; it's already in the
                               frontend bundle)
 ──────────────────────────────────────────────────────────────────── */
@@ -30,7 +30,7 @@ const LOOKBACK_MINUTES = 10; // search window; must be > cron interval
 
 /* Stage ID → PostHog event name.
    Source of truth: we pulled these via the HubSpot MCP on 2026-04-23.
-   If a stage is renamed or its ID rotates, update here — stage IDs
+   If a stage is renamed or its ID rotates, update here - stage IDs
    live in HubSpot under Settings → Objects → Deals → Pipelines. */
 interface StageMap {
   pipelineId: string;
@@ -272,7 +272,7 @@ async function hubspotFetchJson<T>(url: string, init: RequestInit): Promise<T | 
       console.warn(`[hs→ph] retryable ${res.status} on ${url}`);
       continue;
     }
-    // Non-retryable error — log body and bail
+    // Non-retryable error - log body and bail
     let body = '';
     try { body = (await res.text()).slice(0, 200); } catch { /* no-op */ }
     console.warn(`[hs→ph] non-retryable ${res.status} on ${url}: ${body}`);
@@ -352,7 +352,7 @@ export const handler = schedule('*/5 * * * *', async (event) => {
   let totalSkipped = 0;
   const debugLog: Array<Record<string, unknown>> = [];
 
-  // Stage searches in parallel — 8 cheap GETs, no reason to serialize
+  // Stage searches in parallel - 8 cheap GETs, no reason to serialize
   const searchResults = await Promise.all(
     STAGES.map((s) => searchDealsEnteredStageDebug(token, s, cutoffIso))
   );
@@ -397,7 +397,7 @@ export const handler = schedule('*/5 * * * *', async (event) => {
         const email = dealToEmail.get(deal.id);
         if (!email) {
           totalSkipped++;
-          console.log(`[hs→ph] skip ${deal.id} (${stage.stageLabel}) — no email`);
+          console.log(`[hs→ph] skip ${deal.id} (${stage.stageLabel}) - no email`);
           return;
         }
         const uuid = transitionUuid(deal.id, stage.stageId, enteredAt);

@@ -102,7 +102,7 @@ function parseDate(val: string | null): Date | null {
 /* Meeting info comes from URL params set by /book AFTER HubSpot's
    postMessage fires. That redirect is our only trusted source of truth.
 
-   We refuse a bare date string like "2026-04-23" — JavaScript parses
+   We refuse a bare date string like "2026-04-23" - JavaScript parses
    that as midnight UTC which displays wrong in local time. Only a full
    ISO timestamp (with a T and a time component) is acceptable. */
 function parseMeetingInfo(): MeetingInfo | null {
@@ -112,7 +112,7 @@ function parseMeetingInfo(): MeetingInfo | null {
   const rawStart = p.get('start');
   if (!rawStart || !isFullTimestamp(rawStart)) {
     // eslint-disable-next-line no-console
-    console.log('[confirmation] Rejected meeting time. start param =', rawStart, '— not a full timestamp. Showing generic fallback.');
+    console.log('[confirmation] Rejected meeting time. start param =', rawStart, '- not a full timestamp. Showing generic fallback.');
     return null;
   }
 
@@ -149,7 +149,7 @@ function getEmailFromUrl(): string {
   return p.get('email') || p.get('Email') || '';
 }
 
-/* Ask the HubSpot-backed lookup function for anything missing — most
+/* Ask the HubSpot-backed lookup function for anything missing - most
    importantly the Zoom join URL, but also confirmed start/end time
    and owner name if they weren't in the URL. URL params always win
    over the lookup so we never overwrite verified data. */
@@ -168,7 +168,7 @@ async function hydrateFromHubSpot(
   email: string,
   urlMeeting: MeetingInfo | null
 ): Promise<MeetingInfo | null> {
-  // Short retry loop — HubSpot sometimes indexes a new appointment a
+  // Short retry loop - HubSpot sometimes indexes a new appointment a
   // couple of seconds after the booking completes.
   const attemptDelaysMs = [0, 2000, 5000];
 
@@ -204,7 +204,7 @@ async function hydrateFromHubSpot(
     // can render the Zoom button. The banner uses startUnknown flag to
     // avoid displaying a fake time.
     if (!start && !data.joinUrl && !data.ownerName) {
-      continue; // nothing useful — try next retry
+      continue; // nothing useful - try next retry
     }
 
     const safeStart = start || new Date();
@@ -338,7 +338,7 @@ function buildICS(m: MeetingInfo): string {
     `ORGANIZER;CN=${escapeIcsText(m.organizer)}:MAILTO:team@passionproduct.com`,
     m.email ? `ATTENDEE;CN=${escapeIcsText(`${m.firstName} ${m.lastName}`.trim())};RSVP=TRUE:MAILTO:${m.email}` : '',
     'STATUS:CONFIRMED',
-    // Multiple reminder alarms — calendar apps honor these automatically
+    // Multiple reminder alarms - calendar apps honor these automatically
     // Google Calendar's URL params don't support reminders, but an ICS
     // file with VALARM blocks does. Apple Calendar, Outlook, and Google
     // (when importing an ICS) all respect these triggers.
@@ -537,7 +537,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
     .trim();
 
   // Resolve the booked coach's first name so the confirmation text opens
-  // with "Hi Coach <Name>" — lets the coach auto-identify who's texting.
+  // with "Hi Coach <Name>" - lets the coach auto-identify who's texting.
   // Falls back to Jesse when HubSpot hasn't returned an owner or the
   // owner is still the generic "Passion Product Team" placeholder.
   const coachFirstName = (() => {
@@ -608,7 +608,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
   return (
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
       <div className="max-w-3xl mx-auto px-4 pt-10 pb-10 md:pt-14 md:pb-14 text-center">
-        {/* Checkmark badge — pops in on mount with a single ring ripple */}
+        {/* Checkmark badge - pops in on mount with a single ring ripple */}
         <div className="relative inline-flex items-center justify-center mb-6">
           <span className="absolute inset-0 rounded-full animate-confirm-check-ring" aria-hidden="true" />
           <div className="relative inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-green-100 border-2 border-green-300 animate-confirm-check-in">
@@ -698,7 +698,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
           Then do these two things before your call ↓
         </p>
 
-        {/* Calendar add below — secondary micro-ask */}
+        {/* Calendar add below - secondary micro-ask */}
         {meeting && (
           <div className="mt-5">
             <CalendarButton meeting={meeting} variant="primary" />
@@ -795,7 +795,7 @@ export function TrainingNewCloser() {
         first_name: personalization.firstName,
         last_name: personalization.lastName,
       });
-      // Fallback timezone sync — primary call is from /book on
+      // Fallback timezone sync - primary call is from /book on
       // booking success. Deduped by email+tz inside syncContactTimezone.
       syncContactTimezone(personalization.email, 'closer_confirmation');
       // UTM fallback: sessionStorage from /book is still alive on this

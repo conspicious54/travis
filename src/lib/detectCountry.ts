@@ -1,6 +1,6 @@
 /* ───── client-side country detection ─────────────────────────────
    Fetches the visitor's country via a free no-auth IP-to-geo API
-   (country.is — returns just IP + country code, no rate limit
+   (country.is - returns just IP + country code, no rate limit
    advertised) and caches in sessionStorage so we don't re-fetch
    on every page navigation.
 
@@ -19,8 +19,8 @@ export type Audience = 'target' | 'non_target';
 /* ─── Target countries for webinar / list routing ─────────────────
    Anything in this set goes to the "target" audience bucket (which
    our Zapier webhook routes to ActiveCampaign). Anything else is
-   "non_target" (routed to Mailchimp). Edit this list — and only
-   this list — to change routing. No code changes needed elsewhere.
+   "non_target" (routed to Mailchimp). Edit this list - and only
+   this list - to change routing. No code changes needed elsewhere.
 ──────────────────────────────────────────────────────────────────── */
 const TARGET_COUNTRIES = new Set([
   'US', // United States

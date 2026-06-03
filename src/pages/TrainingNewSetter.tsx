@@ -140,7 +140,7 @@ function SetterConfirmationBanner({
   const isMobile = platform === 'ios' || platform === 'android';
 
   // Setter flow has no booked meeting yet, so we can't know which
-  // coach will end up taking the call. Default to Santiago — he's
+  // coach will end up taking the call. Default to Santiago - he's
   // currently the active setter doing the first outreach.
   const coachFirstName = 'Santiago';
 
@@ -197,7 +197,7 @@ function SetterConfirmationBanner({
   return (
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
       <div className="max-w-3xl mx-auto px-4 pt-10 pb-10 md:pt-14 md:pb-14 text-center">
-        {/* Checkmark badge — pops in on mount with a single ring ripple */}
+        {/* Checkmark badge - pops in on mount with a single ring ripple */}
         <div className="relative inline-flex items-center justify-center mb-6">
           <span className="absolute inset-0 rounded-full animate-confirm-check-ring" aria-hidden="true" />
           <div className="relative inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-green-100 border-2 border-green-300 animate-confirm-check-in">

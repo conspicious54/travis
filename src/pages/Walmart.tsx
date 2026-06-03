@@ -5,7 +5,7 @@ import { CheckCircle } from 'lucide-react';
 
 type SellingStatus = 'yes_walmart' | 'yes_amazon' | 'neither' | null;
 
-/* Mailchimp subscribe endpoint — Effective Ecommerce audience */
+/* Mailchimp subscribe endpoint - Effective Ecommerce audience */
 const MC_U = '390599db9e3bac1fdce322d15';
 const MC_ID = 'e97b6c6353';
 const MC_DC = 'us7';
@@ -87,7 +87,7 @@ export function Walmart() {
       await subscribeToMailchimp(email, sellingStatus);
     } catch (error) {
       console.error('Mailchimp subscribe error:', error);
-      // Still show success — they may already be subscribed
+      // Still show success - they may already be subscribed
     }
     setIsSubmitted(true);
     setIsSubmitting(false);
@@ -102,7 +102,7 @@ export function Walmart() {
           </div>
           <h1 className="text-3xl md:text-4xl font-black text-white mb-3 tracking-tight">You're On the List</h1>
           <p className="text-blue-200 mb-6">
-            We'll send you everything you need to know about selling on Walmart — keep an eye on your inbox.
+            We'll send you everything you need to know about selling on Walmart - keep an eye on your inbox.
           </p>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 text-left">
             <p className="text-sm font-semibold text-white mb-2">While you wait:</p>
@@ -179,7 +179,7 @@ export function Walmart() {
               </div>
             </div>
 
-            {/* Email input — only shows after they pick a status */}
+            {/* Email input - only shows after they pick a status */}
             {sellingStatus && (
               <div>
                 <label htmlFor="email" className="block text-sm font-bold text-gray-900 mb-2">

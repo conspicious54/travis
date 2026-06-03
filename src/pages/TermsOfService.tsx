@@ -8,7 +8,7 @@ import { HeaderLight } from '../components/HeaderLight';
 
 export function TermsOfService() {
   useEffect(() => {
-    document.title = 'Terms of Service — Passion Product';
+    document.title = 'Terms of Service - Passion Product';
   }, []);
 
   return (
@@ -63,7 +63,7 @@ export function TermsOfService() {
           <P>
             <span className="font-semibold">Elective.</span> If you enrolled using Elective as
             your payment method, your refund request must be received by the Company within the
-            same calendar week — Monday through Sunday — in which your payment was received. For
+            same calendar week - Monday through Sunday - in which your payment was received. For
             example, if a payment is received on a Tuesday, the refund request must reach us no
             later than the following Sunday. This deadline applies even if your first scheduled
             Program call has not yet occurred.

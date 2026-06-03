@@ -298,7 +298,7 @@ export function ResearchVideo() {
         if (data?.event === 'onStateChange' && data?.info === 0) {
           markDone('video');
         }
-        // state 1 = PLAYING — record that the video was started
+        // state 1 = PLAYING - record that the video was started
         if (data?.event === 'onStateChange' && data?.info === 1) {
           trackEvent('main_video_started');
         }
@@ -559,7 +559,7 @@ export function PassionProductMethodSection() {
             How the <span className="text-orange-600">Passion Product Method</span> works
           </h2>
           <p className="text-base md:text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
-            The exact method Travis used to make over $2 million in the past 15 months selling on Amazon — and the same playbook the team teaches every student.
+            The exact method Travis used to make over $2 million in the past 15 months selling on Amazon - and the same playbook the team teaches every student.
           </p>
         </div>
         <div className="relative">
@@ -586,7 +586,7 @@ export function AcceleratorSection() {
             How the <span className="text-orange-600">Accelerator Program</span> works
           </h2>
           <p className="text-base md:text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
-            A walkthrough of the program — how we teach, how we coach, and how students actually get results.
+            A walkthrough of the program - how we teach, how we coach, and how students actually get results.
           </p>
         </div>
         <div className="relative">
@@ -761,7 +761,7 @@ export function ConfirmationFAQ({
     },
   ];
 
-  // Same personalization sort as BreakoutVideos — surface the most
+  // Same personalization sort as BreakoutVideos - surface the most
   // relevant video first so if someone does expand, the one matching
   // their biggest hesitation is the first they see.
   if (p) {
@@ -783,7 +783,7 @@ export function ConfirmationFAQ({
   }
 
   // Sproutvideo iframes are cross-origin so we can't listen to actual
-  // play events — but a click on the video tile is a strong intent
+  // play events - but a click on the video tile is a strong intent
   // signal. Good enough to rank which objection video draws attention.
   const handleVideoIntent = (headline: string, key: string) => {
     trackEvent('breakout_video_played', {
@@ -912,7 +912,7 @@ export function OpportunitySection() {
    - 1 featured student video embed (pick a banger)
    - A big clear button to the full YouTube playlist of student stories
    - Trust bar
-   Matches Ruby's "cross-pollinate via YouTube" principle — send them
+   Matches Ruby's "cross-pollinate via YouTube" principle - send them
    to the channel, don't embed 60 videos inline.
 ──────────────────────────────────────────────────────────────────── */
 
@@ -956,7 +956,7 @@ const AVERAGE_CASE_VIDEOS: StudentVideo[] = [
 
 const FAILURE_VIDEOS: StudentVideo[] = [
   { id: 'rqatb8mOlF8', name: 'Logan & Leanne', revenue: 'Failure',  time: '3 months',  note: 'What went wrong, and what they\'d do differently next time.' },
-  { id: 'SvWcnRlXQqQ', name: 'Kammel',         revenue: '$913',     time: '11 months', note: 'A launch that didn\'t hit — the real story behind a tough month.' },
+  { id: 'SvWcnRlXQqQ', name: 'Kammel',         revenue: '$913',     time: '11 months', note: 'A launch that didn\'t hit - the real story behind a tough month.' },
   { id: 'Wi2sK5GjvFk', name: 'Brian',          revenue: '$6.2K',    time: '11 months', note: 'Honest look at the gap between effort and result.' },
 ];
 
@@ -1360,7 +1360,7 @@ export function LowCapitalStrategies({ p }: { p?: Personalization | null }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Strategy 1 — Kickstarter */}
+          {/* Strategy 1 - Kickstarter */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-orange-200 transition-all">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 text-orange-600 mb-4 font-black text-lg">
               1
@@ -1374,7 +1374,7 @@ export function LowCapitalStrategies({ p }: { p?: Personalization | null }) {
             </p>
           </div>
 
-          {/* Strategy 2 — Cheap product launch */}
+          {/* Strategy 2 - Cheap product launch */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-orange-200 transition-all">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 text-orange-600 mb-4 font-black text-lg">
               2
@@ -1388,7 +1388,7 @@ export function LowCapitalStrategies({ p }: { p?: Personalization | null }) {
             </p>
           </div>
 
-          {/* Strategy 3 — Financing */}
+          {/* Strategy 3 - Financing */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-orange-200 transition-all">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 text-orange-600 mb-4 font-black text-lg">
               3
@@ -1418,7 +1418,7 @@ export function LowCapitalStrategies({ p }: { p?: Personalization | null }) {
 
 /* ───────────── credit card quiz (US, low capital only) ────────────
    A 2-question quiz that recommends a credit card based on credit
-   score. NOTHING is saved — purely client-side, for the visitor's
+   score. NOTHING is saved - purely client-side, for the visitor's
    personal reference. Only renders for US visitors with limited
    launch capital.
 ──────────────────────────────────────────────────────────────────── */
@@ -1962,7 +1962,7 @@ export function MobileConfirmStickyBar({
      clicked a confirm button (they're app-switching to Messages/
      WhatsApp, not leaving)
    - Mobile fallback: scrolled ≥60% then scrolled back near the top
-     after 20+ seconds on page — "I've seen enough, going back"
+     after 20+ seconds on page - "I've seen enough, going back"
    Only fires once per session.
 ──────────────────────────────────────────────────────────────────── */
 
@@ -2002,7 +2002,7 @@ export function ConfirmationExitPopup({
     const trigger = (source: string) => {
       if (firedRef.current) return;
       const elapsed = Date.now() - pageLoadedAt;
-      // Don't pop on people who haven't read anything yet — they bail
+      // Don't pop on people who haven't read anything yet - they bail
       // for unrelated reasons (notification, switching apps, etc.) and
       // the popup just adds friction.
       if (elapsed < MIN_SECONDS_ON_PAGE) return;
@@ -2027,11 +2027,11 @@ export function ConfirmationExitPopup({
     };
     const handleVisibility = () => {
       if (document.visibilityState !== 'hidden') return;
-      // They just clicked a confirm button — they're switching to
+      // They just clicked a confirm button - they're switching to
       // Messages/WhatsApp, not leaving the page. Suppress.
       if (hadRecentConfirmClick(30_000)) return;
       // Tab-hide on a page they haven't engaged with is just normal
-      // app-switching noise — only fire if they've actually scrolled.
+      // app-switching noise - only fire if they've actually scrolled.
       if (maxScrollPct < MIN_ENGAGED_SCROLL_PCT) return;
       trigger('visibilitychange');
     };
@@ -2132,7 +2132,7 @@ export function ConfirmationExitPopup({
     );
   }
 
-  /* ───── INCOMPLETE VARIANT — prioritize biggest gap ───── */
+  /* ───── INCOMPLETE VARIANT - prioritize biggest gap ───── */
   const undone = {
     microAsk: !snapshot.microAsk,
     video: !snapshot.video,
@@ -2149,11 +2149,11 @@ export function ConfirmationExitPopup({
     ctaLabel = 'Take me back to the video';
   } else if (undone.principles) {
     headline = 'One more step before you go.';
-    body = "You've watched the video — nice. Now just check off the key principles so you walk into your call with the full picture. Takes a minute.";
+    body = "You've watched the video - nice. Now just check off the key principles so you walk into your call with the full picture. Takes a minute.";
     ctaLabel = 'Show me the principles';
   } else if (undone.microAsk) {
     headline = `One tap to tell Coach ${coachFirstName} you'll be there.`;
-    body = "You've prepped for the call — the last step is letting us know you'll show up. Hit one of the buttons below and tap send.";
+    body = "You've prepped for the call - the last step is letting us know you'll show up. Hit one of the buttons below and tap send.";
     ctaLabel = 'Back to the page';
   } else {
     headline = 'Before you go.';

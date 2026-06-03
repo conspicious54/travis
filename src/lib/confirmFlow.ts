@@ -1,6 +1,6 @@
 /* ───── confirm-click coordination ────────────────────────────────
    A tiny shared state module so the ConfirmationExitPopup knows
-   when to suppress itself — we don't want the popup firing on
+   when to suppress itself - we don't want the popup firing on
    visibilitychange while the user is in the middle of switching
    to the Messages / WhatsApp app to send the confirmation.
 ──────────────────────────────────────────────────────────────────── */

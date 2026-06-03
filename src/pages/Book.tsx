@@ -4,7 +4,7 @@ import { identifyUser, trackBookingPageViewed, trackBookingCompleted } from '../
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 
-/* ───── /book — embedded HubSpot closer scheduler ─────────────────
+/* ───── /book - embedded HubSpot closer scheduler ─────────────────
    Embeds the HubSpot meeting scheduler in an iframe and listens
    for the postMessage event HubSpot fires when a meeting is booked.
 
@@ -44,7 +44,7 @@ function persistTypeformAnswers() {
     const val = params.get(field);
     if (val) data[field] = val;
   }
-  // Only write if we actually have something to write — avoids
+  // Only write if we actually have something to write - avoids
   // wiping previously persisted data on a refresh
   if (Object.keys(data).length > 1) {
     try {
@@ -124,7 +124,7 @@ export function Book() {
          *
          * The Zoom / video URL is the HubSpot meeting's "location"
          * property. HubSpot does not include it in the postMessage
-         * payload — it's only on the server side (CRM engagement
+         * payload - it's only on the server side (CRM engagement
          * record). So we can't get it via iframe. Workaround: the same
          * user will receive HubSpot's calendar invite email which has
          * the Zoom link in it. We link them to "check email" for that.
@@ -144,7 +144,7 @@ export function Book() {
           new URLSearchParams(window.location.search).get('email') ||
           '';
         syncContactTimezone(bookingEmail, 'book_redirect');
-        // Also push UTMs — server only writes empty fields, so
+        // Also push UTMs - server only writes empty fields, so
         // first-touch attribution is preserved on returning contacts.
         syncContactUtms(bookingEmail, 'book_redirect');
 
@@ -213,7 +213,7 @@ export function Book() {
         }
 
         // Build the redirect URL. If we don't have a real start timestamp,
-        // DON'T pass start/end — confirmation page shows generic fallback.
+        // DON'T pass start/end - confirmation page shows generic fallback.
         const redirectParams = new URLSearchParams();
         if (startIso) redirectParams.set('start', startIso);
         if (endIso) redirectParams.set('end', endIso);
@@ -284,7 +284,7 @@ export function Book() {
           </div>
 
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.05] mb-4">
-            Congrats — You're In.<br />
+            Congrats - You're In.<br />
             <span className="text-orange-600">Now Pick Your Time.</span>
           </h1>
 
@@ -299,7 +299,7 @@ export function Book() {
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
               <Sparkles className="w-4 h-4 text-orange-600" />
-              <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below — spots fill up fast</p>
+              <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below - spots fill up fast</p>
             </div>
             <div
               ref={containerRef}
@@ -312,7 +312,7 @@ export function Book() {
         {/* Reassurance below the embed */}
         <div className="text-center mt-8 max-w-xl mx-auto">
           <p className="text-sm text-gray-500">
-            After you book, you'll get a confirmation page with everything you need to prepare for your call — plus stories from real students who started exactly where you are.
+            After you book, you'll get a confirmation page with everything you need to prepare for your call - plus stories from real students who started exactly where you are.
           </p>
         </div>
       </div>

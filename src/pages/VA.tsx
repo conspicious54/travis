@@ -73,7 +73,7 @@ export function VA() {
           </div>
           <h1 className="text-3xl md:text-4xl font-black text-gray-900 mb-3 tracking-tight">You're On the List</h1>
           <p className="text-gray-600">
-            We'll send you everything you need to know about the VA Intensive Program — keep an eye on your inbox.
+            We'll send you everything you need to know about the VA Intensive Program - keep an eye on your inbox.
           </p>
         </div>
       </div>
@@ -93,7 +93,7 @@ export function VA() {
             6-Week VA<br />Intensive Program
           </h1>
           <p className="text-gray-600 text-base md:text-lg">
-            Learn how to hire, train, and manage a virtual assistant — so you can get your time back and focus on growing your business.
+            Learn how to hire, train, and manage a virtual assistant - so you can get your time back and focus on growing your business.
           </p>
         </div>
 

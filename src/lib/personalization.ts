@@ -38,7 +38,7 @@ export interface Personalization {
   raw: Record<string, string>;
 }
 
-/* Read raw answers — URL params take precedence over localStorage so
+/* Read raw answers - URL params take precedence over localStorage so
    you can preview personalization by just appending query params to
    any confirmation page URL. */
 function readStorage(): Record<string, string> {
@@ -118,7 +118,7 @@ function mapReason(val: string): Reason {
 function mapSituation(val: string): Situation {
   const v = normalize(val);
   if (!v) return 'unknown';
-  // Order matters — check more specific phrases first
+  // Order matters - check more specific phrases first
   if (has(v, 'stuck')) return 'amazon_stuck';
   if (has(v, 'tried entrepreneurship') || has(v, 'roadmap')) return 'tried_failed';
   if (has(v, 'never started')) return 'never_started';
@@ -129,7 +129,7 @@ function mapSituation(val: string): Situation {
 function mapTravis(val: string): TravisHistory {
   const v = normalize(val);
   if (!v) return 'unknown';
-  // Order matters — "over a year" must check before "months"
+  // Order matters - "over a year" must check before "months"
   if (has(v, 'over a year') || has(v, 'over year')) return 'over_year';
   if (has(v, 'haven t seen') || has(v, 'havent seen') || has(v, 'never seen') || has(v, 'haven t')) return 'never';
   if (has(v, 'recently discovered') || has(v, 'recently')) return 'recent';
@@ -151,7 +151,7 @@ function mapValue(val: string): ValuedFeature {
 function mapCapital(val: string): Capital {
   const v = normalize(val);
   if (!v) return 'unknown';
-  // Order matters — check most specific first
+  // Order matters - check most specific first
   if (has(v, 'do not have') || has(v, 'don t have') || has(v, 'dont have')) return 'none';
   if (has(v, 'set aside') || has(v, 'have capital')) return 'have';
   if (has(v, 'can access') || has(v, 'access the capital') || has(v, 'access capital')) return 'access';

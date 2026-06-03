@@ -24,7 +24,7 @@ export function syncContactTimezone(
   try {
     timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
   } catch {
-    /* old browsers — give up silently */
+    /* old browsers - give up silently */
   }
   if (!timezone) return;
 

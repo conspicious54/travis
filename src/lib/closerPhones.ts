@@ -22,30 +22,30 @@ type CloserPhoneMap = Partial<Record<Region, PhoneEntry>>;
    also matches if HubSpot returns "Matt Kemp") */
 const CLOSER_PHONES: Record<string, CloserPhoneMap> = {
   'matthew kemp': {
-    us:   { display: '(661) 795-2338',   raw: '+16617952338',  label: 'Matthew — US' },
-    eu:   { display: '+44 7463 588086',  raw: '+447463588086', label: 'Matthew — UK' },
-    aunz: { display: '+61 468 080 516',  raw: '+61468080516',  label: 'Matthew — AU' },
+    us:   { display: '(661) 795-2338',   raw: '+16617952338',  label: 'Matthew - US' },
+    eu:   { display: '+44 7463 588086',  raw: '+447463588086', label: 'Matthew - UK' },
+    aunz: { display: '+61 468 080 516',  raw: '+61468080516',  label: 'Matthew - AU' },
   },
   'jorge rodriguez': {
-    us:   { display: '(661) 466-2286',   raw: '+16614662286',  label: 'Jorge — US' },
-    eu:   { display: '+44 7782 229912',  raw: '+447782229912', label: 'Jorge — UK' },
-    aunz: { display: '+61 468 082 890',  raw: '+61468082890',  label: 'Jorge — AU' },
+    us:   { display: '(661) 466-2286',   raw: '+16614662286',  label: 'Jorge - US' },
+    eu:   { display: '+44 7782 229912',  raw: '+447782229912', label: 'Jorge - UK' },
+    aunz: { display: '+61 468 082 890',  raw: '+61468082890',  label: 'Jorge - AU' },
   },
   'sharlee fuentes': {
-    us:   { display: '(478) 800-7090',   raw: '+14788007090',  label: 'Sharlee — US' },
-    // Sharlee has no UK or AU line yet — default to Jesse for those regions
-    eu:   { display: '+44 7463 587844',  raw: '+447463587844', label: 'Jesse — UK' },
-    aunz: { display: '+61 468 080 264',  raw: '+61468080264',  label: 'Jesse — AU' },
+    us:   { display: '(478) 800-7090',   raw: '+14788007090',  label: 'Sharlee - US' },
+    // Sharlee has no UK or AU line yet - default to Jesse for those regions
+    eu:   { display: '+44 7463 587844',  raw: '+447463587844', label: 'Jesse - UK' },
+    aunz: { display: '+61 468 080 264',  raw: '+61468080264',  label: 'Jesse - AU' },
   },
   'jesse saunders': {
-    us:   { display: '(661) 560-4412',   raw: '+16615604412',  label: 'Jesse — US' },
-    eu:   { display: '+44 7463 587844',  raw: '+447463587844', label: 'Jesse — UK' },
-    aunz: { display: '+61 468 080 264',  raw: '+61468080264',  label: 'Jesse — AU' },
+    us:   { display: '(661) 560-4412',   raw: '+16615604412',  label: 'Jesse - US' },
+    eu:   { display: '+44 7463 587844',  raw: '+447463587844', label: 'Jesse - UK' },
+    aunz: { display: '+61 468 080 264',  raw: '+61468080264',  label: 'Jesse - AU' },
   },
   'zac solipsism': {
-    us:   { display: '(661) 475-5982',   raw: '+16614755982',  label: 'Zac — US' },
-    eu:   { display: '+44 7782 229912',  raw: '+447782229912', label: 'Zac — UK' },
-    aunz: { display: '+61 468 082 890',  raw: '+61468082890',  label: 'Zac — AU' },
+    us:   { display: '(661) 475-5982',   raw: '+16614755982',  label: 'Zac - US' },
+    eu:   { display: '+44 7782 229912',  raw: '+447782229912', label: 'Zac - UK' },
+    aunz: { display: '+61 468 082 890',  raw: '+61468082890',  label: 'Zac - AU' },
   },
 };
 
@@ -66,7 +66,7 @@ export function getCloserPhone(
       if (needle.includes(key) || key.includes(needle)) {
         const hit = map[region];
         if (hit) return hit;
-        // owner matched but no number for this region — fall through
+        // owner matched but no number for this region - fall through
         break;
       }
     }

@@ -73,7 +73,7 @@ export function PPC() {
           </div>
           <h1 className="text-3xl md:text-4xl font-black text-gray-900 mb-3 tracking-tight">You're On the List</h1>
           <p className="text-gray-600">
-            We'll send you everything you need to know about the Amazon PPC Course — keep an eye on your inbox.
+            We'll send you everything you need to know about the Amazon PPC Course - keep an eye on your inbox.
           </p>
         </div>
       </div>
