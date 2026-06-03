@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Rocket, DollarSign } from 'lucide-react';
+import { identifyUser, trackEvent } from '../lib/posthog';
 
 type RouterState = 'loading' | 'dq-question' | 'redirecting';
 
@@ -59,6 +60,13 @@ function buildRedirectUrl(baseUrl: string, extraParams: Record<string, string>):
 
 async function doRedirect(baseUrl: string, extraParams: Record<string, string>) {
   const url = buildRedirectUrl(baseUrl, extraParams);
+  // PostHog: capture the routing outcome before we navigate away
+  trackEvent('router_decision', {
+    outcome: extraParams.result || 'unknown',
+    country: extraParams.country || '',
+    has_500: extraParams.has_500 || '',
+    destination: baseUrl,
+  });
   // Wait for tracking POST to complete, then redirect
   await fireTracking(extraParams);
   window.location.replace(url);
@@ -151,6 +159,30 @@ export function Router() {
   const [detectedCountry, setDetectedCountry] = useState('');
 
   useEffect(() => {
+    // Pull email out of the URL if CF passed it through on redirect. If
+    // present, identify the user in PostHog so this travisfba.com session
+    // gets stitched to the same Person as the upstream CF session. Same
+    // for first_name + last_name (commonly passed alongside email).
+    const params = new URLSearchParams(window.location.search);
+    const incomingEmail = (params.get('email') || '').trim().toLowerCase();
+    const firstName = params.get('first_name') || params.get('firstname') || '';
+    const lastName = params.get('last_name') || params.get('lastname') || '';
+    if (incomingEmail && incomingEmail.includes('@')) {
+      identifyUser(incomingEmail, {
+        first_name: firstName || undefined,
+        last_name: lastName || undefined,
+      });
+    }
+
+    // PostHog: announce the router was hit. Country comes later (from
+    // GeoIP) so we fire a separate router_country_detected event.
+    trackEvent('router_visited', {
+      has_email: !!incomingEmail,
+      utm_source: params.get('utm_source') || null,
+      utm_medium: params.get('utm_medium') || null,
+      utm_campaign: params.get('utm_campaign') || null,
+    });
+
     const progressInterval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 95) return prev;
@@ -165,13 +197,21 @@ export function Router() {
         const country = data.country;
         setDetectedCountry(country);
 
-        if (ALLOWED_COUNTRIES.includes(country)) {
+        const allowed = ALLOWED_COUNTRIES.includes(country);
+        trackEvent('router_country_detected', {
+          country,
+          allowed,
+        });
+
+        if (allowed) {
           doRedirect(GROUP_A_URL, { result: 'qualified', country });
         } else {
           // DQ country - ask the capital question first
+          trackEvent('router_dq_question_shown', { country });
           setState('dq-question');
         }
       } catch (error) {
+        trackEvent('router_geoip_failed', { error: String(error).slice(0, 100) });
         doRedirect(GROUP_A_URL, { result: 'qualified' });
       }
     };
