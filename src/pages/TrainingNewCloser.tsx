@@ -37,6 +37,8 @@ import {
 import { markConfirmClicked } from '../lib/confirmFlow';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { syncContactUtms } from '../lib/syncUtm';
+import { getCoachByOwnerName } from '../lib/coaches';
+import { celebrateConfirm } from '../lib/celebrate';
 
 type Platform = 'ios' | 'android' | 'desktop';
 function detectPlatform(): Platform {
@@ -510,7 +512,7 @@ function formatHumanTime(d: Date): string {
   });
 }
 
-function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo | null; firstName: string }) {
+function CloserConfirmationBanner({ meeting, firstName, compact = false }: { meeting: MeetingInfo | null; firstName: string; compact?: boolean }) {
   const [region, setRegion] = useState<Region>('us');
   const [platform, setPlatform] = useState<Platform>('desktop');
   const { markDone, completed } = usePrepChecklist();
@@ -580,6 +582,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
     armAppSwitch('sms', coachFirstName);
     markConfirmClicked();
     markDone('microAsk');
+    celebrateConfirm();
   };
 
   const handleConfirmWhatsapp = () => {
@@ -599,6 +602,7 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
     armAppSwitch('whatsapp', coachFirstName);
     markConfirmClicked();
     markDone('microAsk');
+    celebrateConfirm();
   };
 
   const handleRegionOverride = (r: Region) => {
@@ -608,16 +612,16 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
 
   return (
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
-      <div className="max-w-3xl mx-auto px-4 pt-10 pb-10 md:pt-14 md:pb-14 text-center">
+      <div className={`max-w-3xl mx-auto px-4 text-center ${compact ? 'pt-6 pb-6' : 'pt-10 pb-10 md:pt-14 md:pb-14'}`}>
         {/* Checkmark badge - pops in on mount with a single ring ripple */}
-        <div className="relative inline-flex items-center justify-center mb-6">
+        <div className={`relative inline-flex items-center justify-center ${compact ? 'mb-4' : 'mb-6'}`}>
           <span className="absolute inset-0 rounded-full animate-confirm-check-ring" aria-hidden="true" />
-          <div className="relative inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-green-100 border-2 border-green-300 animate-confirm-check-in">
-            <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-green-600" strokeWidth={2.5} />
+          <div className={`relative inline-flex items-center justify-center rounded-full bg-green-100 border-2 border-green-300 animate-confirm-check-in ${compact ? 'w-14 h-14' : 'w-16 h-16 md:w-20 md:h-20'}`}>
+            <CheckCircle className={`text-green-600 ${compact ? 'w-7 h-7' : 'w-8 h-8 md:w-10 md:h-10'}`} strokeWidth={2.5} />
           </div>
         </div>
 
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-gray-900 tracking-tight leading-[1] mb-4">
+        <h1 className={`font-black text-gray-900 tracking-tight leading-[1] ${compact ? 'text-3xl mb-3' : 'text-4xl md:text-6xl lg:text-7xl mb-4'}`}>
           {firstName ? `You're Booked, ${firstName}.` : "You're Booked."}
         </h1>
 
@@ -694,14 +698,16 @@ function CloserConfirmationBanner({ meeting, firstName }: { meeting: MeetingInfo
           </p>
         </div>
 
-        {/* Transition to next section */}
-        <p className="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-[0.15em] mt-10">
-          Then do these two things before your call ↓
-        </p>
+        {/* Transition to next section (hidden in walkthrough - the walkthrough itself IS the next step) */}
+        {!compact && (
+          <p className="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-[0.15em] mt-10">
+            Then do these two things before your call ↓
+          </p>
+        )}
 
         {/* Calendar add below - secondary micro-ask */}
         {meeting && (
-          <div className="mt-5">
+          <div className={compact ? 'mt-6' : 'mt-5'}>
             <CalendarButton meeting={meeting} variant="primary" />
           </div>
         )}
@@ -820,8 +826,6 @@ export function TrainingNewCloser() {
     });
   }, []);
 
-  const isMobile = useIsMobileViewport();
-
   const popupCoach = (() => {
     const organizer = meeting?.organizer?.trim();
     if (!organizer || organizer === 'Passion Product Team') return 'Jesse';
@@ -838,19 +842,69 @@ export function TrainingNewCloser() {
     : `Hi Coach ${popupCoach}, YES, I'm confirming my call${namePart}`;
   const encodedBody = encodeURIComponent(rawBody);
 
-  // Walkthrough step list - mirrors the desktop scroll order, drops
-  // the NextStepsList (the walkthrough itself replaces that guidance),
-  // and skips capital-gated sections when they wouldn't render anyway.
+  return (
+    <PrepChecklistProvider>
+      <CloserPageBody
+        meeting={meeting}
+        firstName={firstName}
+        p={p}
+        popupCoach={popupCoach}
+        popupPhone={popupPhone}
+        encodedBody={encodedBody}
+      />
+    </PrepChecklistProvider>
+  );
+}
+
+/* ─── inner body lives inside the PrepChecklistProvider so the walkthrough
+       gate can read completed.microAsk to decide whether to prompt ─── */
+
+interface CloserPageBodyProps {
+  meeting: MeetingInfo | null;
+  firstName: string;
+  p: Personalization | null;
+  popupCoach: string;
+  popupPhone: { raw: string; display: string };
+  encodedBody: string;
+}
+
+function CloserPageBody({
+  meeting,
+  firstName,
+  p,
+  popupCoach,
+  popupPhone,
+  encodedBody,
+}: CloserPageBodyProps) {
+  const isMobile = useIsMobileViewport();
+  const { completed } = usePrepChecklist();
+
+  // Skip the coach step entirely when we can't decode the organizer
+  // back to one of our known coaches - showing a generic empty pane
+  // is worse than just not having that step.
+  const hasCoach = getCoachByOwnerName(meeting?.organizer) !== null;
   const isLowCapital = p?.capital === 'none' || p?.capital === 'save';
   const showCreditCard = isLowCapital && p?.region === 'usa';
+
   const allSteps: (WalkthroughStep | null)[] = [
-    { key: 'banner', label: 'Your Call', content: <CloserConfirmationBanner meeting={meeting} firstName={firstName} /> },
+    {
+      key: 'banner',
+      label: 'Your Call',
+      content: <CloserConfirmationBanner meeting={meeting} firstName={firstName} compact />,
+      gate: {
+        canAdvance: () => completed.microAsk,
+        title: 'Have you confirmed your call yet?',
+        body: 'We cancel slots that don\'t reply YES within 12 hours. Tap a confirm button above so we know you\'re coming.',
+        stayLabel: 'Go back and confirm',
+        advanceLabel: 'I\'ll do it later',
+      },
+    },
     { key: 'research', label: 'Research', content: <ResearchVideo /> },
     { key: 'passion-product-method', label: 'The Method', content: <PassionProductMethodSection /> },
     { key: 'accelerator-overview', label: 'Accelerator', content: <AcceleratorSection /> },
     { key: 'faq', label: 'FAQ', content: <ConfirmationFAQ p={p} location="closer" /> },
     { key: 'typical-student-results', label: 'Students', content: <TestimonialHighlights p={p} /> },
-    { key: 'coach', label: 'Your Coach', content: <MeetYourCoach ownerName={meeting?.organizer} /> },
+    hasCoach ? { key: 'coach', label: 'Your Coach', content: <MeetYourCoach ownerName={meeting?.organizer} /> } : null,
     isLowCapital ? { key: 'low-capital', label: 'Low Capital', content: <LowCapitalStrategies p={p} /> } : null,
     showCreditCard ? { key: 'credit', label: 'Credit Cards', content: <CreditCardQuiz p={p} /> } : null,
     { key: 'final', label: "You're Ready", content: <CloserFinalCTA meeting={meeting} firstName={firstName} /> },
@@ -859,49 +913,45 @@ export function TrainingNewCloser() {
 
   if (isMobile) {
     return (
-      <PrepChecklistProvider>
-        <div className="min-h-screen bg-white text-gray-900">
-          <MobileWalkthrough steps={steps} location="closer" />
-          <ConfirmationExitPopup
-            location="closer"
-            coachFirstName={popupCoach}
-            phoneRaw={popupPhone.raw}
-            smsBody={encodedBody}
-          />
-        </div>
-      </PrepChecklistProvider>
-    );
-  }
-
-  return (
-    <PrepChecklistProvider>
       <div className="min-h-screen bg-white text-gray-900">
-        <CloserConfirmationBanner meeting={meeting} firstName={firstName} />
-        <ResearchVideo />
-        <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
-        <PassionProductMethodSection />
-        <AcceleratorSection />
-        <ConfirmationFAQ p={p} location="closer" />
-        <TestimonialHighlights p={p} />
-        <MeetYourCoach ownerName={meeting?.organizer} />
-        <LowCapitalStrategies p={p} />
-        <CreditCardQuiz p={p} />
-        <CloserFinalCTA meeting={meeting} firstName={firstName} />
-        <SharedFooter />
+        <MobileWalkthrough steps={steps} location="closer" />
         <ConfirmationExitPopup
           location="closer"
           coachFirstName={popupCoach}
           phoneRaw={popupPhone.raw}
           smsBody={encodedBody}
         />
-        <MobileConfirmStickyBar
-          location="closer"
-          coachFirstName={popupCoach}
-          phoneRaw={popupPhone.raw}
-          smsBody={encodedBody}
-        />
-        <ScrollToNextButton location="closer" />
       </div>
-    </PrepChecklistProvider>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-white text-gray-900">
+      <CloserConfirmationBanner meeting={meeting} firstName={firstName} />
+      <ResearchVideo />
+      <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
+      <PassionProductMethodSection />
+      <AcceleratorSection />
+      <ConfirmationFAQ p={p} location="closer" />
+      <TestimonialHighlights p={p} />
+      {hasCoach && <MeetYourCoach ownerName={meeting?.organizer} />}
+      <LowCapitalStrategies p={p} />
+      <CreditCardQuiz p={p} />
+      <CloserFinalCTA meeting={meeting} firstName={firstName} />
+      <SharedFooter />
+      <ConfirmationExitPopup
+        location="closer"
+        coachFirstName={popupCoach}
+        phoneRaw={popupPhone.raw}
+        smsBody={encodedBody}
+      />
+      <MobileConfirmStickyBar
+        location="closer"
+        coachFirstName={popupCoach}
+        phoneRaw={popupPhone.raw}
+        smsBody={encodedBody}
+      />
+      <ScrollToNextButton location="closer" />
+    </div>
   );
 }

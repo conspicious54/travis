@@ -1,11 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, AlertTriangle } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
+import { celebrateComplete, celebrateStepAdvance } from '../lib/celebrate';
+
+export interface WalkthroughStepGate {
+  canAdvance: () => boolean;
+  title: string;
+  body: string;
+  stayLabel: string;
+  advanceLabel: string;
+}
 
 export interface WalkthroughStep {
   key: string;
   label: string;
   content: React.ReactNode;
+  gate?: WalkthroughStepGate;
 }
 
 interface MobileWalkthroughProps {
@@ -13,13 +23,23 @@ interface MobileWalkthroughProps {
   location: 'setter' | 'closer';
 }
 
+interface PendingAdvance {
+  fromIndex: number;
+  toIndex: number;
+  source: AdvanceSource;
+}
+
+type AdvanceSource = 'tap' | 'next' | 'back' | 'swipe' | 'dot';
+
 const SWIPE_THRESHOLD = 60;
 
 export function MobileWalkthrough({ steps, location }: MobileWalkthroughProps) {
   const [current, setCurrent] = useState(0);
+  const [pending, setPending] = useState<PendingAdvance | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
   const reachedMaxRef = useRef(0);
+  const completedFiredRef = useRef(false);
 
   const total = steps.length;
   const isFirst = current === 0;
@@ -27,9 +47,7 @@ export function MobileWalkthrough({ steps, location }: MobileWalkthroughProps) {
   const currentStep = steps[current];
   const nextStep = steps[current + 1];
 
-  const goTo = (next: number, source: 'tap' | 'next' | 'back' | 'swipe' | 'dot') => {
-    if (next < 0 || next >= total) return;
-    if (next === current) return;
+  const performNavigation = (next: number, source: AdvanceSource) => {
     trackEvent('walkthrough_step_changed', {
       location,
       from_index: current,
@@ -39,9 +57,17 @@ export function MobileWalkthrough({ steps, location }: MobileWalkthroughProps) {
       total,
       source,
     });
-    if (next > reachedMaxRef.current) {
+    const isNewMax = next > reachedMaxRef.current;
+    if (isNewMax) {
       reachedMaxRef.current = next;
-      if (next === total - 1) {
+      // Subtle celebration the first time a step is reached. Skipped
+      // for the final step - that gets a bigger celebration below.
+      if (next < total - 1 && next > 0) {
+        celebrateStepAdvance();
+      }
+      if (next === total - 1 && !completedFiredRef.current) {
+        completedFiredRef.current = true;
+        celebrateComplete();
         trackEvent('walkthrough_completed', { location, total });
       }
     }
@@ -49,6 +75,51 @@ export function MobileWalkthrough({ steps, location }: MobileWalkthroughProps) {
     requestAnimationFrame(() => {
       contentRef.current?.scrollTo({ top: 0 });
     });
+  };
+
+  const goTo = (next: number, source: AdvanceSource) => {
+    if (next < 0 || next >= total) return;
+    if (next === current) return;
+
+    // Forward-only gating: backward and dot-jumps backward don't trigger.
+    const advancing = next > current;
+    const gate = steps[current]?.gate;
+    if (advancing && gate && !gate.canAdvance()) {
+      trackEvent('walkthrough_gate_shown', {
+        location,
+        step_index: current,
+        step_key: steps[current]?.key,
+      });
+      setPending({ fromIndex: current, toIndex: next, source });
+      return;
+    }
+
+    performNavigation(next, source);
+  };
+
+  const onGateStay = () => {
+    if (!pending) return;
+    trackEvent('walkthrough_gate_resolved', {
+      location,
+      step_index: pending.fromIndex,
+      step_key: steps[pending.fromIndex]?.key,
+      choice: 'stay',
+    });
+    setPending(null);
+  };
+
+  const onGateAdvance = () => {
+    if (!pending) return;
+    trackEvent('walkthrough_gate_resolved', {
+      location,
+      step_index: pending.fromIndex,
+      step_key: steps[pending.fromIndex]?.key,
+      choice: 'advance',
+    });
+    const target = pending.toIndex;
+    const source = pending.source;
+    setPending(null);
+    performNavigation(target, source);
   };
 
   const touchStartX = useRef<number | null>(null);
@@ -104,17 +175,14 @@ export function MobileWalkthrough({ steps, location }: MobileWalkthroughProps) {
           onClick={() => goTo(current - 1, 'back')}
           disabled={isFirst}
           aria-label="Previous step"
-          className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-600 disabled:opacity-25 disabled:pointer-events-none active:bg-gray-100"
+          className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-600 disabled:opacity-25 disabled:pointer-events-none active:bg-gray-100 active:scale-95 transition-transform"
         >
           <ChevronLeft className="w-5 h-5" strokeWidth={2.4} />
         </button>
         <div className="flex-1 flex items-center justify-center gap-1.5 px-1 overflow-hidden">
           {steps.map((s, i) => {
             const state = i === current ? 'current' : i < current ? 'done' : 'pending';
-            const width =
-              state === 'current'
-                ? 'w-7'
-                : 'w-1.5';
+            const width = state === 'current' ? 'w-7' : 'w-1.5';
             const color =
               state === 'current'
                 ? 'bg-orange-500'
@@ -126,7 +194,7 @@ export function MobileWalkthrough({ steps, location }: MobileWalkthroughProps) {
                 key={s.key}
                 onClick={() => goTo(i, 'dot')}
                 aria-label={`Step ${i + 1}: ${s.label}`}
-                className={`h-1.5 rounded-full transition-all duration-200 ${width} ${color}`}
+                className={`h-1.5 rounded-full transition-all duration-300 ease-out ${width} ${color}`}
               />
             );
           })}
@@ -152,20 +220,20 @@ export function MobileWalkthrough({ steps, location }: MobileWalkthroughProps) {
         {!isFirst && (
           <button
             onClick={() => goTo(current - 1, 'back')}
-            className="px-4 py-3 text-gray-600 font-semibold text-sm rounded-xl active:bg-gray-100"
+            className="px-4 py-3 text-gray-600 font-semibold text-sm rounded-xl active:bg-gray-100 active:scale-95 transition-transform"
           >
             Back
           </button>
         )}
         {isLast ? (
-          <div className="flex-1 px-5 py-3.5 bg-green-50 border border-green-200 text-green-800 font-bold rounded-xl text-sm flex items-center justify-center gap-2">
+          <div className="flex-1 px-5 py-3.5 bg-green-50 border border-green-200 text-green-800 font-bold rounded-xl text-sm flex items-center justify-center gap-2 animate-confirm-check-in">
             <Check className="w-4 h-4" strokeWidth={3} />
             You're all set
           </div>
         ) : (
           <button
             onClick={() => goTo(current + 1, 'next')}
-            className="flex-1 px-5 py-3.5 bg-orange-600 active:bg-orange-700 text-white font-bold rounded-xl shadow-sm flex items-center justify-center gap-1.5 text-sm"
+            className="flex-1 px-5 py-3.5 bg-orange-600 active:bg-orange-700 text-white font-bold rounded-xl shadow-sm flex items-center justify-center gap-1.5 text-sm active:scale-[0.98] transition-transform"
           >
             <span className="truncate">
               {nextStep?.label ? `Next: ${nextStep.label}` : 'Next'}
@@ -173,6 +241,56 @@ export function MobileWalkthrough({ steps, location }: MobileWalkthroughProps) {
             <ChevronRight className="w-4 h-4 shrink-0" strokeWidth={2.4} />
           </button>
         )}
+      </div>
+
+      {pending && currentStep?.gate && (
+        <GateModal
+          gate={currentStep.gate}
+          onStay={onGateStay}
+          onAdvance={onGateAdvance}
+        />
+      )}
+    </div>
+  );
+}
+
+function GateModal({
+  gate,
+  onStay,
+  onAdvance,
+}: {
+  gate: WalkthroughStepGate;
+  onStay: () => void;
+  onAdvance: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-4 pb-[max(env(safe-area-inset-bottom),16px)] pt-6 animate-walkthrough-fade-in">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="px-5 pt-6 pb-4 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 mb-3">
+            <AlertTriangle className="w-6 h-6 text-orange-600" strokeWidth={2.4} />
+          </div>
+          <h3 className="text-lg font-black text-gray-900 mb-2 leading-tight">
+            {gate.title}
+          </h3>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            {gate.body}
+          </p>
+        </div>
+        <div className="px-5 pb-5 pt-2 space-y-2">
+          <button
+            onClick={onStay}
+            className="w-full px-5 py-3.5 bg-orange-600 active:bg-orange-700 text-white font-bold rounded-xl text-sm active:scale-[0.98] transition-transform"
+          >
+            {gate.stayLabel}
+          </button>
+          <button
+            onClick={onAdvance}
+            className="w-full px-5 py-3 text-gray-500 font-semibold text-sm rounded-xl active:bg-gray-100"
+          >
+            {gate.advanceLabel}
+          </button>
+        </div>
       </div>
     </div>
   );
