@@ -14,6 +14,7 @@ import {
   PassionProductMethodSection,
   AcceleratorSection,
 } from '../components/TrainingNewSections';
+import { MobileWalkthrough, useIsMobileViewport, type WalkthroughStep } from '../components/MobileWalkthrough';
 import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle, AlertTriangle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import {
@@ -819,6 +820,59 @@ export function TrainingNewCloser() {
     });
   }, []);
 
+  const isMobile = useIsMobileViewport();
+
+  const popupCoach = (() => {
+    const organizer = meeting?.organizer?.trim();
+    if (!organizer || organizer === 'Passion Product Team') return 'Jesse';
+    return organizer.split(/\s+/)[0] || 'Jesse';
+  })();
+  const popupPhone = getCloserPhone(meeting?.organizer, popupRegion);
+  const popupFullName = [
+    meeting?.firstName || firstName,
+    meeting?.lastName,
+  ].filter(Boolean).join(' ').trim();
+  const namePart = popupFullName ? ` - ${popupFullName}` : '';
+  const rawBody = meeting && !meeting.startUnknown
+    ? `Hi Coach ${popupCoach}, YES, I'm confirming my call on ${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}${namePart}`
+    : `Hi Coach ${popupCoach}, YES, I'm confirming my call${namePart}`;
+  const encodedBody = encodeURIComponent(rawBody);
+
+  // Walkthrough step list - mirrors the desktop scroll order, drops
+  // the NextStepsList (the walkthrough itself replaces that guidance),
+  // and skips capital-gated sections when they wouldn't render anyway.
+  const isLowCapital = p?.capital === 'none' || p?.capital === 'save';
+  const showCreditCard = isLowCapital && p?.region === 'usa';
+  const allSteps: (WalkthroughStep | null)[] = [
+    { key: 'banner', label: 'Your Call', content: <CloserConfirmationBanner meeting={meeting} firstName={firstName} /> },
+    { key: 'research', label: 'Research', content: <ResearchVideo /> },
+    { key: 'passion-product-method', label: 'The Method', content: <PassionProductMethodSection /> },
+    { key: 'accelerator-overview', label: 'Accelerator', content: <AcceleratorSection /> },
+    { key: 'faq', label: 'FAQ', content: <ConfirmationFAQ p={p} location="closer" /> },
+    { key: 'typical-student-results', label: 'Students', content: <TestimonialHighlights p={p} /> },
+    { key: 'coach', label: 'Your Coach', content: <MeetYourCoach ownerName={meeting?.organizer} /> },
+    isLowCapital ? { key: 'low-capital', label: 'Low Capital', content: <LowCapitalStrategies p={p} /> } : null,
+    showCreditCard ? { key: 'credit', label: 'Credit Cards', content: <CreditCardQuiz p={p} /> } : null,
+    { key: 'final', label: "You're Ready", content: <CloserFinalCTA meeting={meeting} firstName={firstName} /> },
+  ];
+  const steps = allSteps.filter((s): s is WalkthroughStep => s !== null);
+
+  if (isMobile) {
+    return (
+      <PrepChecklistProvider>
+        <div className="min-h-screen bg-white text-gray-900">
+          <MobileWalkthrough steps={steps} location="closer" />
+          <ConfirmationExitPopup
+            location="closer"
+            coachFirstName={popupCoach}
+            phoneRaw={popupPhone.raw}
+            smsBody={encodedBody}
+          />
+        </div>
+      </PrepChecklistProvider>
+    );
+  }
+
   return (
     <PrepChecklistProvider>
       <div className="min-h-screen bg-white text-gray-900">
@@ -834,40 +888,19 @@ export function TrainingNewCloser() {
         <CreditCardQuiz p={p} />
         <CloserFinalCTA meeting={meeting} firstName={firstName} />
         <SharedFooter />
-        {(() => {
-          const popupCoach = (() => {
-            const organizer = meeting?.organizer?.trim();
-            if (!organizer || organizer === 'Passion Product Team') return 'Jesse';
-            return organizer.split(/\s+/)[0] || 'Jesse';
-          })();
-          const popupPhone = getCloserPhone(meeting?.organizer, popupRegion);
-          const popupFullName = [
-            meeting?.firstName || firstName,
-            meeting?.lastName,
-          ].filter(Boolean).join(' ').trim();
-          const namePart = popupFullName ? ` - ${popupFullName}` : '';
-          const rawBody = meeting && !meeting.startUnknown
-            ? `Hi Coach ${popupCoach}, YES, I'm confirming my call on ${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}${namePart}`
-            : `Hi Coach ${popupCoach}, YES, I'm confirming my call${namePart}`;
-          const encodedBody = encodeURIComponent(rawBody);
-          return (
-            <>
-              <ConfirmationExitPopup
-                location="closer"
-                coachFirstName={popupCoach}
-                phoneRaw={popupPhone.raw}
-                smsBody={encodedBody}
-              />
-              <MobileConfirmStickyBar
-                location="closer"
-                coachFirstName={popupCoach}
-                phoneRaw={popupPhone.raw}
-                smsBody={encodedBody}
-              />
-              <ScrollToNextButton location="closer" />
-            </>
-          );
-        })()}
+        <ConfirmationExitPopup
+          location="closer"
+          coachFirstName={popupCoach}
+          phoneRaw={popupPhone.raw}
+          smsBody={encodedBody}
+        />
+        <MobileConfirmStickyBar
+          location="closer"
+          coachFirstName={popupCoach}
+          phoneRaw={popupPhone.raw}
+          smsBody={encodedBody}
+        />
+        <ScrollToNextButton location="closer" />
       </div>
     </PrepChecklistProvider>
   );
