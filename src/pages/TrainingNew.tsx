@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   ResearchVideo,
   BreakoutVideos,
@@ -10,6 +10,34 @@ import {
   AcceleratorSection,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Star, Shield } from 'lucide-react';
+
+/* React renders after the browser's native anchor-scroll attempt
+   fires, so #hash deep-links land at the top of the page instead
+   of at the section. This hook re-scrolls after React mounts and
+   again after a short delay to account for lazy-loaded content
+   above the target (images, video poster frames) that can shift
+   the anchor's final position. */
+function useScrollToHashOnMount() {
+  useEffect(() => {
+    const hash = (typeof window !== 'undefined' && window.location.hash) || '';
+    if (!hash) return;
+    const id = hash.slice(1);
+    const scrollToId = () => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    // First pass: as soon as React paints (next animation frame).
+    requestAnimationFrame(() => requestAnimationFrame(scrollToId));
+    // Re-align after lazy content above the target has had a moment
+    // to settle into its final layout.
+    const t1 = window.setTimeout(scrollToId, 300);
+    const t2 = window.setTimeout(scrollToId, 1000);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, []);
+}
 
 /* ───────────────────── generic confirmation sections ─────────────── */
 
@@ -85,6 +113,7 @@ function FinalCTA() {
 /* ─────────────────────────── main export ─────────────────────────── */
 
 export function TrainingNew() {
+  useScrollToHashOnMount();
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <ConfirmationBanner />
