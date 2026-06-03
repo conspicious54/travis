@@ -351,23 +351,23 @@ export function ResearchVideo() {
 const KEY_PRINCIPLES = [
   {
     id: 'method',
-    title: 'What the Passion Product Method is and how it works',
-    href: '/method',
+    title: 'What is the Passion Product Method and how it works?',
+    href: '#passion-product-method',
   },
   {
-    id: 'travis',
-    title: "Who Travis is and what his story is",
-    href: '/questions#trust',
+    id: 'accelerator',
+    title: 'What is the Accelerator Program?',
+    href: '#accelerator-overview',
   },
   {
-    id: 'low-capital',
-    title: 'How to start even if you have limited capital',
-    href: '/questions#capital',
+    id: 'faq',
+    title: 'Review the Frequently Asked Questions',
+    href: '#faq',
   },
   {
-    id: 'product',
-    title: 'How we make sure you pick the right product',
-    href: '/questions#wrong',
+    id: 'results',
+    title: 'See Typical Student Results',
+    href: '#typical-student-results',
   },
 ];
 
@@ -476,8 +476,16 @@ export function NextStepsList({
                         </span>
                         <a
                           href={p.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          onClick={(e) => {
+                            // Smooth-scroll to in-page anchors instead of jumping
+                            if (p.href.startsWith('#')) {
+                              const el = document.getElementById(p.href.slice(1));
+                              if (el) {
+                                e.preventDefault();
+                                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }
+                          }}
                           className="shrink-0 text-xs font-bold text-orange-600 hover:text-orange-800 underline underline-offset-2 cursor-pointer whitespace-nowrap"
                         >
                           Learn more →
@@ -533,6 +541,60 @@ function StepRow({
           {label}
         </p>
         {sub && <p className="text-xs md:text-sm text-gray-500 mt-1 leading-relaxed">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Passion Product Method overview video ──────────────────────── */
+export function PassionProductMethodSection() {
+  return (
+    <div id="passion-product-method" className="scroll-mt-20 bg-white py-14 md:py-20 border-t border-gray-100">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="text-center mb-8 md:mb-10">
+          <p className="text-orange-600 text-xs md:text-sm font-bold uppercase tracking-[0.18em] mb-3">
+            Learn the method
+          </p>
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1] mb-3">
+            How the <span className="text-orange-600">Passion Product Method</span> works
+          </h2>
+          <p className="text-base md:text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
+            The exact method Travis used to make over $2 million in the past 15 months selling on Amazon — and the same playbook the team teaches every student.
+          </p>
+        </div>
+        <div className="relative">
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video ring-1 ring-gray-200">
+            <YouTubeLazyEmbed videoId="uHr6HOnaFyQ" title="How the Passion Product Method works" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Accelerator Program overview video ─────────────────────────── */
+export function AcceleratorSection() {
+  return (
+    <div id="accelerator-overview" className="scroll-mt-20 bg-gradient-to-b from-orange-50/40 via-white to-white py-14 md:py-20 border-t border-gray-100">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="text-center mb-8 md:mb-10">
+          <p className="text-orange-600 text-xs md:text-sm font-bold uppercase tracking-[0.18em] mb-3">
+            How we work with students
+          </p>
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[1.1] mb-3">
+            How the <span className="text-orange-600">Accelerator Program</span> works
+          </h2>
+          <p className="text-base md:text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
+            A walkthrough of the program — how we teach, how we coach, and how students actually get results.
+          </p>
+        </div>
+        <div className="relative">
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video ring-1 ring-gray-200">
+            <YouTubeLazyEmbed videoId="0XknFrJ2yH0" title="How the Accelerator Program works" />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -597,7 +659,7 @@ export function BreakoutVideos({ p }: { p?: Personalization | null }) {
     : 'Common Questions';
 
   return (
-    <div className="bg-gradient-to-b from-gray-50 to-white py-14 md:py-20 border-t border-gray-100">
+    <div id="faq" className="scroll-mt-20 bg-gradient-to-b from-gray-50 to-white py-14 md:py-20 border-t border-gray-100">
       <div className="max-w-5xl mx-auto px-4">
         <div className="text-center mb-10">
           <span className="inline-block text-orange-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
@@ -732,7 +794,7 @@ export function ConfirmationFAQ({
   };
 
   return (
-    <div ref={sectionRef} className="bg-gradient-to-b from-gray-50 to-white py-14 md:py-20 border-t border-gray-100">
+    <div ref={sectionRef} id="faq" className="scroll-mt-20 bg-gradient-to-b from-gray-50 to-white py-14 md:py-20 border-t border-gray-100">
       <div className="max-w-5xl mx-auto px-4">
         <div className="text-center mb-10 md:mb-12">
           <p className="text-orange-600 text-xs md:text-sm font-bold uppercase tracking-[0.18em] mb-3">
@@ -972,7 +1034,7 @@ function ResultsSegment({ eyebrow, title, percent, subhead, accent, videos }: Re
 
 export function TestimonialHighlights({ p: _p }: { p?: Personalization | null }) {
   return (
-    <div className="bg-gradient-to-b from-white via-gray-50/50 to-white py-14 md:py-20 border-t border-gray-100">
+    <div id="typical-student-results" className="scroll-mt-20 bg-gradient-to-b from-white via-gray-50/50 to-white py-14 md:py-20 border-t border-gray-100">
       <div className="max-w-6xl mx-auto">
         {/* Section heading */}
         <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16 px-4">

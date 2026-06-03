@@ -6,6 +6,8 @@ import {
   TestimonialHighlights,
   ResourceSection,
   SharedFooter,
+  PassionProductMethodSection,
+  AcceleratorSection,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Star, Shield } from 'lucide-react';
 
@@ -87,6 +89,8 @@ export function TrainingNew() {
     <div className="min-h-screen bg-white text-gray-900">
       <ConfirmationBanner />
       <ResearchVideo />
+      <PassionProductMethodSection />
+      <AcceleratorSection />
       <BreakoutVideos />
       <OpportunitySection />
       <TestimonialHighlights />

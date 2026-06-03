@@ -29,6 +29,11 @@ import { Migration } from './pages/Migration';
 import { TermsOfService } from './pages/TermsOfService';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { LiveTraining } from './pages/LiveTraining';
+import {
+  PassionProductMethodRedirect,
+  AcceleratorOverviewRedirect,
+  FaqRedirect,
+} from './pages/AnchorRedirect';
 import { VideoProgressProvider } from './context/VideoProgressContext';
 import { EmailCaptureProvider } from './context/EmailCaptureContext';
 import { ExitIntentProvider } from './context/ExitIntentContext';
@@ -71,6 +76,9 @@ function AppWrapper() {
                 <Route path="/termsofservice" element={<TermsOfService />} />
                 <Route path="/privacypolicy" element={<PrivacyPolicy />} />
                 <Route path="/live-training" element={<LiveTraining />} />
+                <Route path="/passionproductmethod" element={<PassionProductMethodRedirect />} />
+                <Route path="/acceleratoroverview" element={<AcceleratorOverviewRedirect />} />
+                <Route path="/faq" element={<FaqRedirect />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>

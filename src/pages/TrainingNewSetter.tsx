@@ -10,6 +10,8 @@ import {
   ConfirmationFAQ,
   MobileConfirmStickyBar,
   ScrollToNextButton,
+  PassionProductMethodSection,
+  AcceleratorSection,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Phone, Star, Shield, MessageSquare, MessageCircle, AlertTriangle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -407,6 +409,8 @@ export function TrainingNewSetter() {
         <SetterConfirmationBanner firstName={p?.firstName || ''} onSaved={() => {}} />
         <ResearchVideo />
         <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
+        <PassionProductMethodSection />
+        <AcceleratorSection />
         <ConfirmationFAQ p={p} location="setter" />
         <TestimonialHighlights p={p} />
         <LowCapitalStrategies p={p} />

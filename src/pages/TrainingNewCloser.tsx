@@ -11,6 +11,8 @@ import {
   ConfirmationFAQ,
   MobileConfirmStickyBar,
   ScrollToNextButton,
+  PassionProductMethodSection,
+  AcceleratorSection,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle, AlertTriangle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
@@ -823,6 +825,8 @@ export function TrainingNewCloser() {
         <CloserConfirmationBanner meeting={meeting} firstName={firstName} />
         <ResearchVideo />
         <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
+        <PassionProductMethodSection />
+        <AcceleratorSection />
         <ConfirmationFAQ p={p} location="closer" />
         <TestimonialHighlights p={p} />
         <MeetYourCoach ownerName={meeting?.organizer} />
