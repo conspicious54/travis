@@ -159,25 +159,34 @@ export function Router() {
   const [detectedCountry, setDetectedCountry] = useState('');
 
   useEffect(() => {
-    // Pull email out of the URL if CF passed it through on redirect. If
-    // present, identify the user in PostHog so this travisfba.com session
-    // gets stitched to the same Person as the upstream CF session. Same
-    // for first_name + last_name (commonly passed alongside email).
+    // Pull identity out of the URL. Two paths:
+    // - ?email=... means CF (or the CF JS patcher snippet) gave us the
+    //   email directly. Best case - we identify with the literal email.
+    // - ?phid=... is PostHog's distinct_id from the CF-side session.
+    //   Useful as a fallback when the email isn't in a visible field
+    //   yet but PostHog has already established an anonymous Person on
+    //   start.travismarziani.com. identify(phid) merges that anonymous
+    //   Person into this travisfba.com session, so subsequent identify
+    //   calls (e.g. by email later in the funnel) stitch all three.
     const params = new URLSearchParams(window.location.search);
     const incomingEmail = (params.get('email') || '').trim().toLowerCase();
     const firstName = params.get('first_name') || params.get('firstname') || '';
     const lastName = params.get('last_name') || params.get('lastname') || '';
+    const incomingPhid = (params.get('phid') || '').trim();
     if (incomingEmail && incomingEmail.includes('@')) {
       identifyUser(incomingEmail, {
         first_name: firstName || undefined,
         last_name: lastName || undefined,
       });
+    } else if (incomingPhid) {
+      identifyUser(incomingPhid);
     }
 
     // PostHog: announce the router was hit. Country comes later (from
     // GeoIP) so we fire a separate router_country_detected event.
     trackEvent('router_visited', {
       has_email: !!incomingEmail,
+      has_phid: !!incomingPhid,
       utm_source: params.get('utm_source') || null,
       utm_medium: params.get('utm_medium') || null,
       utm_campaign: params.get('utm_campaign') || null,
