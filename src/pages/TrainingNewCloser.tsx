@@ -15,7 +15,7 @@ import {
   AcceleratorSection,
 } from '../components/TrainingNewSections';
 import { MobileWalkthrough, useIsMobileViewport, type WalkthroughStep } from '../components/MobileWalkthrough';
-import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle, AlertTriangle, ArrowDown, Check } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import {
   identifyUser,
@@ -38,7 +38,12 @@ import { markConfirmClicked } from '../lib/confirmFlow';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { syncContactUtms } from '../lib/syncUtm';
 import { getCoachByOwnerName } from '../lib/coaches';
-import { celebrateConfirm } from '../lib/celebrate';
+import { celebrateConfirm, celebrateArrival } from '../lib/celebrate';
+
+// Module-level flag so we only fire the arrival celebration once
+// per page session (not every time the banner remounts when the
+// user navigates back to step 1 of the walkthrough).
+let arrivalCelebrated = false;
 
 type Platform = 'ios' | 'android' | 'desktop';
 function detectPlatform(): Platform {
@@ -522,6 +527,17 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false }: { mee
     setPlatform(detectPlatform());
   }, []);
 
+  // First-load celebration in walkthrough mode: a small confetti
+  // sprinkle ~300ms after the check badge has animated in, so the
+  // user gets a satisfying "boom, you're booked" arrival moment.
+  useEffect(() => {
+    if (!compact) return;
+    if (arrivalCelebrated) return;
+    arrivalCelebrated = true;
+    const t = setTimeout(() => celebrateArrival(), 320);
+    return () => clearTimeout(t);
+  }, [compact]);
+
   // Look up the specific Kixie line for this meeting's owner and the
   // visitor's region. Falls back to the default regional number if the
   // owner isn't mapped or has no number for this region.
@@ -610,9 +626,22 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false }: { mee
     trackEvent('wrong_region_clicked', { faq_location: 'closer', from: region, to: r });
   };
 
+  // Walkthrough success morph swaps in after the user has tapped a
+  // confirm button, replacing the buttons + 12-hour warning + region
+  // selector with a clear "now tap Next" call to action.
+  const showSuccessMorph = compact && completed.microAsk;
+
   return (
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
       <div className={`max-w-3xl mx-auto px-4 text-center ${compact ? 'pt-6 pb-6' : 'pt-10 pb-10 md:pt-14 md:pb-14'}`}>
+        {/* Compact "BOOKED" stamp pill - sets the tone right at the top */}
+        {compact && (
+          <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-800 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full mb-3 border border-green-300 animate-booked-stamp-in shadow-sm">
+            <Check className="w-3 h-3" strokeWidth={3} />
+            Booking Confirmed
+          </div>
+        )}
+
         {/* Checkmark badge - pops in on mount with a single ring ripple */}
         <div className={`relative inline-flex items-center justify-center ${compact ? 'mb-4' : 'mb-6'}`}>
           <span className="absolute inset-0 rounded-full animate-confirm-check-ring" aria-hidden="true" />
@@ -621,11 +650,11 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false }: { mee
           </div>
         </div>
 
-        <h1 className={`font-black text-gray-900 tracking-tight leading-[1] ${compact ? 'text-3xl mb-3' : 'text-4xl md:text-6xl lg:text-7xl mb-4'}`}>
+        <h1 className={`font-black text-gray-900 tracking-tight leading-[1] ${compact ? 'text-3xl mb-3 animate-banner-rise-1' : 'text-4xl md:text-6xl lg:text-7xl mb-4'}`}>
           {firstName ? `You're Booked, ${firstName}.` : "You're Booked."}
         </h1>
 
-        <p className="text-lg md:text-2xl text-gray-700 max-w-2xl mx-auto mb-3 leading-snug">
+        <p className={`text-gray-700 max-w-2xl mx-auto mb-3 leading-snug ${compact ? 'text-base animate-banner-rise-2' : 'text-lg md:text-2xl'}`}>
           {meeting ? (
             <>
               Your strategy call
@@ -641,62 +670,85 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false }: { mee
             'Your strategy call with Travis or one of his top coaches is scheduled.'
           )}
         </p>
-        <p className="text-sm md:text-base text-gray-500 mb-10">
-          Check your email for the calendar invite. It has your exact date, time, and Zoom link.
-        </p>
-
-        {/* Micro-ask: confirm via text or WhatsApp */}
-        <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
-          <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
-            To confirm you'll attend, tap one of the buttons below and hit send:
+        {/* Email reminder is desktop-only - on mobile it's redundant noise above the action */}
+        {!compact && (
+          <p className="text-sm md:text-base text-gray-500 mb-10">
+            Check your email for the calendar invite. It has your exact date, time, and Zoom link.
           </p>
+        )}
 
-          <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 max-w-lg mx-auto">
-            <a
-              href={`sms:${phone.raw}?&body=${smsBody}`}
-              onClick={handleConfirmText}
-              className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer ${completed.microAsk ? '' : 'animate-confirm-pulse-blue'}`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              Confirm via Text
-            </a>
-            <a
-              href={`https://wa.me/${whatsappNumber}?text=${whatsappBody}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleConfirmWhatsapp}
-              className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer ${completed.microAsk ? '' : 'animate-confirm-pulse-green'}`}
-            >
-              <MessageCircle className="w-4 h-4" />
-              Confirm via WhatsApp
-            </a>
+        {showSuccessMorph ? (
+          /* Success morph - shown after the user has tapped Confirm */
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-6 shadow-sm animate-confirm-check-in">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-500 mb-3 shadow-md shadow-green-500/30">
+              <Check className="w-8 h-8 text-white" strokeWidth={3} />
+            </div>
+            <p className="text-2xl font-black text-green-900 mb-2 leading-tight">
+              You're Confirmed!
+            </p>
+            <p className="text-sm text-green-800 leading-relaxed mb-5 max-w-xs mx-auto">
+              We got it. Now tap <span className="font-black text-orange-600">Next</span> below to start your prep walkthrough.
+            </p>
+            <div className="flex justify-center">
+              <div className="inline-flex flex-col items-center gap-0.5 text-orange-500">
+                <ArrowDown className="w-6 h-6 animate-point-down" strokeWidth={3} />
+              </div>
+            </div>
           </div>
+        ) : (
+          /* Micro-ask: confirm via text or WhatsApp */
+          <div className={`bg-white border-2 border-gray-200 rounded-2xl shadow-sm ${compact ? 'p-5 animate-banner-rise-3' : 'p-6 md:p-7'}`}>
+            <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
+              To confirm you'll attend, tap one of the buttons below and hit send:
+            </p>
 
-          <div className="mt-5 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2.5 text-left max-w-lg mx-auto">
-            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" strokeWidth={2.25} />
-            <p className="text-sm text-gray-800 leading-snug">
-              <span className="font-bold text-red-600">NOTE:</span> If we don't see your "Yes" RSVP within 12 hours, we cancel the slot and pass it to someone on the waitlist. We only get on calls with people who actually show up.
+            <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 max-w-lg mx-auto">
+              <a
+                href={`sms:${phone.raw}?&body=${smsBody}`}
+                onClick={handleConfirmText}
+                className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer active:scale-[0.98] ${completed.microAsk ? '' : 'animate-confirm-pulse-blue'}`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                Confirm via Text
+              </a>
+              <a
+                href={`https://wa.me/${whatsappNumber}?text=${whatsappBody}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleConfirmWhatsapp}
+                className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer active:scale-[0.98] ${completed.microAsk ? '' : 'animate-confirm-pulse-green'}`}
+              >
+                <MessageCircle className="w-4 h-4" />
+                Confirm via WhatsApp
+              </a>
+            </div>
+
+            <div className="mt-5 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2.5 text-left max-w-lg mx-auto">
+              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" strokeWidth={2.25} />
+              <p className="text-sm text-gray-800 leading-snug">
+                <span className="font-bold text-red-600">NOTE:</span> If we don't see your "Yes" RSVP within 12 hours, we cancel the slot and pass it to someone on the waitlist. We only get on calls with people who actually show up.
+              </p>
+            </div>
+
+            <p className="text-xs text-gray-400 mt-4">
+              Takes 10 seconds.{' '}
+              <span className="text-gray-500">
+                Wrong region?{' '}
+                {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map((r, i) => (
+                  <span key={r}>
+                    {i > 0 && <span className="text-gray-300">/</span>}{' '}
+                    <button
+                      onClick={() => handleRegionOverride(r)}
+                      className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
+                    >
+                      {PHONE_NUMBERS[r].label}
+                    </button>
+                  </span>
+                ))}
+              </span>
             </p>
           </div>
-
-          <p className="text-xs text-gray-400 mt-4">
-            Takes 10 seconds.{' '}
-            <span className="text-gray-500">
-              Wrong region?{' '}
-              {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map((r, i) => (
-                <span key={r}>
-                  {i > 0 && <span className="text-gray-300">/</span>}{' '}
-                  <button
-                    onClick={() => handleRegionOverride(r)}
-                    className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
-                  >
-                    {PHONE_NUMBERS[r].label}
-                  </button>
-                </span>
-              ))}
-            </span>
-          </p>
-        </div>
+        )}
 
         {/* Transition to next section (hidden in walkthrough - the walkthrough itself IS the next step) */}
         {!compact && (

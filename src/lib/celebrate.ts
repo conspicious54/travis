@@ -2,6 +2,23 @@ import confetti from 'canvas-confetti';
 
 const BRAND_COLORS = ['#fb923c', '#fbbf24', '#22c55e', '#3b82f6', '#ffffff'];
 
+export function celebrateArrival() {
+  // A gentle sprinkle at the top of the viewport - sets the "you're
+  // booked" tone the moment the page lands. Quieter than confirm so
+  // the actual confirm tap still feels like the bigger moment.
+  confetti({
+    particleCount: 45,
+    spread: 65,
+    startVelocity: 28,
+    origin: { x: 0.5, y: 0.18 },
+    colors: BRAND_COLORS,
+    scalar: 0.7,
+    ticks: 130,
+    gravity: 0.9,
+  });
+  vibrate(8);
+}
+
 export function celebrateConfirm() {
   confetti({
     particleCount: 90,

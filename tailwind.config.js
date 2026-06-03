@@ -31,6 +31,23 @@ export default {
           '0%':   { opacity: '0', transform: 'translateY(6px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        'next-ready-pulse': {
+          '0%, 60%, 100%': { boxShadow: '0 4px 6px -1px rgba(0,0,0,0.10), 0 2px 4px -2px rgba(0,0,0,0.10)' },
+          '15%':           { boxShadow: '0 0 0 8px rgba(234, 88, 12, 0.22), 0 8px 18px -2px rgba(234, 88, 12, 0.55)' },
+        },
+        'booked-stamp-in': {
+          '0%':   { transform: 'scale(0.5) rotate(-10deg)', opacity: '0' },
+          '60%':  { transform: 'scale(1.08) rotate(0deg)',  opacity: '1' },
+          '100%': { transform: 'scale(1) rotate(0deg)' },
+        },
+        'banner-rise': {
+          '0%':   { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'point-down': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%':      { transform: 'translateY(4px)' },
+        },
       },
       animation: {
         'confirm-check-in':       'confirm-check-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both',
@@ -39,6 +56,12 @@ export default {
         'confirm-pulse-green':    'confirm-pulse-green 2.6s ease-in-out infinite',
         'bounce-gentle':          'bounce-gentle 1.8s ease-in-out infinite',
         'walkthrough-fade-in':    'walkthrough-fade-in 0.28s ease-out both',
+        'next-ready-pulse':       'next-ready-pulse 2.2s ease-in-out infinite',
+        'booked-stamp-in':        'booked-stamp-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s both',
+        'banner-rise-1':          'banner-rise 0.5s ease-out 0.20s both',
+        'banner-rise-2':          'banner-rise 0.5s ease-out 0.35s both',
+        'banner-rise-3':          'banner-rise 0.5s ease-out 0.50s both',
+        'point-down':             'point-down 1.2s ease-in-out infinite',
       },
     },
   },

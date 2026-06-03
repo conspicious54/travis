@@ -47,6 +47,11 @@ export function MobileWalkthrough({ steps, location }: MobileWalkthroughProps) {
   const currentStep = steps[current];
   const nextStep = steps[current + 1];
 
+  // When the current step has a gate AND it now passes, draw the
+  // user's eye to the Next button - they've completed the critical
+  // action (e.g. tapped Confirm) and just need to advance.
+  const gateReady = !!(currentStep?.gate && currentStep.gate.canAdvance());
+
   const performNavigation = (next: number, source: AdvanceSource) => {
     trackEvent('walkthrough_step_changed', {
       location,
@@ -233,7 +238,7 @@ export function MobileWalkthrough({ steps, location }: MobileWalkthroughProps) {
         ) : (
           <button
             onClick={() => goTo(current + 1, 'next')}
-            className="flex-1 px-5 py-3.5 bg-orange-600 active:bg-orange-700 text-white font-bold rounded-xl shadow-sm flex items-center justify-center gap-1.5 text-sm active:scale-[0.98] transition-transform"
+            className={`flex-1 px-5 py-3.5 active:bg-orange-700 text-white font-bold rounded-xl shadow-sm flex items-center justify-center gap-1.5 text-sm active:scale-[0.98] transition-transform ${gateReady ? 'bg-orange-500 animate-next-ready-pulse' : 'bg-orange-600'}`}
           >
             <span className="truncate">
               {nextStep?.label ? `Next: ${nextStep.label}` : 'Next'}
