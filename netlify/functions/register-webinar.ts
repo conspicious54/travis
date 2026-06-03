@@ -100,70 +100,85 @@ export const handler: Handler = async (event: HandlerEvent) => {
   const phone = (body.phone || '').trim();
   if (phone) properties.phone = phone;
 
-  // Upsert: try update by email; if 404, create.
-  const upsertUrl = `${HUBSPOT_BASE}/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email`;
-  let res = await fetch(upsertUrl, {
-    method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ properties }),
-  });
-
-  if (res.status === 404) {
-    // Contact doesn't exist — create it with email + the same props
-    res = await fetch(`${HUBSPOT_BASE}/crm/v3/objects/contacts`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ properties: { ...properties, email } }),
-    });
-  }
-
-  if (!res.ok) {
-    let bodyText = '';
-    try { bodyText = (await res.text()).slice(0, 300); } catch { /* no-op */ }
-    console.warn(`[register-webinar] HubSpot ${res.status} email=${email} body=${bodyText}`);
-    return json(200, {
-      ok: false,
-      reason: 'hubspot_error',
-      status: res.status,
-      detail: bodyText,
-    });
-  }
-
-  // Forward the registration to Zapier. Zapier just needs the
-  // single `audience` field to branch on — we already did the
-  // country → bucket classification here. Zapier never needs to
-  // know the country list.
-  const zapResult = await forwardToZapier({
-    email,
-    phone,
-    stage,
-    is_member: !!body.is_member,
-    audience,
-    country_code: countryCode,
-    country_name: countryName,
-    submitted_at: new Date().toISOString(),
-  });
+  // Fire Zapier and HubSpot IN PARALLEL — neither depends on the
+  // other succeeding. Zapier is the source of truth for list/email
+  // management; HubSpot is just CRM tagging. If HubSpot fails (e.g.
+  // a custom property doesn't exist yet), the registration is still
+  // captured downstream.
+  const [zapResult, hubspotResult] = await Promise.all([
+    forwardToZapier({
+      email,
+      phone,
+      stage,
+      is_member: !!body.is_member,
+      audience,
+      country_code: countryCode,
+      country_name: countryName,
+      submitted_at: new Date().toISOString(),
+    }),
+    upsertHubspotContact(email, properties, token),
+  ]);
 
   console.log(
-    `[register-webinar] ok email=${email} stage="${stage}" ` +
-    `audience=${audience} country=${countryCode || '?'} source=${properties.webinar_registration_source} ` +
-    `zap_ok=${zapResult.ok} zap_reason=${zapResult.reason || ''}`
+    `[register-webinar] email=${email} stage="${stage}" ` +
+    `audience=${audience} country=${countryCode || '?'} ` +
+    `zap_ok=${zapResult.ok} zap_reason=${zapResult.reason || ''} ` +
+    `hs_ok=${hubspotResult.ok} hs_reason=${hubspotResult.reason || ''}`
   );
+
+  // The user-facing "ok" is whether the LIST sync succeeded. HubSpot
+  // is best-effort and doesn't gate the response.
   return json(200, {
-    ok: true,
+    ok: zapResult.ok,
     email,
     stage,
     audience,
     country_code: countryCode || null,
     zapier: zapResult,
+    hubspot: hubspotResult,
   });
 };
+
+async function upsertHubspotContact(
+  email: string,
+  properties: Record<string, string>,
+  token: string
+): Promise<{ ok: boolean; status?: number; reason?: string; detail?: string }> {
+  // PATCH by email; on 404 create new. If properties include fields
+  // that don't exist on the contact object, HubSpot 400s the whole
+  // request. We return the failure without re-trying — the caller
+  // treats this as best-effort.
+  const upsertUrl = `${HUBSPOT_BASE}/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email`;
+  let res: Response;
+  try {
+    res = await fetch(upsertUrl, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ properties }),
+    });
+  } catch (err) {
+    return { ok: false, reason: 'hubspot_fetch_error' };
+  }
+
+  if (res.status === 404) {
+    try {
+      res = await fetch(`${HUBSPOT_BASE}/crm/v3/objects/contacts`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ properties: { ...properties, email } }),
+      });
+    } catch (err) {
+      return { ok: false, reason: 'hubspot_create_fetch_error' };
+    }
+  }
+
+  if (res.ok) return { ok: true, status: res.status };
+
+  let bodyText = '';
+  try { bodyText = (await res.text()).slice(0, 300); } catch { /* no-op */ }
+  console.warn(`[register-webinar] HubSpot ${res.status} email=${email} body=${bodyText}`);
+  return { ok: false, status: res.status, reason: 'hubspot_error', detail: bodyText };
+}
 
 interface ZapierPayload {
   email: string;
