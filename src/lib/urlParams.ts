@@ -19,6 +19,20 @@ const KNOWN_PLACEHOLDERS = new Set([
   'null', 'undefined', 'none', 'unknown', 'n/a', 'na',
 ]);
 
+/* Runs of 3+ placeholder characters at the START or END of a value.
+   Matches things like "_____", "-----", "***" - the literal glue left
+   over when one slot of a concatenated merge tag template doesn't
+   substitute (e.g. {{utm_firstname}}{{contact_firstname}} where one
+   side is empty → "_____Team" or "Passion_____"). Doesn't touch
+   placeholder-char runs in the middle of a value, so emails like
+   john_doe@example.com survive unchanged. */
+const BOUNDARY_PLACEHOLDER = /^[_\-*~.]{3,}|[_\-*~.]{3,}$/g;
+
+/** Strips placeholder runs glued to the start or end of a value. */
+function stripBoundaryPlaceholders(value: string): string {
+  return value.replace(BOUNDARY_PLACEHOLDER, '').trim();
+}
+
 /** Returns true if the value looks like an unsubstituted merge-tag
     fallback (e.g. "_____", "{{firstname}}", "%EMAIL%", "null"). */
 export function isPlaceholder(value: unknown): boolean {
@@ -35,11 +49,11 @@ export function isPlaceholder(value: unknown): boolean {
 }
 
 /** Returns true if the value is a syntactically plausible email
-    address AND not a placeholder. Used as the gate before
-    posthog.identify() and any other email-keyed write. */
+    address AND not a placeholder. Strips boundary placeholder runs
+    first so "_____info@x.com" validates as info@x.com. */
 export function isValidEmail(value: unknown): value is string {
   if (typeof value !== 'string') return false;
-  const v = value.trim();
+  const v = stripBoundaryPlaceholders(value);
   if (v.length < 5) return false;
   if (!v.includes('@')) return false;
   if (!v.includes('.')) return false;
@@ -47,16 +61,20 @@ export function isValidEmail(value: unknown): value is string {
   return true;
 }
 
-/** Reads a URL param and returns its value, or null if missing /
-    blank / placeholder. Drop-in replacement for params.get(name). */
+/** Reads a URL param and returns its value, or null if the value is
+    missing / blank / pure placeholder. Strips boundary placeholder
+    runs glued onto a real value (e.g. "_____Team" → "Team"). Use
+    this as a drop-in replacement for params.get(name). */
 export function getCleanParam(
   params: URLSearchParams,
   name: string
 ): string | null {
   const raw = params.get(name);
   if (raw === null) return null;
-  if (isPlaceholder(raw)) return null;
-  return raw.trim();
+  const stripped = stripBoundaryPlaceholders(raw);
+  if (!stripped) return null;
+  if (isPlaceholder(stripped)) return null;
+  return stripped;
 }
 
 /** Same as getCleanParam but checks multiple names in order and
