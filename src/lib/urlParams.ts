@@ -19,19 +19,41 @@ const KNOWN_PLACEHOLDERS = new Set([
   'null', 'undefined', 'none', 'unknown', 'n/a', 'na',
 ]);
 
-/* Runs of 3+ placeholder characters at the START or END of a value.
-   Matches things like "_____", "-----", "***" - the literal glue left
-   over when one slot of a concatenated merge tag template doesn't
-   substitute (e.g. {{utm_firstname}}{{contact_firstname}} where one
-   side is empty → "_____Team" or "Passion_____"). Doesn't touch
-   placeholder-char runs in the middle of a value, so emails like
-   john_doe@example.com survive unchanged. */
-const BOUNDARY_PLACEHOLDER = /^[_\-*~.]{3,}|[_\-*~.]{3,}$/g;
+/* Runs of placeholder characters at the START or END of a value.
+   Matches things like "_____", "-----", "***", "xxxxx" - the literal
+   glue left over when one slot of a concatenated merge tag template
+   doesn't substitute (e.g. {{utm_firstname}}{{contact_firstname}}
+   where one side is empty → "_____Team" or "Passion_____" or
+   "xxxxxinfo@x.com"). Doesn't touch runs in the middle of a value,
+   so emails like john_doe@example.com survive unchanged.
 
-/** Strips placeholder runs glued to the start or end of a value. */
+   Punctuation runs need only 3+ chars (less likely to appear in real
+   data). Letter runs (x/X) need 5+ to avoid mangling things like
+   names with double X. */
+const BOUNDARY_PLACEHOLDER = /^[_\-*~.]{3,}|[_\-*~.]{3,}$|^[xX]{5,}|[xX]{5,}$/g;
+
+/* Some Typeform / CF redirect templates use "$" as a query-param
+   separator instead of "&", which turns ?email=foo&location=USA into
+   ?email=foo$location=USA - meaning the email PARAM swallows every
+   following key=value pair as part of its value. Detect a "$word="
+   tail and chop it off. Safe against real values containing "$"
+   amounts ("Cost is $100") because those aren't followed by "word=". */
+const MALFORMED_QUERY_TAIL = /\$[A-Za-z_][A-Za-z0-9_]*=.*$/;
+
+/** Strips placeholder runs glued to the start or end of a value AND
+    chops any "$word=value..." tail that's a sign of a broken URL. */
 export function stripBoundaryPlaceholders(value: string): string {
-  return value.replace(BOUNDARY_PLACEHOLDER, '').trim();
+  return value
+    .replace(MALFORMED_QUERY_TAIL, '')
+    .replace(BOUNDARY_PLACEHOLDER, '')
+    .trim();
 }
+
+/* A genuinely valid email: no whitespace, no $, single @, has a TLD.
+   Used to gate identifyUser - rejects garbage like
+   info@passionproduct.com$location=USA that survives boundary
+   stripping in some malformed-URL edge cases. */
+const STRICT_EMAIL_RE = /^[^\s@$,;<>"'(){}[\]]+@[^\s@$,;<>"'(){}[\]]+\.[^\s@$,;<>"'(){}[\]]+$/;
 
 /** Rewrites window.location to strip "_____" glue from every URL
     param, then uses history.replaceState so the browser's URL bar
@@ -77,15 +99,18 @@ export function isPlaceholder(value: unknown): boolean {
   return false;
 }
 
-/** Returns true if the value is a syntactically plausible email
-    address AND not a placeholder. Strips boundary placeholder runs
-    first so "_____info@x.com" validates as info@x.com. */
+/** Returns true if the value is a real-looking email address. Strips
+    boundary placeholders + malformed query-tail first so
+    "_____info@x.com" → "info@x.com" and
+    "xxxxxinfo@x.com$location=USA" → "info@x.com" both validate.
+    Uses a strict regex that rejects whitespace, $, commas, etc. in
+    either the local or domain part - garbage that survives boundary
+    stripping won't sneak through. */
 export function isValidEmail(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   const v = stripBoundaryPlaceholders(value);
   if (v.length < 5) return false;
-  if (!v.includes('@')) return false;
-  if (!v.includes('.')) return false;
+  if (!STRICT_EMAIL_RE.test(v)) return false;
   if (isPlaceholder(v)) return false;
   return true;
 }
