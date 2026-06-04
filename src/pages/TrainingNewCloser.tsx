@@ -39,6 +39,7 @@ import { syncContactTimezone } from '../lib/syncTimezone';
 import { syncContactUtms } from '../lib/syncUtm';
 import { getCoachByOwnerName } from '../lib/coaches';
 import { celebrateConfirm, celebrateArrival } from '../lib/celebrate';
+import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
 
 // Module-level flag so we only fire the arrival celebration once
 // per page session (not every time the banner remounts when the
@@ -133,15 +134,19 @@ function parseMeetingInfo(): MeetingInfo | null {
       ? parseDate(rawEnd) || new Date(start.getTime() + 30 * 60 * 1000)
       : new Date(start.getTime() + 30 * 60 * 1000);
 
+  // Identity fields use the canonical/clean lookup so any "_____Team"
+  // glue from a Typeform-style concatenated merge tag gets stripped
+  // before display on the confirmation page.
+  const id = getCleanIdentity(p);
   return {
     start,
     end,
-    title: p.get('title') || 'Amazon Strategy Call with Passion Product',
+    title: getCleanParam(p, 'title') || 'Amazon Strategy Call with Passion Product',
     joinUrl: p.get('join') || '',
-    organizer: p.get('owner') || p.get('organizer') || 'Passion Product Team',
-    firstName: p.get('firstname') || p.get('first_name') || p.get('firstName') || '',
-    lastName: p.get('lastname') || p.get('last_name') || p.get('lastName') || '',
-    email: p.get('email') || '',
+    organizer: getCleanParam(p, 'owner') || getCleanParam(p, 'organizer') || 'Passion Product Team',
+    firstName: id.firstname || '',
+    lastName: id.lastname || '',
+    email: id.email || '',
   };
 }
 
@@ -153,8 +158,7 @@ function isFullTimestamp(v: string): boolean {
 
 function getEmailFromUrl(): string {
   if (typeof window === 'undefined') return '';
-  const p = new URLSearchParams(window.location.search);
-  return p.get('email') || p.get('Email') || '';
+  return getCleanIdentity(new URLSearchParams(window.location.search)).email || '';
 }
 
 /* Ask the HubSpot-backed lookup function for anything missing - most
@@ -289,14 +293,8 @@ function getMeetingFromStorage(): MeetingInfo | null {
 
 function getFirstName(): string {
   if (typeof window === 'undefined') return '';
-  const p = new URLSearchParams(window.location.search);
-  return (
-    p.get('first_name') ||
-    p.get('firstName') ||
-    p.get('firstname') ||
-    getRelayData().firstname ||
-    ''
-  );
+  const id = getCleanIdentity(new URLSearchParams(window.location.search));
+  return id.firstname || getRelayData().firstname || '';
 }
 
 function formatForICS(d: Date): string {

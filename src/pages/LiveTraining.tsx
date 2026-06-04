@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Calendar, Clock, CheckCircle, Star, ArrowRight, BookmarkPlus, ChevronDown, Sparkles, Bell, Phone, Youtube, Video, AlertTriangle, Wifi, MonitorSmartphone } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
+import { getCleanIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
 
 /* ───── /live-training - webinar opt-in ───────────────────────────
@@ -40,7 +41,7 @@ function isListMember(): boolean {
 
 function emailFromUrl(): string {
   if (typeof window === 'undefined') return '';
-  return (new URLSearchParams(window.location.search).get('email') || '').trim();
+  return getCleanIdentity(new URLSearchParams(window.location.search)).email || '';
 }
 
 function formatHumanDate(d: Date): string {

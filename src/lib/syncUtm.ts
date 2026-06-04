@@ -9,6 +9,7 @@
 ──────────────────────────────────────────────────────────────────── */
 
 import { trackEvent } from './posthog';
+import { isPlaceholder } from './urlParams';
 
 const UTM_FIELDS = [
   'utm_source',
@@ -23,21 +24,21 @@ const STORAGE_KEY = 'pp_utm_data';
 
 export type UtmData = Partial<Record<(typeof UTM_FIELDS)[number], string>>;
 
-/** Read utm_* params from the current URL (case-insensitive). */
+/** Read utm_* params from the current URL (case-insensitive).
+    Skips placeholder values (e.g. "_____") so a broken merge tag
+    doesn't pollute HubSpot UTM properties. */
 export function readUtmFromUrl(): UtmData {
   if (typeof window === 'undefined') return {};
   const params = new URLSearchParams(window.location.search);
   const result: UtmData = {};
   for (const field of UTM_FIELDS) {
-    // Try lowercase first, then any-case match
     const direct = params.get(field);
-    if (direct) {
+    if (direct && !isPlaceholder(direct)) {
       result[field] = direct;
       continue;
     }
-    // case-insensitive scan
     for (const [k, v] of params.entries()) {
-      if (k.toLowerCase() === field && v) {
+      if (k.toLowerCase() === field && v && !isPlaceholder(v)) {
         result[field] = v;
         break;
       }
