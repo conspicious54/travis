@@ -3,6 +3,7 @@ import { CheckCircle, Sparkles } from 'lucide-react';
 import { identifyUser, trackBookingPageViewed, trackBookingCompleted } from '../lib/posthog';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
+import { getCleanParam, cleanParamsForForward } from '../lib/urlParams';
 
 /* ───── /book - embedded HubSpot closer scheduler ─────────────────
    Embeds the HubSpot meeting scheduler in an iframe and listens
@@ -40,12 +41,13 @@ function persistTypeformAnswers() {
   const data: Record<string, string> = {
     _captured_at: new Date().toISOString(),
   };
+  // Use getCleanParam so unsubstituted merge-tag values like "_____"
+  // are skipped rather than persisted to localStorage (where they'd
+  // later flow into personalization on the confirmation page).
   for (const field of TYPEFORM_FIELDS) {
-    const val = params.get(field);
+    const val = getCleanParam(params, field);
     if (val) data[field] = val;
   }
-  // Only write if we actually have something to write - avoids
-  // wiping previously persisted data on a refresh
   if (Object.keys(data).length > 1) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -58,12 +60,9 @@ function persistTypeformAnswers() {
 function buildEmbedUrl(): string {
   if (typeof window === 'undefined') return HUBSPOT_EMBED_URL;
   const params = new URLSearchParams(window.location.search);
-  const forward = new URLSearchParams();
-  // Forward only the short identity fields to pre-fill HubSpot's form
-  for (const field of ['firstname', 'lastname', 'phone', 'email']) {
-    const val = params.get(field);
-    if (val) forward.set(field, val);
-  }
+  // Forward only validated identity fields - never pre-fill HubSpot's
+  // form with "_____" or other placeholder values.
+  const forward = cleanParamsForForward(params, ['firstname', 'lastname', 'phone', 'email']);
   if (forward.toString() === '') return HUBSPOT_EMBED_URL;
   return `${HUBSPOT_EMBED_URL}&${forward.toString()}`;
 }
@@ -79,14 +78,15 @@ export function Book() {
     persistUtmsFromUrl();
     trackBookingPageViewed('closer');
 
-    // Identify user if we have their email
+    // Identify user if we have their email (placeholder-safe via
+    // getCleanParam, so "_____" never gets passed to posthog).
     const params = new URLSearchParams(window.location.search);
-    const email = params.get('email');
+    const email = getCleanParam(params, 'email');
     if (email) {
       identifyUser(email, {
-        first_name: params.get('firstname') || undefined,
-        last_name: params.get('lastname') || undefined,
-        phone: params.get('phone') || undefined,
+        first_name: getCleanParam(params, 'firstname') ?? undefined,
+        last_name: getCleanParam(params, 'lastname') ?? undefined,
+        phone: getCleanParam(params, 'phone') ?? undefined,
       });
     }
 
@@ -141,7 +141,7 @@ export function Book() {
         // and-forget; sendBeacon survives the redirect below.
         const bookingEmail =
           (contact.email as string | undefined) ||
-          new URLSearchParams(window.location.search).get('email') ||
+          getCleanParam(new URLSearchParams(window.location.search), 'email') ||
           '';
         syncContactTimezone(bookingEmail, 'book_redirect');
         // Also push UTMs - server only writes empty fields, so

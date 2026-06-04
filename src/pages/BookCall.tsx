@@ -3,6 +3,7 @@ import { CheckCircle, Sparkles } from 'lucide-react';
 import { identifyUser, trackBookingPageViewed, trackBookingCompleted } from '../lib/posthog';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
+import { getCleanParam, cleanParamsForForward } from '../lib/urlParams';
 
 /* ───── /bookacall - embedded HubSpot setter scheduler ─────────────
    Same flow as /book but for the setter team. Captures the booking
@@ -33,8 +34,10 @@ function persistTypeformAnswers() {
   const data: Record<string, string> = {
     _captured_at: new Date().toISOString(),
   };
+  // Skip placeholder values ("_____", "{{firstname}}", etc.) so
+  // unsubstituted merge tags don't propagate to localStorage.
   for (const field of TYPEFORM_FIELDS) {
-    const val = params.get(field);
+    const val = getCleanParam(params, field);
     if (val) data[field] = val;
   }
   if (Object.keys(data).length > 1) {
@@ -49,11 +52,7 @@ function persistTypeformAnswers() {
 function buildEmbedUrl(): string {
   if (typeof window === 'undefined') return HUBSPOT_EMBED_URL;
   const params = new URLSearchParams(window.location.search);
-  const forward = new URLSearchParams();
-  for (const field of ['firstname', 'lastname', 'phone', 'email']) {
-    const val = params.get(field);
-    if (val) forward.set(field, val);
-  }
+  const forward = cleanParamsForForward(params, ['firstname', 'lastname', 'phone', 'email']);
   if (forward.toString() === '') return HUBSPOT_EMBED_URL;
   return `${HUBSPOT_EMBED_URL}&${forward.toString()}`;
 }
@@ -69,12 +68,12 @@ export function BookCall() {
     trackBookingPageViewed('setter');
 
     const params = new URLSearchParams(window.location.search);
-    const email = params.get('email');
+    const email = getCleanParam(params, 'email');
     if (email) {
       identifyUser(email, {
-        first_name: params.get('firstname') || undefined,
-        last_name: params.get('lastname') || undefined,
-        phone: params.get('phone') || undefined,
+        first_name: getCleanParam(params, 'firstname') ?? undefined,
+        last_name: getCleanParam(params, 'lastname') ?? undefined,
+        phone: getCleanParam(params, 'phone') ?? undefined,
       });
     }
 
@@ -111,7 +110,7 @@ export function BookCall() {
 
         const bookingEmail =
           (contact.email as string | undefined) ||
-          new URLSearchParams(window.location.search).get('email') ||
+          getCleanParam(new URLSearchParams(window.location.search), 'email') ||
           '';
         // Push timezone + UTMs to HubSpot. UTM sync respects existing
         // values so first-touch attribution is preserved.

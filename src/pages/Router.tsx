@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Rocket, DollarSign } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
+import { getCleanParam } from '../lib/urlParams';
 
 type RouterState = 'loading' | 'dq-question' | 'redirecting';
 
@@ -169,10 +170,10 @@ export function Router() {
     //   Person into this travisfba.com session, so subsequent identify
     //   calls (e.g. by email later in the funnel) stitch all three.
     const params = new URLSearchParams(window.location.search);
-    const incomingEmail = (params.get('email') || '').trim().toLowerCase();
-    const firstName = params.get('first_name') || params.get('firstname') || '';
-    const lastName = params.get('last_name') || params.get('lastname') || '';
-    const incomingPhid = (params.get('phid') || '').trim();
+    const incomingEmail = (getCleanParam(params, 'email') || '').toLowerCase();
+    const firstName = getCleanParam(params, 'first_name') || getCleanParam(params, 'firstname') || '';
+    const lastName = getCleanParam(params, 'last_name') || getCleanParam(params, 'lastname') || '';
+    const incomingPhid = getCleanParam(params, 'phid') || '';
     if (incomingEmail && incomingEmail.includes('@')) {
       identifyUser(incomingEmail, {
         first_name: firstName || undefined,

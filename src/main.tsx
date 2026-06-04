@@ -3,39 +3,25 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { identifyUser } from './lib/posthog';
+import { getCleanParamAny } from './lib/urlParams';
 
 /* ───── Global PostHog identification from URL params ─────────────
    Runs on every page load. If the URL contains an email param
    (from Typeform, ClickFunnels, UTM passthrough, etc.), we identify
    the visitor in PostHog immediately. Also grabs first/last name
    if present. Checks multiple common param names.
+
+   getCleanParamAny skips placeholder values like "_____" or
+   "{{firstname}}" so unsubstituted merge tags never reach identify.
 ──────────────────────────────────────────────────────────────────── */
 try {
   const p = new URLSearchParams(window.location.search);
-  const email =
-    p.get('email') ||
-    p.get('Email') ||
-    p.get('EMAIL') ||
-    p.get('contact_email') ||
-    p.get('cf_email') ||
-    '';
+  const email = getCleanParamAny(p, ['email', 'Email', 'EMAIL', 'contact_email', 'cf_email', 'utm_email']);
 
-  if (email && email.includes('@')) {
-    const firstName =
-      p.get('firstname') ||
-      p.get('first_name') ||
-      p.get('firstName') ||
-      p.get('name') ||
-      undefined;
-    const lastName =
-      p.get('lastname') ||
-      p.get('last_name') ||
-      p.get('lastName') ||
-      undefined;
-    const phone =
-      p.get('phone') ||
-      p.get('Phone') ||
-      undefined;
+  if (email) {
+    const firstName = getCleanParamAny(p, ['firstname', 'first_name', 'firstName', 'name']) ?? undefined;
+    const lastName = getCleanParamAny(p, ['lastname', 'last_name', 'lastName']) ?? undefined;
+    const phone = getCleanParamAny(p, ['phone', 'Phone']) ?? undefined;
 
     identifyUser(email, {
       ...(firstName ? { first_name: firstName } : {}),

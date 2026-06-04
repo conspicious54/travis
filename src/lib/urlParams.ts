@@ -1,0 +1,91 @@
+/* ───── URL param sanitization ─────────────────────────────────────
+   When a Typeform / ClickFunnels / ActiveCampaign / HubSpot redirect
+   has an unresolved merge tag, the upstream tool often substitutes a
+   placeholder value (e.g. "_____") instead of leaving the field
+   empty. If we accept those values at face value we end up:
+     - identifying every such visitor as the same fictional Person
+     - pre-filling HubSpot iframes with junk like email="_____"
+     - storing "_____" into localStorage personalization that then
+       renders on confirmation pages ("Hi _____!")
+   Filter them out at intake. Use cleanParams() at the start of any
+   page that reads URL params for identity / personalization.
+──────────────────────────────────────────────────────────────────── */
+
+const PLACEHOLDER_PATTERN = /^[_\-*~.\s]+$/;
+
+const KNOWN_PLACEHOLDERS = new Set([
+  'firstname', 'first_name', 'lastname', 'last_name', 'email', 'phone',
+  'firstName', 'lastName', 'fname', 'lname',
+  'null', 'undefined', 'none', 'unknown', 'n/a', 'na',
+]);
+
+/** Returns true if the value looks like an unsubstituted merge-tag
+    fallback (e.g. "_____", "{{firstname}}", "%EMAIL%", "null"). */
+export function isPlaceholder(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  const v = value.trim();
+  if (!v) return true;
+  if (PLACEHOLDER_PATTERN.test(v)) return true;
+  if (KNOWN_PLACEHOLDERS.has(v.toLowerCase())) return true;
+  if (/^\{\{.+\}\}$/.test(v)) return true; // Liquid / Handlebars
+  if (/^\[.+\]$/.test(v)) return true;     // Mailchimp Classic [FNAME]
+  if (/^%[A-Z_]+%$/.test(v)) return true;  // ActiveCampaign %FIRSTNAME%
+  if (/^\*\|.+\|\*$/.test(v)) return true; // Mailchimp *|EMAIL|*
+  return false;
+}
+
+/** Returns true if the value is a syntactically plausible email
+    address AND not a placeholder. Used as the gate before
+    posthog.identify() and any other email-keyed write. */
+export function isValidEmail(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const v = value.trim();
+  if (v.length < 5) return false;
+  if (!v.includes('@')) return false;
+  if (!v.includes('.')) return false;
+  if (isPlaceholder(v)) return false;
+  return true;
+}
+
+/** Reads a URL param and returns its value, or null if missing /
+    blank / placeholder. Drop-in replacement for params.get(name). */
+export function getCleanParam(
+  params: URLSearchParams,
+  name: string
+): string | null {
+  const raw = params.get(name);
+  if (raw === null) return null;
+  if (isPlaceholder(raw)) return null;
+  return raw.trim();
+}
+
+/** Same as getCleanParam but checks multiple names in order and
+    returns the first valid match. Useful when an email might arrive
+    as either `email` or `utm_email` (one is the upstream merge tag,
+    the other is the UTM passthrough - we want whichever is real). */
+export function getCleanParamAny(
+  params: URLSearchParams,
+  names: string[]
+): string | null {
+  for (const n of names) {
+    const v = getCleanParam(params, n);
+    if (v) return v;
+  }
+  return null;
+}
+
+/** Builds a new URLSearchParams containing only the named keys whose
+    values pass the placeholder filter. Use this when forwarding URL
+    params to a downstream destination (e.g. HubSpot iframe) so we
+    don't propagate junk. */
+export function cleanParamsForForward(
+  params: URLSearchParams,
+  names: string[]
+): URLSearchParams {
+  const out = new URLSearchParams();
+  for (const n of names) {
+    const v = getCleanParam(params, n);
+    if (v) out.set(n, v);
+  }
+  return out;
+}
