@@ -13,7 +13,7 @@ import {
   PassionProductMethodSection,
   AcceleratorSection,
 } from '../components/TrainingNewSections';
-import { CheckCircle, Phone, Star, Shield, MessageSquare, MessageCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Phone, Star, Shield, MessageSquare, AlertTriangle } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import {
   identifyUser,
@@ -170,29 +170,12 @@ function SetterConfirmationBanner({
     markDone('microAsk');
   };
 
-  const handleConfirmWhatsapp = () => {
-    trackEvent('setter_confirm_whatsapp_clicked', {
-      region,
-      platform,
-      coach_first_name: coachFirstName,
-    });
-    setPersonProperties({
-      coach_first_name: coachFirstName,
-      confirmed_via: 'whatsapp',
-      last_platform: platform,
-    });
-    armAppSwitch('whatsapp', coachFirstName);
-    markConfirmClicked();
-    markDone('microAsk');
-  };
-
   const handleRegionOverride = (r: Region) => {
     setRegion(r);
     trackEvent('wrong_region_clicked', { faq_location: 'setter', from: region, to: r });
   };
 
   const smsBody = encodeURIComponent(`Hi Coach ${coachFirstName}, YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
-  const whatsappNumber = phone.raw.replace(/[^\d]/g, '');
 
   return (
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
@@ -217,13 +200,13 @@ function SetterConfirmationBanner({
           Save it as <span className="font-bold text-gray-700">"Santiago Espinoza"</span> so you know it's us when we call.
         </p>
 
-        {/* Micro-ask: confirm via text or WhatsApp */}
+        {/* Micro-ask: confirm via text */}
         <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
           <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
-            To confirm you'll be available for the call, tap one of the buttons below and hit send:
+            To confirm you'll be available for the call, tap the button below and hit send:
           </p>
 
-          <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 max-w-lg mx-auto">
+          <div className="flex items-stretch justify-center max-w-lg mx-auto">
             <a
               href={`sms:${phone.raw}?&body=${smsBody}`}
               onClick={handleConfirmText}
@@ -231,16 +214,6 @@ function SetterConfirmationBanner({
             >
               <MessageSquare className="w-4 h-4" />
               Confirm via Text
-            </a>
-            <a
-              href={`https://wa.me/${whatsappNumber}?text=${smsBody}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleConfirmWhatsapp}
-              className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer ${completed.microAsk ? '' : 'animate-confirm-pulse-green'}`}
-            >
-              <MessageCircle className="w-4 h-4" />
-              Confirm via WhatsApp
             </a>
           </div>
 

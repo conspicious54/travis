@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users, CheckCircle, Check, Mail, MessageSquare, MessageCircle } from 'lucide-react';
+import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users, CheckCircle, Check, Mail, MessageSquare } from 'lucide-react';
 import type { Personalization, Reason, Situation, ValuedFeature, Capital, TravisHistory, Region } from '../lib/personalization';
 import { trackTestimonialsExpanded, trackCreditQuizStarted, trackCreditQuizCompleted, trackCreditCardApplyClicked, trackEvent, setPersonProperties } from '../lib/posthog';
 import { usePrepChecklist } from '../context/PrepChecklistContext';
@@ -1885,7 +1885,6 @@ interface MobileConfirmStickyBarProps {
   coachFirstName: string;
   phoneRaw: string;
   smsBody: string;
-  whatsappBody?: string;
 }
 
 export function MobileConfirmStickyBar({
@@ -1893,7 +1892,6 @@ export function MobileConfirmStickyBar({
   coachFirstName,
   phoneRaw,
   smsBody,
-  whatsappBody,
 }: MobileConfirmStickyBarProps) {
   const [show, setShow] = useState(false);
   const { completed, markDone } = usePrepChecklist();
@@ -1909,18 +1907,15 @@ export function MobileConfirmStickyBar({
 
   if (completed.microAsk || !show) return null;
 
-  const whatsappNumber = phoneRaw.replace(/[^\d]/g, '');
-  const effectiveWhatsappBody = whatsappBody ?? smsBody;
-
-  const handleClick = (channel: 'sms' | 'whatsapp') => {
+  const handleClick = () => {
     trackEvent('mobile_sticky_bar_clicked', {
       faq_location: location,
-      channel,
+      channel: 'sms',
       coach_first_name: coachFirstName,
     });
     setPersonProperties({
       coach_first_name: coachFirstName,
-      confirmed_via: channel,
+      confirmed_via: 'sms',
     });
     markConfirmClicked();
     markDone('microAsk');
@@ -1931,24 +1926,14 @@ export function MobileConfirmStickyBar({
       className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-orange-200 shadow-[0_-8px_20px_rgba(0,0,0,0.08)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="px-3 pt-2.5 pb-2.5 flex gap-2">
+      <div className="px-3 pt-2.5 pb-2.5 flex">
         <a
           href={`sms:${phoneRaw}?&body=${smsBody}`}
-          onClick={() => handleClick('sms')}
+          onClick={handleClick}
           className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer"
         >
           <MessageSquare className="w-4 h-4" />
           Confirm via Text
-        </a>
-        <a
-          href={`https://wa.me/${whatsappNumber}?text=${effectiveWhatsappBody}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => handleClick('whatsapp')}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer"
-        >
-          <MessageCircle className="w-4 h-4" />
-          WhatsApp
         </a>
       </div>
     </div>
@@ -1971,7 +1956,6 @@ interface ConfirmationExitPopupProps {
   coachFirstName: string;
   phoneRaw: string;
   smsBody: string;
-  whatsappBody?: string;
 }
 
 export function ConfirmationExitPopup({
@@ -1979,7 +1963,6 @@ export function ConfirmationExitPopup({
   coachFirstName,
   phoneRaw,
   smsBody,
-  whatsappBody,
 }: ConfirmationExitPopupProps) {
   const [show, setShow] = useState(false);
   const firedRef = useRef(false);
@@ -2153,7 +2136,7 @@ export function ConfirmationExitPopup({
     ctaLabel = 'Show me the principles';
   } else if (undone.microAsk) {
     headline = `One tap to tell Coach ${coachFirstName} you'll be there.`;
-    body = "You've prepped for the call - the last step is letting us know you'll show up. Hit one of the buttons below and tap send.";
+    body = "You've prepped for the call - the last step is letting us know you'll show up. Hit the button below and tap send.";
     ctaLabel = 'Back to the page';
   } else {
     headline = 'Before you go.';
@@ -2166,18 +2149,15 @@ export function ConfirmationExitPopup({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const whatsappNumber = phoneRaw.replace(/[^\d]/g, '');
-  const effectiveWhatsappBody = whatsappBody ?? smsBody;
-
-  const handlePopupConfirm = (channel: 'sms' | 'whatsapp') => {
+  const handlePopupConfirm = () => {
     trackEvent('exit_popup_confirm_clicked', {
       faq_location: location,
-      channel,
+      channel: 'sms',
       coach_first_name: coachFirstName,
     });
     setPersonProperties({
       coach_first_name: coachFirstName,
-      confirmed_via: channel,
+      confirmed_via: 'sms',
     });
     markConfirmClicked();
     markDone('microAsk');
@@ -2217,31 +2197,21 @@ export function ConfirmationExitPopup({
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-6 text-left">
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">Your progress</p>
           <ul className="space-y-1.5">
-            <ProgressRow done={snapshot.microAsk} label="Confirm via text or WhatsApp" />
+            <ProgressRow done={snapshot.microAsk} label="Confirm via text" />
             <ProgressRow done={snapshot.video} label="Watch the video" />
             <ProgressRow done={snapshot.principles} label="Understand the key principles" />
           </ul>
         </div>
 
         {undone.microAsk ? (
-          <div className="flex flex-col sm:flex-row items-stretch gap-2">
+          <div className="flex items-stretch">
             <a
               href={`sms:${phoneRaw}?&body=${smsBody}`}
-              onClick={() => handlePopupConfirm('sms')}
+              onClick={handlePopupConfirm}
               className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-colors shadow-md cursor-pointer"
             >
               <MessageSquare className="w-4 h-4" />
               Confirm via Text
-            </a>
-            <a
-              href={`https://wa.me/${whatsappNumber}?text=${effectiveWhatsappBody}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => handlePopupConfirm('whatsapp')}
-              className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-colors shadow-md cursor-pointer"
-            >
-              <MessageCircle className="w-4 h-4" />
-              Confirm via WhatsApp
             </a>
           </div>
         ) : (

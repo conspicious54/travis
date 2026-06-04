@@ -15,7 +15,7 @@ import {
   AcceleratorSection,
 } from '../components/TrainingNewSections';
 import { MobileWalkthrough, useIsMobileViewport, type WalkthroughStep } from '../components/MobileWalkthrough';
-import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, MessageCircle, AlertTriangle, ArrowDown, Check } from 'lucide-react';
+import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, AlertTriangle, ArrowDown, Check } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import {
   identifyUser,
@@ -542,7 +542,6 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false }: { mee
   // visitor's region. Falls back to the default regional number if the
   // owner isn't mapped or has no number for this region.
   const phone = getCloserPhone(meeting?.organizer, region);
-  const whatsappNumber = phone.raw.replace(/[^\d]/g, '');
 
   // Build a confirmation message body that includes the exact booked
   // time (if we have a verified meeting time) and the person's full
@@ -576,7 +575,6 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false }: { mee
   })();
 
   const smsBody = encodeURIComponent(confirmationBody);
-  const whatsappBody = encodeURIComponent(confirmationBody);
 
   usePhoneCopyTracking(phone.display, 'closer', region);
   const armAppSwitch = useConfirmAppSwitch('closer');
@@ -596,26 +594,6 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false }: { mee
       last_platform: platform,
     });
     armAppSwitch('sms', coachFirstName);
-    markConfirmClicked();
-    markDone('microAsk');
-    celebrateConfirm();
-  };
-
-  const handleConfirmWhatsapp = () => {
-    trackEvent('closer_confirm_whatsapp_clicked', {
-      region,
-      platform,
-      owner: meeting?.organizer || null,
-      coach_first_name: coachFirstName,
-      phone: phone.raw,
-    });
-    setPersonProperties({
-      coach_first_name: coachFirstName,
-      coach_full_name: meeting?.organizer || null,
-      confirmed_via: 'whatsapp',
-      last_platform: platform,
-    });
-    armAppSwitch('whatsapp', coachFirstName);
     markConfirmClicked();
     markDone('microAsk');
     celebrateConfirm();
@@ -696,13 +674,13 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false }: { mee
             </div>
           </div>
         ) : (
-          /* Micro-ask: confirm via text or WhatsApp */
+          /* Micro-ask: confirm via text */
           <div className={`bg-white border-2 border-gray-200 rounded-2xl shadow-sm ${compact ? 'p-5 animate-banner-rise-3' : 'p-6 md:p-7'}`}>
             <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
-              To confirm you'll attend, tap one of the buttons below and hit send:
+              To confirm you'll attend, tap the button below and hit send:
             </p>
 
-            <div className="flex flex-col sm:flex-row items-stretch justify-center gap-3 max-w-lg mx-auto">
+            <div className="flex items-stretch justify-center max-w-lg mx-auto">
               <a
                 href={`sms:${phone.raw}?&body=${smsBody}`}
                 onClick={handleConfirmText}
@@ -710,16 +688,6 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false }: { mee
               >
                 <MessageSquare className="w-4 h-4" />
                 Confirm via Text
-              </a>
-              <a
-                href={`https://wa.me/${whatsappNumber}?text=${whatsappBody}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={handleConfirmWhatsapp}
-                className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer active:scale-[0.98] ${completed.microAsk ? '' : 'animate-confirm-pulse-green'}`}
-              >
-                <MessageCircle className="w-4 h-4" />
-                Confirm via WhatsApp
               </a>
             </div>
 
@@ -946,7 +914,7 @@ function CloserPageBody({
       gate: {
         canAdvance: () => completed.microAsk,
         title: 'Have you confirmed your call yet?',
-        body: 'We cancel slots that don\'t reply YES within 12 hours. Tap a confirm button above so we know you\'re coming.',
+        body: 'We cancel slots that don\'t reply YES within 12 hours. Tap "Confirm via Text" above so we know you\'re coming.',
         stayLabel: 'Go back and confirm',
         advanceLabel: 'I\'ll do it later',
       },
