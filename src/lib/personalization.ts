@@ -13,6 +13,8 @@
    Then we match against unique fingerprint words for each answer.
 ──────────────────────────────────────────────────────────────────── */
 
+import { getCleanParam, getCleanIdentity, isPlaceholder } from './urlParams';
+
 const STORAGE_KEY = 'pp_booking_data';
 
 export type Region = 'usa' | 'canada' | 'europe' | 'australia' | 'newzealand' | 'unknown';
@@ -49,18 +51,31 @@ function readStorage(): Record<string, string> {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') stored = parsed;
+      if (parsed && typeof parsed === 'object') {
+        // Strip any placeholder values that snuck into localStorage
+        // before the intake sanitization was in place. Defends the
+        // confirmation page from old "Hi _____" data.
+        for (const [k, v] of Object.entries(parsed)) {
+          if (!isPlaceholder(v)) stored[k] = v as string;
+        }
+      }
     }
   } catch {
     /* no-op */
   }
 
-  // Layer URL params on top so they override stored values
+  // Layer URL params on top so they override stored values. Identity
+  // fields use the canonical alias lookup so utm_email folds into
+  // "email" etc., and placeholder values never overwrite real ones.
   try {
     const params = new URLSearchParams(window.location.search);
-    const fields = ['firstname', 'lastname', 'phone', 'email', 'location', 'reason', 'tried', 'travis', 'value', 'money'];
-    for (const f of fields) {
-      const v = params.get(f);
+    const id = getCleanIdentity(params);
+    if (id.firstname) stored.firstname = id.firstname;
+    if (id.lastname)  stored.lastname  = id.lastname;
+    if (id.phone)     stored.phone     = id.phone;
+    if (id.email)     stored.email     = id.email;
+    for (const f of ['location', 'reason', 'tried', 'travis', 'value', 'money']) {
+      const v = getCleanParam(params, f);
       if (v) stored[f] = v;
     }
   } catch {

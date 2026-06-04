@@ -3,30 +3,21 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { identifyUser } from './lib/posthog';
-import { getCleanParamAny } from './lib/urlParams';
+import { getCleanIdentity } from './lib/urlParams';
 
 /* ───── Global PostHog identification from URL params ─────────────
-   Runs on every page load. If the URL contains an email param
-   (from Typeform, ClickFunnels, UTM passthrough, etc.), we identify
-   the visitor in PostHog immediately. Also grabs first/last name
-   if present. Checks multiple common param names.
-
-   getCleanParamAny skips placeholder values like "_____" or
-   "{{firstname}}" so unsubstituted merge tags never reach identify.
+   Runs on every page load. If the URL carries identity from any of
+   the supported aliases (email / utm_email / contact_email / ...),
+   identify the visitor in PostHog immediately. Placeholder values
+   like "_____" are skipped, so a real value under any alias wins.
 ──────────────────────────────────────────────────────────────────── */
 try {
-  const p = new URLSearchParams(window.location.search);
-  const email = getCleanParamAny(p, ['email', 'Email', 'EMAIL', 'contact_email', 'cf_email', 'utm_email']);
-
-  if (email) {
-    const firstName = getCleanParamAny(p, ['firstname', 'first_name', 'firstName', 'name']) ?? undefined;
-    const lastName = getCleanParamAny(p, ['lastname', 'last_name', 'lastName']) ?? undefined;
-    const phone = getCleanParamAny(p, ['phone', 'Phone']) ?? undefined;
-
-    identifyUser(email, {
-      ...(firstName ? { first_name: firstName } : {}),
-      ...(lastName ? { last_name: lastName } : {}),
-      ...(phone ? { phone } : {}),
+  const id = getCleanIdentity(new URLSearchParams(window.location.search));
+  if (id.email) {
+    identifyUser(id.email, {
+      ...(id.firstname ? { first_name: id.firstname } : {}),
+      ...(id.lastname  ? { last_name:  id.lastname }  : {}),
+      ...(id.phone     ? { phone:      id.phone }     : {}),
     });
   }
 } catch {

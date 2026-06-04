@@ -89,3 +89,54 @@ export function cleanParamsForForward(
   }
   return out;
 }
+
+/* ───── canonical identity aliases ─────────────────────────────────
+   We send visitors to Typeform with the same identity in TWO param
+   slots (e.g. ?email={{contact.email}}&utm_email={{utm.email}}) so
+   either source can populate it. When Typeform redirects on, both
+   slots come through - one is real, one is "_____". Code that needs
+   "the email" or "the first name" should never look at one slot in
+   isolation - it should use these alias lists with getCleanParamAny
+   so the first valid value wins, regardless of param name.
+──────────────────────────────────────────────────────────────────── */
+export const IDENTITY_PARAM_NAMES = {
+  email:     ['email', 'Email', 'EMAIL', 'utm_email', 'contact_email', 'cf_email'],
+  firstname: ['firstname', 'first_name', 'firstName', 'utm_firstname', 'utm_first_name'],
+  lastname:  ['lastname', 'last_name', 'lastName', 'utm_lastname', 'utm_last_name'],
+  phone:     ['phone', 'Phone', 'utm_phone'],
+} as const;
+
+export interface CleanIdentity {
+  email: string | null;
+  firstname: string | null;
+  lastname: string | null;
+  phone: string | null;
+}
+
+/** Returns the canonical identity values from URL params, picking
+    the first valid (non-placeholder) value across every alias. */
+export function getCleanIdentity(params: URLSearchParams): CleanIdentity {
+  return {
+    email:     getCleanParamAny(params, [...IDENTITY_PARAM_NAMES.email]),
+    firstname: getCleanParamAny(params, [...IDENTITY_PARAM_NAMES.firstname]),
+    lastname:  getCleanParamAny(params, [...IDENTITY_PARAM_NAMES.lastname]),
+    phone:     getCleanParamAny(params, [...IDENTITY_PARAM_NAMES.phone]),
+  };
+}
+
+/** Builds a URLSearchParams with the CANONICAL identity field names
+    populated from any matching alias. So URL ?email=_____&utm_email=
+    real@x.com produces { email: "real@x.com" } in the output - the
+    HubSpot iframe pre-fill, etc. always gets the real value under
+    the expected key. */
+export function buildCanonicalIdentityForward(
+  params: URLSearchParams
+): URLSearchParams {
+  const id = getCleanIdentity(params);
+  const out = new URLSearchParams();
+  if (id.firstname) out.set('firstname', id.firstname);
+  if (id.lastname)  out.set('lastname',  id.lastname);
+  if (id.phone)     out.set('phone',     id.phone);
+  if (id.email)     out.set('email',     id.email);
+  return out;
+}

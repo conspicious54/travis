@@ -3,7 +3,7 @@ import { CheckCircle, Sparkles } from 'lucide-react';
 import { identifyUser, trackBookingPageViewed, trackBookingCompleted } from '../lib/posthog';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
-import { getCleanParam, cleanParamsForForward } from '../lib/urlParams';
+import { getCleanParam, getCleanIdentity, buildCanonicalIdentityForward } from '../lib/urlParams';
 
 /* ───── /book - embedded HubSpot closer scheduler ─────────────────
    Embeds the HubSpot meeting scheduler in an iframe and listens
@@ -41,10 +41,16 @@ function persistTypeformAnswers() {
   const data: Record<string, string> = {
     _captured_at: new Date().toISOString(),
   };
-  // Use getCleanParam so unsubstituted merge-tag values like "_____"
-  // are skipped rather than persisted to localStorage (where they'd
-  // later flow into personalization on the confirmation page).
-  for (const field of TYPEFORM_FIELDS) {
+  // Identity fields use the canonical alias lookup - if URL has
+  // ?email=_____&utm_email=real@x.com we want "real@x.com" stored
+  // under the canonical "email" key.
+  const id = getCleanIdentity(params);
+  if (id.firstname) data.firstname = id.firstname;
+  if (id.lastname)  data.lastname  = id.lastname;
+  if (id.phone)     data.phone     = id.phone;
+  if (id.email)     data.email     = id.email;
+  // Non-identity Typeform answer fields - just placeholder-filter.
+  for (const field of ['location', 'reason', 'tried', 'travis', 'value', 'money']) {
     const val = getCleanParam(params, field);
     if (val) data[field] = val;
   }
@@ -60,9 +66,10 @@ function persistTypeformAnswers() {
 function buildEmbedUrl(): string {
   if (typeof window === 'undefined') return HUBSPOT_EMBED_URL;
   const params = new URLSearchParams(window.location.search);
-  // Forward only validated identity fields - never pre-fill HubSpot's
-  // form with "_____" or other placeholder values.
-  const forward = cleanParamsForForward(params, ['firstname', 'lastname', 'phone', 'email']);
+  // Forward the first valid value across every identity alias under
+  // canonical keys, so the HubSpot iframe is pre-filled correctly
+  // whether the source param was `email`, `utm_email`, etc.
+  const forward = buildCanonicalIdentityForward(params);
   if (forward.toString() === '') return HUBSPOT_EMBED_URL;
   return `${HUBSPOT_EMBED_URL}&${forward.toString()}`;
 }
@@ -78,15 +85,16 @@ export function Book() {
     persistUtmsFromUrl();
     trackBookingPageViewed('closer');
 
-    // Identify user if we have their email (placeholder-safe via
-    // getCleanParam, so "_____" never gets passed to posthog).
+    // Identify user using the canonical identity lookup - this
+    // picks the first valid email across [email, utm_email, ...]
+    // so a real value under any alias is used.
     const params = new URLSearchParams(window.location.search);
-    const email = getCleanParam(params, 'email');
-    if (email) {
-      identifyUser(email, {
-        first_name: getCleanParam(params, 'firstname') ?? undefined,
-        last_name: getCleanParam(params, 'lastname') ?? undefined,
-        phone: getCleanParam(params, 'phone') ?? undefined,
+    const id = getCleanIdentity(params);
+    if (id.email) {
+      identifyUser(id.email, {
+        first_name: id.firstname ?? undefined,
+        last_name: id.lastname ?? undefined,
+        phone: id.phone ?? undefined,
       });
     }
 
@@ -141,7 +149,7 @@ export function Book() {
         // and-forget; sendBeacon survives the redirect below.
         const bookingEmail =
           (contact.email as string | undefined) ||
-          getCleanParam(new URLSearchParams(window.location.search), 'email') ||
+          getCleanIdentity(new URLSearchParams(window.location.search)).email ||
           '';
         syncContactTimezone(bookingEmail, 'book_redirect');
         // Also push UTMs - server only writes empty fields, so
