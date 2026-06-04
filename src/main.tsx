@@ -3,7 +3,18 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { identifyUser } from './lib/posthog';
-import { getCleanIdentity } from './lib/urlParams';
+import { getCleanIdentity, sanitizeWindowUrl } from './lib/urlParams';
+
+/* ───── URL-bar sanitization ───────────────────────────────────────
+   Rewrites window.location to strip "_____" runs glued to URL
+   params BEFORE anything else reads from window.location. Critical
+   for third-party embeds like HubSpot's meetings widget, which
+   pre-fills its form from the parent page's URL params rather than
+   from the iframe src we control. Without this, a value like
+   "Passion_____" stays in the URL bar and HubSpot reads the dirty
+   version even though our data-src is clean.
+──────────────────────────────────────────────────────────────────── */
+sanitizeWindowUrl();
 
 /* ───── Global PostHog identification from URL params ─────────────
    Runs on every page load. If the URL carries identity from any of

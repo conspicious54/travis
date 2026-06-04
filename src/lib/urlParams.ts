@@ -29,8 +29,37 @@ const KNOWN_PLACEHOLDERS = new Set([
 const BOUNDARY_PLACEHOLDER = /^[_\-*~.]{3,}|[_\-*~.]{3,}$/g;
 
 /** Strips placeholder runs glued to the start or end of a value. */
-function stripBoundaryPlaceholders(value: string): string {
+export function stripBoundaryPlaceholders(value: string): string {
   return value.replace(BOUNDARY_PLACEHOLDER, '').trim();
+}
+
+/** Rewrites window.location to strip "_____" glue from every URL
+    param, then uses history.replaceState so the browser's URL bar
+    actually shows the clean values. Critical for third-party widgets
+    (HubSpot meetings embed, etc.) that pre-fill from the parent
+    page's URL rather than from the iframe's data-src. Called once at
+    app boot in main.tsx; running it again is a safe no-op when
+    everything is already clean. */
+export function sanitizeWindowUrl(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const url = new URL(window.location.href);
+    let changed = false;
+    const cleaned = new URLSearchParams();
+    for (const [key, value] of url.searchParams.entries()) {
+      const stripped = stripBoundaryPlaceholders(value);
+      if (stripped !== value) changed = true;
+      if (stripped) cleaned.set(key, stripped);
+    }
+    if (changed) {
+      const newSearch = cleaned.toString();
+      const newUrl = url.pathname + (newSearch ? '?' + newSearch : '') + url.hash;
+      window.history.replaceState({}, '', newUrl);
+    }
+    return changed;
+  } catch {
+    return false;
+  }
 }
 
 /** Returns true if the value looks like an unsubstituted merge-tag
