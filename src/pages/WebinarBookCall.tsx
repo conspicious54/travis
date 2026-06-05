@@ -119,7 +119,7 @@ export function WebinarBookCall() {
 
       let preview = '';
       try {
-        preview = typeof event.data === 'string' ? event.data.slice(0, 200) : JSON.stringify(event.data).slice(0, 200);
+        preview = typeof event.data === 'string' ? event.data.slice(0, 800) : JSON.stringify(event.data).slice(0, 800);
       } catch { /* no-op */ }
       trackEvent('oncehub_postmessage_received', {
         booking_type: 'webinar_setter',

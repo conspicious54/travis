@@ -142,7 +142,7 @@ export function WebinarBook() {
       // if a new event shape ever shows up.
       let preview = '';
       try {
-        preview = typeof event.data === 'string' ? event.data.slice(0, 200) : JSON.stringify(event.data).slice(0, 200);
+        preview = typeof event.data === 'string' ? event.data.slice(0, 800) : JSON.stringify(event.data).slice(0, 800);
       } catch { /* no-op */ }
       trackEvent('oncehub_postmessage_received', {
         booking_type: 'webinar_closer',
@@ -217,30 +217,56 @@ export function WebinarBook() {
         }
         return typeof cur === 'string' && cur.trim() ? cur.trim() : '';
       };
+      // Field names from actual OnceHub booking.scheduled payload:
+      //   starting_time, ending_time, subject, host, customer_*, ...
+      // NOT start_time / end_time / etc.
       const meetingStart =
-        pickStr('start_time', 'startTime', 'start', 'scheduled_at', 'scheduledAt') ||
-        pickNested(['booking', 'start_time']) ||
-        pickNested(['event', 'start_time']);
+        pickStr('starting_time', 'start_time', 'startTime', 'start', 'scheduled_at', 'scheduledAt') ||
+        pickNested(['booking', 'starting_time']) ||
+        pickNested(['event', 'starting_time']);
       const meetingEnd =
-        pickStr('end_time', 'endTime', 'end') ||
-        pickNested(['booking', 'end_time']) ||
-        pickNested(['event', 'end_time']);
+        pickStr('ending_time', 'end_time', 'endTime', 'end') ||
+        pickNested(['booking', 'ending_time']) ||
+        pickNested(['event', 'ending_time']);
       const meetingTitle =
         pickStr('subject', 'title', 'name', 'event_name') ||
         pickNested(['booking', 'subject']);
+      // OnceHub host is typically a USR-XXX id; we also try host_name
+      // and nested name in case a more human form is included.
       const ownerName =
         pickStr('host_name', 'owner_name', 'organizer_name', 'organizer') ||
         pickNested(['host', 'name']) ||
         pickNested(['owner', 'name']);
       const joinUrl =
-        pickStr('join_url', 'joinUrl', 'meeting_url', 'video_url', 'conference_url') ||
-        pickNested(['conference', 'join_url']);
+        pickStr('join_url', 'joinUrl', 'meeting_url', 'video_url', 'conference_url', 'location') ||
+        pickNested(['conference', 'join_url']) ||
+        pickNested(['conference_details', 'join_url']);
+
+      // OnceHub also includes customer info in the payload. Use it as a
+      // fallback when URL/localStorage didn't carry identity.
+      const payloadEmail = pickStr('customer_email', 'attendee_email', 'guest_email') || pickNested(['customer', 'email']);
+      const payloadFirst = pickStr('customer_first_name', 'attendee_first_name') || pickNested(['customer', 'first_name']);
+      const payloadLast  = pickStr('customer_last_name', 'attendee_last_name')   || pickNested(['customer', 'last_name']);
+      const payloadName  = pickStr('customer_name', 'attendee_name')              || pickNested(['customer', 'name']);
+      const payloadPhone = pickStr('customer_phone', 'attendee_phone', 'phone')   || pickNested(['customer', 'phone']);
+
+      // Prefer OnceHub-payload identity when present, fall back to
+      // URL / localStorage. Same for the split-name handling.
+      const finalEmail = bookingEmail || payloadEmail;
+      let finalFirst = firstname || payloadFirst;
+      let finalLast  = lastname  || payloadLast;
+      if (!finalFirst && payloadName) {
+        const parts = payloadName.split(/\s+/).filter(Boolean);
+        finalFirst = parts[0] || '';
+        if (!finalLast && parts.length > 1) finalLast = parts.slice(1).join(' ');
+      }
+      const finalPhone = bookingPhone || payloadPhone;
 
       const redirectParams = new URLSearchParams();
-      if (bookingEmail) redirectParams.set('email',     bookingEmail);
-      if (firstname)    redirectParams.set('firstname', firstname);
-      if (lastname)     redirectParams.set('lastname',  lastname);
-      if (bookingPhone) redirectParams.set('phone',     bookingPhone);
+      if (finalEmail)   redirectParams.set('email',     finalEmail);
+      if (finalFirst)   redirectParams.set('firstname', finalFirst);
+      if (finalLast)    redirectParams.set('lastname',  finalLast);
+      if (finalPhone)   redirectParams.set('phone',     finalPhone);
       if (meetingStart) redirectParams.set('start',     meetingStart);
       if (meetingEnd)   redirectParams.set('end',       meetingEnd);
       if (meetingTitle) redirectParams.set('title',     meetingTitle);
