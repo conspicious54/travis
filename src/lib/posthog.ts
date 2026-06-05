@@ -122,11 +122,13 @@ export function trackEvent(event: string, properties?: Record<string, any>) {
 
 /* ───── pre-built events for our funnel ───────────────────────────── */
 
-export function trackBookingPageViewed(type: 'closer' | 'setter') {
+export type BookingType = 'closer' | 'setter' | 'webinar_closer' | 'webinar_setter';
+
+export function trackBookingPageViewed(type: BookingType) {
   trackEvent('booking_page_viewed', { booking_type: type });
 }
 
-export function trackBookingCompleted(type: 'closer' | 'setter', payload?: Record<string, any>) {
+export function trackBookingCompleted(type: BookingType, payload?: Record<string, any>) {
   trackEvent('booking_completed', { booking_type: type, ...payload });
 }
 

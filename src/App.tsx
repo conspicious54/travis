@@ -14,6 +14,8 @@ import { VA } from './pages/VA';
 import { PPC } from './pages/PPC';
 import { Router } from './pages/Router';
 import { Book } from './pages/Book';
+import { WebinarBook } from './pages/WebinarBook';
+import { WebinarBookCall } from './pages/WebinarBookCall';
 import { RealCost } from './pages/RealCost';
 import { Method } from './pages/Method';
 import { Questions } from './pages/Questions';
@@ -61,6 +63,8 @@ function AppWrapper() {
                 <Route path="/ppc" element={<PPC />} />
                 <Route path="/router" element={<Router />} />
                 <Route path="/book" element={<Book />} />
+                <Route path="/webinar/book" element={<WebinarBook />} />
+                <Route path="/webinar/bookacall" element={<WebinarBookCall />} />
                 <Route path="/realcost" element={<RealCost />} />
                 <Route path="/method" element={<Method />} />
                 <Route path="/questions" element={<Questions />} />
