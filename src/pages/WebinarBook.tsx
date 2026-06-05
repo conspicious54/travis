@@ -113,7 +113,7 @@ function getOncehubPrefill(): { name?: string; email?: string; phone?: string } 
 }
 
 function buildOncehubIframeUrl(): string {
-  const base = `https://meetings.oncehub.com/${ONCEHUB_CALENDAR_ID}?widget=true`;
+  const base = `https://go.oncehub.com/${ONCEHUB_CALENDAR_ID}`;
   if (typeof window === 'undefined') return base;
   const prefill = getOncehubPrefill();
   const params = new URLSearchParams();
@@ -121,7 +121,7 @@ function buildOncehubIframeUrl(): string {
   if (prefill.email) params.set('email', prefill.email);
   if (prefill.phone) params.set('phone', prefill.phone);
   const qs = params.toString();
-  return qs ? `${base}&${qs}` : base;
+  return qs ? `${base}?${qs}` : base;
 }
 
 export function WebinarBook() {
