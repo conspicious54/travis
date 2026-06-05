@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
 import { identifyUser, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
-import { getCleanIdentity } from '../lib/urlParams';
+import { getCleanIdentity, getCleanParam } from '../lib/urlParams';
 
 /* ───── /webinar/book - embedded OnceHub closer scheduler ─────────
    Webinar funnel equivalent of /book. Mirrors all the same identity,
@@ -59,33 +59,72 @@ function persistTypeformAnswers() {
   }
 }
 
-/* OnceHub booking-confirmed detection. Their postMessage shape isn't
-   strictly documented and has shifted across embed versions, so match
-   defensively on the patterns we've seen: explicit type strings, an
-   eventType field, or a stringified payload containing a known marker. */
+/* OnceHub fires events as type: "oncehub.booking_calendar.<action>",
+   confirmed from diagnostic events. We've observed `loaded` and
+   `time_slot_selected` so far. Booking confirmation will be a similar
+   pattern. Match broadly on any booking-related success terminology. */
 function isOncehubBookingConfirmed(data: unknown): boolean {
   if (!data) return false;
+  let typeStr = '';
   if (typeof data === 'string') {
-    const s = data.toLowerCase();
-    return s.includes('booking-confirmed') || s.includes('booking_confirmed') || s.includes('bookingsucceeded');
-  }
-  if (typeof data === 'object') {
+    typeStr = data.toLowerCase();
+  } else if (typeof data === 'object') {
     const d = data as Record<string, unknown>;
-    const t = typeof d.type === 'string' ? d.type.toLowerCase() : '';
-    const e = typeof d.eventType === 'string' ? d.eventType.toLowerCase() : '';
-    const en = typeof d.eventName === 'string' ? d.eventName.toLowerCase() : '';
-    return (
-      t.includes('booking-confirmed') || t.includes('booking_confirmed') || t.includes('bookingsucceeded') ||
-      e.includes('booking-confirmed') || e.includes('booking_confirmed') || e.includes('bookingsucceeded') ||
-      en.includes('booking-confirmed') || en.includes('booking_confirmed') || en.includes('bookingsucceeded')
-    );
+    typeStr = [
+      typeof d.type === 'string' ? d.type : '',
+      typeof d.eventType === 'string' ? d.eventType : '',
+      typeof d.eventName === 'string' ? d.eventName : '',
+    ].join(' ').toLowerCase();
   }
-  return false;
+  if (!typeStr.includes('booking')) return false;
+  return (
+    typeStr.includes('confirmed') ||
+    typeStr.includes('succeeded') ||
+    typeStr.includes('success') ||
+    typeStr.includes('complete') ||
+    typeStr.includes('scheduled')
+  );
+}
+
+/* OnceHub URL prefill - the iframe URL accepts ?name=&email=&phone=
+   query params. Build the prefill value set from getCleanIdentity
+   (which handles all the URL-alias slots) PLUS a `name` alias since
+   some upstream tools send a single full-name field. */
+function getOncehubPrefill(): { name?: string; email?: string; phone?: string } {
+  if (typeof window === 'undefined') return {};
+  const params = new URLSearchParams(window.location.search);
+  // getCleanIdentity covers email / firstname / lastname / phone across
+  // all the alias slots and strips "_____" placeholders. Some upstream
+  // tools (and the user's test URL) send a single full-name field via
+  // `name`/`fullname`, so handle that explicitly as a fallback to
+  // assembling firstname + lastname.
+  const id = getCleanIdentity(params);
+  const rawName = getCleanParam(params, 'name') || getCleanParam(params, 'fullname') || getCleanParam(params, 'full_name');
+  const name =
+    rawName ||
+    [id.firstname, id.lastname].filter(Boolean).join(' ').trim() ||
+    id.firstname ||
+    undefined;
+  return {
+    name: name || undefined,
+    email: id.email || undefined,
+    phone: id.phone || undefined,
+  };
+}
+
+function buildOncehubIframeUrl(): string {
+  const base = `https://meetings.oncehub.com/${ONCEHUB_CALENDAR_ID}?widget=true`;
+  if (typeof window === 'undefined') return base;
+  const prefill = getOncehubPrefill();
+  const params = new URLSearchParams();
+  if (prefill.name)  params.set('name', prefill.name);
+  if (prefill.email) params.set('email', prefill.email);
+  if (prefill.phone) params.set('phone', prefill.phone);
+  const qs = params.toString();
+  return qs ? `${base}&${qs}` : base;
 }
 
 export function WebinarBook() {
-  const containerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     persistTypeformAnswers();
     persistUtmsFromUrl();
@@ -166,16 +205,6 @@ export function WebinarBook() {
 
     window.addEventListener('message', handleMessage);
 
-    // Inject OnceHub embed loader script (idempotent)
-    const existing = document.querySelector('script[src*="cdn.oncehub.com/cal/embed.js"]');
-    if (!existing) {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.oncehub.com/cal/embed.js';
-      script.async = true;
-      script.type = 'text/javascript';
-      document.body.appendChild(script);
-    }
-
     return () => {
       window.removeEventListener('message', handleMessage);
     };
@@ -230,10 +259,17 @@ export function WebinarBook() {
               <Sparkles className="w-4 h-4 text-orange-600" />
               <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below - spots fill up fast</p>
             </div>
-            <div
-              ref={containerRef}
-              data-oh-booking-calendar-id={ONCEHUB_CALENDAR_ID}
-              style={{ minWidth: 320, height: 700 }}
+            <iframe
+              src={buildOncehubIframeUrl()}
+              title="Book your call"
+              style={{
+                minWidth: 320,
+                width: '100%',
+                height: 700,
+                border: 0,
+                display: 'block',
+              }}
+              allow="camera; microphone; autoplay; encrypted-media; fullscreen"
             />
           </div>
         </div>
