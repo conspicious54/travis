@@ -157,36 +157,98 @@ export function WebinarBook() {
 
       trackBookingCompleted('webinar_closer');
 
-      // OnceHub postMessage payloads don't reliably carry the booker's
-      // email back to the parent window, so fall back to whatever we
-      // captured at page load via getCleanIdentity (URL params / Garlic
-      // from a prior CF page).
-      const bookingEmail =
-        getCleanIdentity(new URLSearchParams(window.location.search)).email ||
-        (() => {
-          try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-              const parsed = JSON.parse(stored);
-              return parsed?.email || '';
-            }
-          } catch { /* no-op */ }
-          return '';
-        })() ||
-        '';
+      // Recover identity from URL (which the user just came in with)
+      // or localStorage (set by persistTypeformAnswers on mount).
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = getCleanIdentity(urlParams);
+      const rawName = getCleanParam(urlParams, 'name') || getCleanParam(urlParams, 'fullname') || '';
+
+      // Best-effort fall-back to localStorage if URL doesn't carry it
+      let storedFirst = '';
+      let storedLast  = '';
+      let storedPhone = '';
+      let storedEmail = '';
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          storedFirst = parsed?.firstname || '';
+          storedLast  = parsed?.lastname  || '';
+          storedPhone = parsed?.phone     || '';
+          storedEmail = parsed?.email     || '';
+        }
+      } catch { /* no-op */ }
+
+      // Split "name" into firstname/lastname when only the single field
+      // was provided (the user's test URL came in as ?name=Connor+Byers).
+      let firstname = id.firstname || storedFirst || '';
+      let lastname  = id.lastname  || storedLast  || '';
+      if (!firstname && rawName) {
+        const parts = rawName.split(/\s+/).filter(Boolean);
+        firstname = parts[0] || '';
+        if (!lastname && parts.length > 1) lastname = parts.slice(1).join(' ');
+      }
+      const bookingEmail = id.email || storedEmail || '';
+      const bookingPhone = id.phone || storedPhone || '';
 
       syncContactTimezone(bookingEmail, 'webinar_book_redirect');
       syncContactUtms(bookingEmail, 'webinar_book_redirect');
 
+      // Pull whatever meeting details OnceHub's postMessage carries -
+      // start/end times, title, host name, join URL. The shape isn't
+      // strictly documented so check several common keys defensively.
+      const payload: Record<string, unknown> =
+        (typeof event.data === 'object' && event.data !== null
+          ? ((event.data as Record<string, unknown>).payload as Record<string, unknown> | undefined) || (event.data as Record<string, unknown>)
+          : {}) || {};
+      const pickStr = (...keys: string[]): string => {
+        for (const k of keys) {
+          const v = payload[k];
+          if (typeof v === 'string' && v.trim()) return v.trim();
+          if (typeof v === 'number') return String(v);
+        }
+        return '';
+      };
+      const pickNested = (path: string[]): string => {
+        let cur: unknown = payload;
+        for (const seg of path) {
+          if (!cur || typeof cur !== 'object') return '';
+          cur = (cur as Record<string, unknown>)[seg];
+        }
+        return typeof cur === 'string' && cur.trim() ? cur.trim() : '';
+      };
+      const meetingStart =
+        pickStr('start_time', 'startTime', 'start', 'scheduled_at', 'scheduledAt') ||
+        pickNested(['booking', 'start_time']) ||
+        pickNested(['event', 'start_time']);
+      const meetingEnd =
+        pickStr('end_time', 'endTime', 'end') ||
+        pickNested(['booking', 'end_time']) ||
+        pickNested(['event', 'end_time']);
+      const meetingTitle =
+        pickStr('subject', 'title', 'name', 'event_name') ||
+        pickNested(['booking', 'subject']);
+      const ownerName =
+        pickStr('host_name', 'owner_name', 'organizer_name', 'organizer') ||
+        pickNested(['host', 'name']) ||
+        pickNested(['owner', 'name']);
+      const joinUrl =
+        pickStr('join_url', 'joinUrl', 'meeting_url', 'video_url', 'conference_url') ||
+        pickNested(['conference', 'join_url']);
+
       const redirectParams = new URLSearchParams();
-      if (bookingEmail) redirectParams.set('email', bookingEmail);
-      // Tag the destination so the confirmation page knows this was a
-      // webinar booking, in case it ever needs different copy/tracking.
+      if (bookingEmail) redirectParams.set('email',     bookingEmail);
+      if (firstname)    redirectParams.set('firstname', firstname);
+      if (lastname)     redirectParams.set('lastname',  lastname);
+      if (bookingPhone) redirectParams.set('phone',     bookingPhone);
+      if (meetingStart) redirectParams.set('start',     meetingStart);
+      if (meetingEnd)   redirectParams.set('end',       meetingEnd);
+      if (meetingTitle) redirectParams.set('title',     meetingTitle);
+      if (ownerName)    redirectParams.set('owner',     ownerName);
+      if (joinUrl)      redirectParams.set('join',      joinUrl);
       redirectParams.set('source', 'webinar');
 
-      const target = redirectParams.toString()
-        ? `${REDIRECT_TO}?${redirectParams.toString()}`
-        : REDIRECT_TO;
+      const target = `${REDIRECT_TO}?${redirectParams.toString()}`;
 
       setTimeout(() => {
         window.location.href = target;

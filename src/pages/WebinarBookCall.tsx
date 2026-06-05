@@ -134,30 +134,46 @@ export function WebinarBookCall() {
 
       trackBookingCompleted('webinar_setter');
 
-      const bookingEmail =
-        getCleanIdentity(new URLSearchParams(window.location.search)).email ||
-        (() => {
-          try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-              const parsed = JSON.parse(stored);
-              return parsed?.email || '';
-            }
-          } catch { /* no-op */ }
-          return '';
-        })() ||
-        '';
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = getCleanIdentity(urlParams);
+      const rawName = getCleanParam(urlParams, 'name') || getCleanParam(urlParams, 'fullname') || '';
+
+      let storedFirst = '';
+      let storedLast  = '';
+      let storedPhone = '';
+      let storedEmail = '';
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          storedFirst = parsed?.firstname || '';
+          storedLast  = parsed?.lastname  || '';
+          storedPhone = parsed?.phone     || '';
+          storedEmail = parsed?.email     || '';
+        }
+      } catch { /* no-op */ }
+
+      let firstname = id.firstname || storedFirst || '';
+      let lastname  = id.lastname  || storedLast  || '';
+      if (!firstname && rawName) {
+        const parts = rawName.split(/\s+/).filter(Boolean);
+        firstname = parts[0] || '';
+        if (!lastname && parts.length > 1) lastname = parts.slice(1).join(' ');
+      }
+      const bookingEmail = id.email || storedEmail || '';
+      const bookingPhone = id.phone || storedPhone || '';
 
       syncContactTimezone(bookingEmail, 'webinar_bookacall_redirect');
       syncContactUtms(bookingEmail, 'webinar_bookacall_redirect');
 
       const redirectParams = new URLSearchParams();
-      if (bookingEmail) redirectParams.set('email', bookingEmail);
+      if (bookingEmail) redirectParams.set('email',     bookingEmail);
+      if (firstname)    redirectParams.set('firstname', firstname);
+      if (lastname)     redirectParams.set('lastname',  lastname);
+      if (bookingPhone) redirectParams.set('phone',     bookingPhone);
       redirectParams.set('source', 'webinar');
 
-      const target = redirectParams.toString()
-        ? `${REDIRECT_TO}?${redirectParams.toString()}`
-        : REDIRECT_TO;
+      const target = `${REDIRECT_TO}?${redirectParams.toString()}`;
 
       setTimeout(() => {
         window.location.href = target;
