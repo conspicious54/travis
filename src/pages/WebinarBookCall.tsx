@@ -191,9 +191,35 @@ export function WebinarBookCall() {
         try {
           const url = new URL(iframe.src);
           let changed = false;
-          if (prefill.name  && !url.searchParams.has('name'))  { url.searchParams.set('name',  prefill.name);  changed = true; }
-          if (prefill.email && !url.searchParams.has('email')) { url.searchParams.set('email', prefill.email); changed = true; }
-          if (prefill.phone && !url.searchParams.has('phone')) { url.searchParams.set('phone', prefill.phone); changed = true; }
+          const setIfAbsent = (key: string, value: string) => {
+            if (!url.searchParams.has(key)) {
+              url.searchParams.set(key, value);
+              changed = true;
+            }
+          };
+          if (prefill.name) {
+            setIfAbsent('name', prefill.name);
+            const parts = prefill.name.split(/\s+/).filter(Boolean);
+            if (parts[0]) setIfAbsent('first_name', parts[0]);
+            if (parts.length > 1) setIfAbsent('last_name', parts.slice(1).join(' '));
+          }
+          if (prefill.email) {
+            setIfAbsent('email', prefill.email);
+          }
+          if (prefill.phone) {
+            setIfAbsent('phone', prefill.phone);
+            setIfAbsent('mobile', prefill.phone);
+            setIfAbsent('mobile_phone', prefill.phone);
+            setIfAbsent('phone_number', prefill.phone);
+            setIfAbsent('cellphone', prefill.phone);
+            const e164 = prefill.phone.replace(/[\s()-]/g, '');
+            if (e164 !== prefill.phone) {
+              url.searchParams.set('phone', e164);
+              url.searchParams.set('mobile', e164);
+              url.searchParams.set('mobile_phone', e164);
+              changed = true;
+            }
+          }
           if (changed) iframe.src = url.toString();
         } catch { /* no-op */ }
         return true;
