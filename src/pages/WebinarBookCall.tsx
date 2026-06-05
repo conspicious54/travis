@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
 import { identifyUser, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
 import { syncContactTimezone } from '../lib/syncTimezone';
@@ -93,19 +93,9 @@ function getOncehubPrefill(): { name?: string; email?: string; phone?: string } 
   };
 }
 
-function buildOncehubIframeUrl(): string {
-  const base = `https://go.oncehub.com/${ONCEHUB_CALENDAR_ID}`;
-  if (typeof window === 'undefined') return base;
-  const prefill = getOncehubPrefill();
-  const params = new URLSearchParams();
-  if (prefill.name)  params.set('name', prefill.name);
-  if (prefill.email) params.set('email', prefill.email);
-  if (prefill.phone) params.set('phone', prefill.phone);
-  const qs = params.toString();
-  return qs ? `${base}?${qs}` : base;
-}
-
 export function WebinarBookCall() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     persistTypeformAnswers();
     persistUtmsFromUrl();
@@ -176,8 +166,49 @@ export function WebinarBookCall() {
 
     window.addEventListener('message', handleMessage);
 
+    // Restore the ORIGINAL embed script - cdn.oncehub.com creates the
+    // working iframe. Don't touch it.
+    const existing = document.querySelector('script[src*="cdn.oncehub.com/cal/embed.js"]');
+    if (!existing) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.oncehub.com/cal/embed.js';
+      script.async = true;
+      script.type = 'text/javascript';
+      document.body.appendChild(script);
+    }
+
+    // After embed.js creates the iframe inside our container, append
+    // OnceHub's name/email/phone prefill query params to the iframe's
+    // own src.
+    const prefill = getOncehubPrefill();
+    const hasPrefill = !!(prefill.name || prefill.email || prefill.phone);
+    let pollHandle: ReturnType<typeof setInterval> | null = null;
+    if (hasPrefill) {
+      let attempts = 0;
+      const tryAddPrefill = (): boolean => {
+        const iframe = containerRef.current?.querySelector('iframe') as HTMLIFrameElement | null;
+        if (!iframe || !iframe.src) return false;
+        try {
+          const url = new URL(iframe.src);
+          let changed = false;
+          if (prefill.name  && !url.searchParams.has('name'))  { url.searchParams.set('name',  prefill.name);  changed = true; }
+          if (prefill.email && !url.searchParams.has('email')) { url.searchParams.set('email', prefill.email); changed = true; }
+          if (prefill.phone && !url.searchParams.has('phone')) { url.searchParams.set('phone', prefill.phone); changed = true; }
+          if (changed) iframe.src = url.toString();
+        } catch { /* no-op */ }
+        return true;
+      };
+      pollHandle = setInterval(() => {
+        attempts++;
+        if (tryAddPrefill() || attempts > 60) {
+          if (pollHandle) clearInterval(pollHandle);
+        }
+      }, 100);
+    }
+
     return () => {
       window.removeEventListener('message', handleMessage);
+      if (pollHandle) clearInterval(pollHandle);
     };
   }, []);
 
@@ -230,17 +261,10 @@ export function WebinarBookCall() {
               <Sparkles className="w-4 h-4 text-orange-600" />
               <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below - spots fill up fast</p>
             </div>
-            <iframe
-              src={buildOncehubIframeUrl()}
-              title="Book your call"
-              style={{
-                minWidth: 320,
-                width: '100%',
-                height: 700,
-                border: 0,
-                display: 'block',
-              }}
-              allow="camera; microphone; autoplay; encrypted-media; fullscreen"
+            <div
+              ref={containerRef}
+              data-oh-booking-calendar-id={ONCEHUB_CALENDAR_ID}
+              style={{ minWidth: 320, height: 700 }}
             />
           </div>
         </div>
