@@ -137,13 +137,19 @@ function parseMeetingInfo(): MeetingInfo | null {
   // Identity fields use the canonical/clean lookup so any "_____Team"
   // glue from a Typeform-style concatenated merge tag gets stripped
   // before display on the confirmation page.
+  //
+  // Note: title / organizer return EMPTY STRINGS when not in the URL
+  // (rather than the human defaults). The defaults only kick in at
+  // the END of the merge chain in hydrateFromHubSpot, so HubSpot data
+  // wins over the URL when the URL only had defaults. Otherwise the
+  // truthy default string would beat data.ownerName in the merge.
   const id = getCleanIdentity(p);
   return {
     start,
     end,
-    title: getCleanParam(p, 'title') || 'Amazon Strategy Call with Passion Product',
+    title: getCleanParam(p, 'title') || '',
     joinUrl: p.get('join') || '',
-    organizer: getCleanParam(p, 'owner') || getCleanParam(p, 'organizer') || 'Passion Product Team',
+    organizer: getCleanParam(p, 'owner') || getCleanParam(p, 'organizer') || '',
     firstName: id.firstname || '',
     lastName: id.lastname || '',
     email: id.email || '',
