@@ -56,32 +56,81 @@ export const handler: Handler = async (event: HandlerEvent) => {
     // 2. Find the most recent appointment/meeting for that contact
     const found = await findLatestAppointmentForContact(contactId, token, trace);
 
-    // 2b. OnceHub fallback: if no meeting/appointment record exists,
-    // OnceHub's integration may have written the booking as a DEAL
-    // instead. Pull the most recent deal in the scheduling pipeline
-    // and use its owner as the meeting organizer. The OnceHub
-    // postMessage gives us the actual meeting time via URL params.
+    // 2b. OnceHub path: it associates the meeting with the DEAL (not
+    // the contact directly). When OnceHub's integration writes a deal,
+    // the deal's hs_next_meeting_id points at the actual meeting
+    // record - we can fetch THAT to get the Zoom URL, end time, etc.
+    // The deal itself carries hs_next_meeting_start_time + name as a
+    // fast path that avoids needing the meeting fetch for basic info.
     if (!found) {
       const deal = await findRecentSchedulingDealForContact(contactId, token, trace);
       if (deal) {
-        const dealOwnerId = deal.properties?.hubspot_owner_id as string | undefined;
-        const dealOwnerName = dealOwnerId
-          ? await getOwnerName(dealOwnerId, token, trace).catch(() => undefined)
+        const dp = deal.properties || {};
+        const nextMeetingId = String(dp.hs_next_meeting_id || '').trim();
+        const dealOwnerId = (dp.hubspot_owner_id as string | undefined) || undefined;
+
+        // Fetch the linked meeting record (has the Zoom URL etc.)
+        let meetingProps: Record<string, unknown> = {};
+        if (nextMeetingId) {
+          meetingProps = await fetchMeetingById(nextMeetingId, token, trace);
+        }
+
+        const ownerId = (dealOwnerId ||
+          (meetingProps.hubspot_owner_id as string | undefined) ||
+          undefined) as string | undefined;
+        const ownerName = ownerId
+          ? await getOwnerName(ownerId, token, trace).catch(() => undefined)
           : undefined;
-        return json(200, {
-          found: true,
-          source: 'deals',
-          appointmentId: deal.id,
-          contactId,
-          firstName: contact.firstName,
-          lastName: contact.lastName,
-          // Meeting time / title / join URL all come from the OnceHub
-          // postMessage payload on the client side. We only contribute
-          // the owner from the deal.
-          ownerId: dealOwnerId,
-          ownerName: dealOwnerName,
-          ...(debug ? { rawProperties: deal.properties, trace } : {}),
-        });
+
+        const dPick = (...keys: string[]): string | undefined => {
+          for (const k of keys) {
+            const v = dp[k];
+            if (v !== undefined && v !== null && v !== '') return String(v);
+          }
+          return undefined;
+        };
+        const mPick = (...keys: string[]): string | undefined => {
+          for (const k of keys) {
+            const v = meetingProps[k];
+            if (v !== undefined && v !== null && v !== '') return String(v);
+          }
+          return undefined;
+        };
+
+        const startIso = toIso(
+          dPick('hs_next_meeting_start_time') ||
+            mPick('hs_meeting_start_time', 'hs_appointment_start')
+        );
+        const endIso = toIso(mPick('hs_meeting_end_time', 'hs_appointment_end'));
+        const title =
+          mPick('hs_meeting_title', 'hs_appointment_name') ||
+          dPick('hs_next_meeting_name');
+        const joinUrl = mPick(
+          'hs_meeting_location',
+          'hs_meeting_external_url',
+          'hs_videoconference_link',
+          'hs_appointment_location'
+        );
+
+        if (startIso || joinUrl || ownerName || nextMeetingId) {
+          return json(200, {
+            found: true,
+            source: 'oncehub_deal',
+            dealId: deal.id,
+            appointmentId: nextMeetingId || undefined,
+            contactId,
+            firstName: contact.firstName,
+            lastName: contact.lastName,
+            startIso,
+            endIso,
+            title,
+            joinUrl,
+            ownerId,
+            ownerName,
+            leadSource: dPick('lead_source'),
+            ...(debug ? { rawDealProperties: dp, rawMeetingProperties: meetingProps, trace } : {}),
+          });
+        }
       }
       return json(200, {
         found: false,
@@ -349,7 +398,22 @@ async function findRecentSchedulingDealForContact(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        properties: ['dealname', 'dealstage', 'pipeline', 'hubspot_owner_id', 'createdate', 'hs_createdate'],
+        properties: [
+          'dealname',
+          'dealstage',
+          'pipeline',
+          'hubspot_owner_id',
+          'createdate',
+          'hs_createdate',
+          // OnceHub-populated next-meeting pointers (the deal's
+          // "scheduled meeting" rollup fields). hs_next_meeting_id
+          // is the actual meeting record we need to fetch for the
+          // Zoom URL.
+          'hs_next_meeting_id',
+          'hs_next_meeting_name',
+          'hs_next_meeting_start_time',
+          'lead_source',
+        ],
         inputs: ids.map((id) => ({ id })),
       }),
     },
@@ -380,6 +444,42 @@ async function findRecentSchedulingDealForContact(
   };
   inPipeline.sort((a, b) => getCreatedMs(b) - getCreatedMs(a));
   return inPipeline[0];
+}
+
+/** Fetch a single meeting record by ID. Used by the OnceHub-deal path
+    to resolve the meeting that the deal's hs_next_meeting_id points
+    at - the meeting itself has the Zoom URL and end time. Returns
+    properties object (possibly empty on failure - caller falls back). */
+async function fetchMeetingById(
+  meetingId: string,
+  token: string,
+  trace: DebugEntry[]
+): Promise<Record<string, unknown>> {
+  const properties = [
+    'hs_meeting_title',
+    'hs_meeting_start_time',
+    'hs_meeting_end_time',
+    'hs_meeting_location',
+    'hs_meeting_external_url',
+    'hs_videoconference_link',
+    'hs_meeting_body',
+    'hs_meeting_outcome',
+    'hubspot_owner_id',
+  ].join(',');
+  const url = `https://api.hubapi.com/crm/v3/objects/meetings/${encodeURIComponent(meetingId)}?properties=${properties}`;
+  const res = await hubspotFetch(
+    url,
+    { headers: { Authorization: `Bearer ${token}` } },
+    trace,
+    'fetch_meeting_by_id'
+  );
+  if (!res.ok) return {};
+  try {
+    const data = await res.json();
+    return (data?.properties as Record<string, unknown>) || {};
+  } catch {
+    return {};
+  }
 }
 
 async function getOwnerName(
