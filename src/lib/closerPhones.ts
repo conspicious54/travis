@@ -47,6 +47,12 @@ const CLOSER_PHONES: Record<string, CloserPhoneMap> = {
     eu:   { display: '+44 7782 229912',  raw: '+447782229912', label: 'Zac - UK' },
     aunz: { display: '+61 468 082 890',  raw: '+61468082890',  label: 'Zac - AU' },
   },
+  "benjamin o'reilly": {
+    us:   { display: '(272) 359-9857',   raw: '+12723599857',  label: 'Benjamin - US' },
+    // Benjamin has no UK or AU line yet - fall back to Jesse for those regions
+    eu:   { display: '+44 7463 587844',  raw: '+447463587844', label: 'Jesse - UK' },
+    aunz: { display: '+61 468 080 264',  raw: '+61468080264',  label: 'Jesse - AU' },
+  },
 };
 
 /**
