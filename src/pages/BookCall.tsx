@@ -101,8 +101,6 @@ export function BookCall() {
         // eslint-disable-next-line no-console
         console.log('[HubSpot meetingBookSucceeded payload - setter]', payload);
 
-        trackBookingCompleted('setter');
-
         // Setter is a PHONE CALL, not a video meeting. Only carry the
         // contact info forward. No start time, no join URL, no calendar
         // event. The setter page relies on phone-number contact saving,
@@ -113,13 +111,29 @@ export function BookCall() {
           payload?.contact ||
           {};
 
+        // Identify FIRST with the HubSpot-confirmed email so subsequent
+        // events on this page are attributed correctly. Visitors who
+        // arrived without an email in the URL (more common on /bookacall
+        // than /book - more direct/YouTube traffic) stay anonymous up
+        // to this point; identifying here means trackBookingCompleted
+        // and all later events get the right Person attribution.
         const bookingEmail =
           (contact.email as string | undefined) ||
           getCleanIdentity(new URLSearchParams(window.location.search)).email ||
           '';
+        if (bookingEmail) {
+          identifyUser(bookingEmail, {
+            first_name: contact.firstName || undefined,
+            last_name:  contact.lastName  || undefined,
+            phone:      contact.phone     || undefined,
+          });
+        }
+
+        trackBookingCompleted('setter');
+
         // Push timezone + UTMs to HubSpot. UTM sync respects existing
         // values so first-touch attribution is preserved.
-        syncContactTimezone(bookingEmail, 'book_redirect');
+        syncContactTimezone(bookingEmail, 'bookacall_redirect');
         syncContactUtms(bookingEmail, 'bookacall_redirect');
 
         const redirectParams = new URLSearchParams();

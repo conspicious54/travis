@@ -122,8 +122,6 @@ export function Book() {
         // eslint-disable-next-line no-console
         console.log('[HubSpot payload JSON]', JSON.stringify(payload, null, 2));
 
-        trackBookingCompleted('closer');
-
         /* ───── Documented HubSpot meetingsPayload shape ─────────────
          *   meetingsPayload.bookingResponse.event.dateString    (meeting start, ISO w/ time)
          *   meetingsPayload.bookingResponse.event.duration      (ms)
@@ -143,14 +141,30 @@ export function Book() {
         const organizer = postResponse.organizer || bookingResponse.organizer || {};
         const contact = postResponse.contact || bookingResponse.contact || {};
 
-        // Push the visitor's IANA timezone (e.g. "America/New_York")
-        // onto their HubSpot contact so SMS/email automations can
-        // render meeting times in the recipient's local zone. Fire-
-        // and-forget; sendBeacon survives the redirect below.
+        // Identify FIRST with the email HubSpot just confirmed. Visitors
+        // who arrived without an email in the URL stayed anonymous on
+        // /book up to this point - calling identifyUser here means
+        // trackBookingCompleted and all subsequent events get correctly
+        // attributed to the right Person, AND PostHog will retroactively
+        // merge the pre-identify events under that Person too.
         const bookingEmail =
           (contact.email as string | undefined) ||
           getCleanIdentity(new URLSearchParams(window.location.search)).email ||
           '';
+        if (bookingEmail) {
+          identifyUser(bookingEmail, {
+            first_name: contact.firstName || undefined,
+            last_name:  contact.lastName  || undefined,
+            phone:      contact.phone     || undefined,
+          });
+        }
+
+        trackBookingCompleted('closer');
+
+        // Push the visitor's IANA timezone (e.g. "America/New_York")
+        // onto their HubSpot contact so SMS/email automations can
+        // render meeting times in the recipient's local zone. Fire-
+        // and-forget; sendBeacon survives the redirect below.
         syncContactTimezone(bookingEmail, 'book_redirect');
         // Also push UTMs - server only writes empty fields, so
         // first-touch attribution is preserved on returning contacts.
