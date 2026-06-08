@@ -34,6 +34,14 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
   const email = (event.queryStringParameters?.email || '').trim().toLowerCase();
   const debug = event.queryStringParameters?.debug === '1';
+  // Webinar bookings come through OnceHub (writes a DEAL with linked
+  // meeting); the legacy HubSpot-native scheduler at /book writes a
+  // MEETING associated with the contact. When ?source=webinar we try
+  // the OnceHub deal path first because EVERY webinar booking goes
+  // that way, and the contact may also have stale legacy meetings
+  // from past testing that would otherwise win the lookup.
+  const sourceParam = (event.queryStringParameters?.source || '').trim().toLowerCase();
+  const isWebinar = sourceParam === 'webinar';
   const trace: DebugEntry[] = [];
 
   if (!email || !email.includes('@')) {
@@ -46,137 +54,36 @@ export const handler: Handler = async (event: HandlerEvent) => {
   }
 
   try {
-    // 1. Find the contact by email
     const contact = await findContactId(email, token, trace);
     if (!contact) {
       return json(200, { found: false, reason: 'contact_not_found', email, ...(debug ? { trace } : {}) });
     }
     const contactId = contact.id;
 
-    // 2. Find the most recent appointment/meeting for that contact
-    const found = await findLatestAppointmentForContact(contactId, token, trace);
+    // Each path returns either a populated response or null when it
+    // has nothing to offer. We chain them in whatever order the caller
+    // wants based on ?source=.
+    const tryOncehubDealPath = async () =>
+      await resolveFromOncehubDeal(contactId, contact, token, trace, debug);
+    const tryLegacyMeetingPath = async () =>
+      await resolveFromContactMeeting(contactId, contact, token, trace, debug);
 
-    // 2b. OnceHub path: it associates the meeting with the DEAL (not
-    // the contact directly). When OnceHub's integration writes a deal,
-    // the deal's hs_next_meeting_id points at the actual meeting
-    // record - we can fetch THAT to get the Zoom URL, end time, etc.
-    // The deal itself carries hs_next_meeting_start_time + name as a
-    // fast path that avoids needing the meeting fetch for basic info.
-    if (!found) {
-      const deal = await findRecentSchedulingDealForContact(contactId, token, trace);
-      if (deal) {
-        const dp = deal.properties || {};
-        const nextMeetingId = String(dp.hs_next_meeting_id || '').trim();
-        const dealOwnerId = (dp.hubspot_owner_id as string | undefined) || undefined;
+    const paths = isWebinar
+      ? [tryOncehubDealPath, tryLegacyMeetingPath]
+      : [tryLegacyMeetingPath, tryOncehubDealPath];
 
-        // Fetch the linked meeting record (has the Zoom URL etc.)
-        let meetingProps: Record<string, unknown> = {};
-        if (nextMeetingId) {
-          meetingProps = await fetchMeetingById(nextMeetingId, token, trace);
-        }
-
-        const ownerId = (dealOwnerId ||
-          (meetingProps.hubspot_owner_id as string | undefined) ||
-          undefined) as string | undefined;
-        const ownerName = ownerId
-          ? await getOwnerName(ownerId, token, trace).catch(() => undefined)
-          : undefined;
-
-        const dPick = (...keys: string[]): string | undefined => {
-          for (const k of keys) {
-            const v = dp[k];
-            if (v !== undefined && v !== null && v !== '') return String(v);
-          }
-          return undefined;
-        };
-        const mPick = (...keys: string[]): string | undefined => {
-          for (const k of keys) {
-            const v = meetingProps[k];
-            if (v !== undefined && v !== null && v !== '') return String(v);
-          }
-          return undefined;
-        };
-
-        const startIso = toIso(
-          dPick('hs_next_meeting_start_time') ||
-            mPick('hs_meeting_start_time', 'hs_appointment_start')
-        );
-        const endIso = toIso(mPick('hs_meeting_end_time', 'hs_appointment_end'));
-        const title =
-          mPick('hs_meeting_title', 'hs_appointment_name') ||
-          dPick('hs_next_meeting_name');
-        const joinUrl = mPick(
-          'hs_meeting_location',
-          'hs_meeting_external_url',
-          'hs_videoconference_link',
-          'hs_appointment_location'
-        );
-
-        if (startIso || joinUrl || ownerName || nextMeetingId) {
-          return json(200, {
-            found: true,
-            source: 'oncehub_deal',
-            dealId: deal.id,
-            appointmentId: nextMeetingId || undefined,
-            contactId,
-            firstName: contact.firstName,
-            lastName: contact.lastName,
-            startIso,
-            endIso,
-            title,
-            joinUrl,
-            ownerId,
-            ownerName,
-            leadSource: dPick('lead_source'),
-            ...(debug ? { rawDealProperties: dp, rawMeetingProperties: meetingProps, trace } : {}),
-          });
-        }
-      }
-      return json(200, {
-        found: false,
-        reason: 'no_meeting_found',
-        contactId,
-        firstName: contact.firstName,
-        lastName: contact.lastName,
-        ...(debug ? { trace } : {}),
-      });
+    for (const tryPath of paths) {
+      const result = await tryPath();
+      if (result) return json(200, result);
     }
-
-    // 3. Fetch the owner name
-    let ownerName: string | undefined;
-    const ownerId = found.properties?.hubspot_owner_id as string | undefined;
-    if (ownerId) {
-      ownerName = await getOwnerName(ownerId, token, trace).catch(() => undefined);
-    }
-
-    const p = found.properties || {};
-    const pick = (...keys: string[]): string | undefined => {
-      for (const k of keys) {
-        const v = p[k];
-        if (v !== undefined && v !== null && v !== '') return String(v);
-      }
-      return undefined;
-    };
 
     return json(200, {
-      found: true,
-      source: found.source,
-      appointmentId: found.id,
+      found: false,
+      reason: 'no_meeting_found',
       contactId,
       firstName: contact.firstName,
       lastName: contact.lastName,
-      startIso: toIso(pick('hs_appointment_start', 'hs_meeting_start_time')),
-      endIso: toIso(pick('hs_appointment_end', 'hs_meeting_end_time')),
-      title: pick('hs_appointment_name', 'hs_meeting_title'),
-      joinUrl: pick(
-        'hs_appointment_location',
-        'hs_meeting_location',
-        'hs_meeting_external_url',
-        'hs_videoconference_link'
-      ),
-      ownerId,
-      ownerName,
-      ...(debug ? { rawProperties: p, trace } : {}),
+      ...(debug ? { trace } : {}),
     });
   } catch (err) {
     console.error('[meeting-lookup]', err);
@@ -191,6 +98,137 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
 function json(statusCode: number, body: unknown) {
   return { statusCode, headers: CORS, body: JSON.stringify(body) };
+}
+
+/** OnceHub-deal-first resolver. The deal's hs_next_meeting_id points
+    at the linked meeting record; fetch that for the Zoom URL. Returns
+    null when no scheduling-pipeline deal exists for the contact. */
+async function resolveFromOncehubDeal(
+  contactId: string,
+  contact: ContactData,
+  token: string,
+  trace: DebugEntry[],
+  debug: boolean
+): Promise<Record<string, unknown> | null> {
+  const deal = await findRecentSchedulingDealForContact(contactId, token, trace);
+  if (!deal) return null;
+
+  const dp = deal.properties || {};
+  const nextMeetingId = String(dp.hs_next_meeting_id || '').trim();
+
+  let meetingProps: Record<string, unknown> = {};
+  if (nextMeetingId) {
+    meetingProps = await fetchMeetingById(nextMeetingId, token, trace);
+  }
+
+  const ownerId =
+    ((dp.hubspot_owner_id as string | undefined) ||
+      (meetingProps.hubspot_owner_id as string | undefined) ||
+      undefined) as string | undefined;
+  const ownerName = ownerId
+    ? await getOwnerName(ownerId, token, trace).catch(() => undefined)
+    : undefined;
+
+  const dPick = (...keys: string[]): string | undefined => {
+    for (const k of keys) {
+      const v = dp[k];
+      if (v !== undefined && v !== null && v !== '') return String(v);
+    }
+    return undefined;
+  };
+  const mPick = (...keys: string[]): string | undefined => {
+    for (const k of keys) {
+      const v = meetingProps[k];
+      if (v !== undefined && v !== null && v !== '') return String(v);
+    }
+    return undefined;
+  };
+
+  const startIso = toIso(
+    dPick('hs_next_meeting_start_time') ||
+      mPick('hs_meeting_start_time', 'hs_appointment_start')
+  );
+  const endIso = toIso(mPick('hs_meeting_end_time', 'hs_appointment_end'));
+  const title =
+    mPick('hs_meeting_title', 'hs_appointment_name') ||
+    dPick('hs_next_meeting_name');
+  const joinUrl = mPick(
+    'hs_meeting_location',
+    'hs_meeting_external_url',
+    'hs_videoconference_link',
+    'hs_appointment_location'
+  );
+
+  if (!startIso && !joinUrl && !ownerName && !nextMeetingId) {
+    return null; // deal existed but had no useful data - let next path try
+  }
+
+  return {
+    found: true,
+    source: 'oncehub_deal',
+    dealId: deal.id,
+    appointmentId: nextMeetingId || undefined,
+    contactId,
+    firstName: contact.firstName,
+    lastName: contact.lastName,
+    startIso,
+    endIso,
+    title,
+    joinUrl,
+    ownerId,
+    ownerName,
+    leadSource: dPick('lead_source'),
+    ...(debug ? { rawDealProperties: dp, rawMeetingProperties: meetingProps, trace } : {}),
+  };
+}
+
+/** Legacy contact-meeting resolver. HubSpot-native scheduler bookings
+    create a meeting associated directly with the contact. Returns null
+    when no meeting/appointment is associated. */
+async function resolveFromContactMeeting(
+  contactId: string,
+  contact: ContactData,
+  token: string,
+  trace: DebugEntry[],
+  debug: boolean
+): Promise<Record<string, unknown> | null> {
+  const found = await findLatestAppointmentForContact(contactId, token, trace);
+  if (!found) return null;
+
+  const ownerId = found.properties?.hubspot_owner_id as string | undefined;
+  const ownerName = ownerId
+    ? await getOwnerName(ownerId, token, trace).catch(() => undefined)
+    : undefined;
+
+  const p = found.properties || {};
+  const pick = (...keys: string[]): string | undefined => {
+    for (const k of keys) {
+      const v = p[k];
+      if (v !== undefined && v !== null && v !== '') return String(v);
+    }
+    return undefined;
+  };
+
+  return {
+    found: true,
+    source: found.source,
+    appointmentId: found.id,
+    contactId,
+    firstName: contact.firstName,
+    lastName: contact.lastName,
+    startIso: toIso(pick('hs_appointment_start', 'hs_meeting_start_time')),
+    endIso: toIso(pick('hs_appointment_end', 'hs_meeting_end_time')),
+    title: pick('hs_appointment_name', 'hs_meeting_title'),
+    joinUrl: pick(
+      'hs_appointment_location',
+      'hs_meeting_location',
+      'hs_meeting_external_url',
+      'hs_videoconference_link'
+    ),
+    ownerId,
+    ownerName,
+    ...(debug ? { rawProperties: p, trace } : {}),
+  };
 }
 
 function toIso(v: string | undefined): string | undefined {

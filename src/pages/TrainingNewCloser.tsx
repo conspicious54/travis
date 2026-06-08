@@ -186,15 +186,24 @@ async function hydrateFromHubSpot(
   // out to ~4 minutes total to catch those before giving up.
   const attemptDelaysMs = [0, 2000, 5000, 15000, 30000, 60000, 90000, 90000];
 
+  // When the user arrived from the webinar booking flow we set
+  // ?source=webinar on the redirect. That tells the meeting-lookup
+  // function to try the OnceHub deal path FIRST instead of the
+  // contact-meeting path, so stale legacy meetings from past tests
+  // don't preempt the actual webinar booking.
+  const isWebinarSource =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('source') === 'webinar';
+  const lookupUrl =
+    `/.netlify/functions/meeting-lookup?email=${encodeURIComponent(email)}` +
+    (isWebinarSource ? '&source=webinar' : '');
+
   for (const delay of attemptDelaysMs) {
     if (delay > 0) await new Promise((r) => setTimeout(r, delay));
 
     let data: LookupResponse | null = null;
     try {
-      const res = await fetch(
-        `/.netlify/functions/meeting-lookup?email=${encodeURIComponent(email)}`,
-        { headers: { Accept: 'application/json' } }
-      );
+      const res = await fetch(lookupUrl, { headers: { Accept: 'application/json' } });
       if (!res.ok) continue;
       data = (await res.json()) as LookupResponse;
       // eslint-disable-next-line no-console
