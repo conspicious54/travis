@@ -55,7 +55,34 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
     // 2. Find the most recent appointment/meeting for that contact
     const found = await findLatestAppointmentForContact(contactId, token, trace);
+
+    // 2b. OnceHub fallback: if no meeting/appointment record exists,
+    // OnceHub's integration may have written the booking as a DEAL
+    // instead. Pull the most recent deal in the scheduling pipeline
+    // and use its owner as the meeting organizer. The OnceHub
+    // postMessage gives us the actual meeting time via URL params.
     if (!found) {
+      const deal = await findRecentSchedulingDealForContact(contactId, token, trace);
+      if (deal) {
+        const dealOwnerId = deal.properties?.hubspot_owner_id as string | undefined;
+        const dealOwnerName = dealOwnerId
+          ? await getOwnerName(dealOwnerId, token, trace).catch(() => undefined)
+          : undefined;
+        return json(200, {
+          found: true,
+          source: 'deals',
+          appointmentId: deal.id,
+          contactId,
+          firstName: contact.firstName,
+          lastName: contact.lastName,
+          // Meeting time / title / join URL all come from the OnceHub
+          // postMessage payload on the client side. We only contribute
+          // the owner from the deal.
+          ownerId: dealOwnerId,
+          ownerName: dealOwnerName,
+          ...(debug ? { rawProperties: deal.properties, trace } : {}),
+        });
+      }
       return json(200, {
         found: false,
         reason: 'no_meeting_found',
@@ -282,6 +309,77 @@ async function findLatestAppointmentForContact(
     (await tryObjectType('appointments')) ||
     (await tryObjectType('meetings'))
   );
+}
+
+/** OnceHub fallback path: OnceHub's HubSpot integration writes DEALS
+    (in the Inbound Scheduled Calls pipeline), not Meeting engagement
+    records. When no meeting/appointment is found, look for the most
+    recent deal in that pipeline associated with the contact, and use
+    its owner as the meeting organizer. The booking time itself comes
+    from the OnceHub postMessage via URL params on the confirmation
+    page, not from this lookup. */
+async function findRecentSchedulingDealForContact(
+  contactId: string,
+  token: string,
+  trace: DebugEntry[]
+): Promise<{ id: string; properties: Record<string, unknown> } | null> {
+  const INBOUND_SCHEDULED_CALLS_PIPELINE = '1957399266';
+
+  const assocUrl = `https://api.hubapi.com/crm/v4/objects/contacts/${contactId}/associations/deals?limit=100`;
+  const assocRes = await hubspotFetch(
+    assocUrl,
+    { headers: { Authorization: `Bearer ${token}` } },
+    trace,
+    'assoc_deals'
+  );
+  if (!assocRes.ok) return null;
+  const assocData = await assocRes.json();
+  const ids: string[] = (assocData?.results || [])
+    .map((r: { toObjectId?: string | number; id?: string | number }) => String(r.toObjectId ?? r.id ?? ''))
+    .filter(Boolean);
+  if (ids.length === 0) return null;
+
+  const batchUrl = `https://api.hubapi.com/crm/v3/objects/deals/batch/read`;
+  const batchRes = await hubspotFetch(
+    batchUrl,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        properties: ['dealname', 'dealstage', 'pipeline', 'hubspot_owner_id', 'createdate', 'hs_createdate'],
+        inputs: ids.map((id) => ({ id })),
+      }),
+    },
+    trace,
+    'batch_deals'
+  );
+  if (!batchRes.ok) return null;
+  const batchData = await batchRes.json();
+  const allResults = (batchData?.results || []) as Array<{
+    id: string;
+    properties: Record<string, unknown>;
+    createdAt?: string;
+  }>;
+  if (allResults.length === 0) return null;
+
+  const inPipeline = allResults.filter(
+    (r) => String(r.properties?.pipeline || '') === INBOUND_SCHEDULED_CALLS_PIPELINE
+  );
+  if (inPipeline.length === 0) return null;
+
+  const getCreatedMs = (r: { createdAt?: string; properties: Record<string, unknown> }): number => {
+    const raw = r.createdAt || r.properties?.createdate || r.properties?.hs_createdate;
+    if (!raw) return 0;
+    const s = String(raw);
+    if (/^\d{13}$/.test(s)) return parseInt(s, 10);
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? 0 : d.getTime();
+  };
+  inPipeline.sort((a, b) => getCreatedMs(b) - getCreatedMs(a));
+  return inPipeline[0];
 }
 
 async function getOwnerName(

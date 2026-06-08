@@ -180,9 +180,11 @@ async function hydrateFromHubSpot(
   email: string,
   urlMeeting: MeetingInfo | null
 ): Promise<MeetingInfo | null> {
-  // Short retry loop - HubSpot sometimes indexes a new appointment a
-  // couple of seconds after the booking completes.
-  const attemptDelaysMs = [0, 2000, 5000];
+  // Retry loop. HubSpot-native scheduler bookings appear within 1-2s
+  // (covered by the first few retries). OnceHub bookings sync as DEALS
+  // (not meetings) with a typical 2-4 minute lag, so we keep polling
+  // out to ~4 minutes total to catch those before giving up.
+  const attemptDelaysMs = [0, 2000, 5000, 15000, 30000, 60000, 90000, 90000];
 
   for (const delay of attemptDelaysMs) {
     if (delay > 0) await new Promise((r) => setTimeout(r, delay));

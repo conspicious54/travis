@@ -237,8 +237,10 @@ export function WebinarBook() {
         pickStr('host_name', 'owner_name', 'organizer_name', 'organizer') ||
         pickNested(['host', 'name']) ||
         pickNested(['owner', 'name']);
+      // OnceHub uses `virtual_or_physical_location` for the join URL
+      // per their developer docs - that's the canonical field name.
       const joinUrl =
-        pickStr('join_url', 'joinUrl', 'meeting_url', 'video_url', 'conference_url', 'location') ||
+        pickStr('virtual_or_physical_location', 'join_url', 'joinUrl', 'meeting_url', 'video_url', 'conference_url', 'location') ||
         pickNested(['conference', 'join_url']) ||
         pickNested(['conference_details', 'join_url']);
 
