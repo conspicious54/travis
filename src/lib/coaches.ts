@@ -70,6 +70,17 @@ export const COACHES: Record<string, Coach> = {
       "Zac is one of my newest in-house Amazon coaches at Passion Product, and he's already proving why I brought him on. Sharp, direct, and serious about helping you build something real.",
     bio: "He's been trained directly on the Passion Product method and is in the trenches with our students every week. On your call he'll get to the heart of what's actually going to move the needle for your situation.",
   },
+  "benjamin o'reilly": {
+    id: 'benjamin',
+    firstName: 'Benjamin',
+    fullName: "Benjamin O'Reilly",
+    role: 'Passion Product Lead Amazon Coach',
+    tenure: 'On the Passion Product team',
+    photoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/83422940_10157995024021197_4281016984524554240_o.jpg',
+    travisIntro:
+      "Benjamin is one of my newest in-house Amazon coaches at Passion Product. Sharp, thoughtful, and the kind of coach who'll meet you where you are and give you the straight read on what to do next.",
+    bio: "He's been trained directly on the Passion Product method and works with our students through every stage - from picking the right product to building a brand that actually scales. On your call he'll cut through the noise and tell you exactly where to put your focus.",
+  },
   // Santiago is a setter - kept here so getCoachByOwnerName resolves him
   // if a HubSpot owner happens to use his name. Setter SMS confirmations
   // also reference this entry via firstName.
