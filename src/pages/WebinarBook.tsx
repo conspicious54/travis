@@ -252,17 +252,24 @@ export function WebinarBook() {
       const payloadName  = pickStr('customer_name', 'attendee_name')              || pickNested(['customer', 'name']);
       const payloadPhone = pickStr('customer_phone', 'attendee_phone', 'phone')   || pickNested(['customer', 'phone']);
 
-      // Prefer OnceHub-payload identity when present, fall back to
-      // URL / localStorage. Same for the split-name handling.
-      const finalEmail = bookingEmail || payloadEmail;
-      let finalFirst = firstname || payloadFirst;
-      let finalLast  = lastname  || payloadLast;
-      if (!finalFirst && payloadName) {
+      // OnceHub-payload identity WINS over URL/localStorage. The user
+      // could have arrived at /webinar/book with one email in the URL
+      // (e.g. from a stale Typeform redirect or a prior browser session)
+      // and then typed a DIFFERENT email into the OnceHub form. The
+      // OnceHub email is the authoritative one - it's what created the
+      // HubSpot contact + deal, so it's what hydration on the next page
+      // needs to find the right record.
+      let splitFirst = '';
+      let splitLast  = '';
+      if (payloadName && !payloadFirst && !payloadLast) {
         const parts = payloadName.split(/\s+/).filter(Boolean);
-        finalFirst = parts[0] || '';
-        if (!finalLast && parts.length > 1) finalLast = parts.slice(1).join(' ');
+        splitFirst = parts[0] || '';
+        if (parts.length > 1) splitLast = parts.slice(1).join(' ');
       }
-      const finalPhone = bookingPhone || payloadPhone;
+      const finalEmail = payloadEmail || bookingEmail;
+      const finalFirst = payloadFirst || splitFirst || firstname;
+      const finalLast  = payloadLast  || splitLast  || lastname;
+      const finalPhone = payloadPhone || bookingPhone;
 
       const redirectParams = new URLSearchParams();
       if (finalEmail)   redirectParams.set('email',     finalEmail);

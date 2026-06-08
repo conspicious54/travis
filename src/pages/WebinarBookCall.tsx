@@ -153,24 +153,54 @@ export function WebinarBookCall() {
         }
       } catch { /* no-op */ }
 
-      let firstname = id.firstname || storedFirst || '';
-      let lastname  = id.lastname  || storedLast  || '';
-      if (!firstname && rawName) {
-        const parts = rawName.split(/\s+/).filter(Boolean);
-        firstname = parts[0] || '';
-        if (!lastname && parts.length > 1) lastname = parts.slice(1).join(' ');
-      }
-      const bookingEmail = id.email || storedEmail || '';
-      const bookingPhone = id.phone || storedPhone || '';
+      // OnceHub payload identity wins over URL/localStorage. The user
+      // could have arrived with a stale URL email but typed a different
+      // email into the OnceHub form - the OnceHub email is what created
+      // the HubSpot contact, so it's the one that matters for hydration.
+      const payload: Record<string, unknown> =
+        (typeof event.data === 'object' && event.data !== null
+          ? ((event.data as Record<string, unknown>).payload as Record<string, unknown> | undefined) || (event.data as Record<string, unknown>)
+          : {}) || {};
+      const pickStr = (...keys: string[]): string => {
+        for (const k of keys) {
+          const v = payload[k];
+          if (typeof v === 'string' && v.trim()) return v.trim();
+        }
+        return '';
+      };
+      const payloadEmail = pickStr('customer_email', 'attendee_email', 'guest_email');
+      const payloadFirst = pickStr('customer_first_name', 'attendee_first_name');
+      const payloadLast  = pickStr('customer_last_name', 'attendee_last_name');
+      const payloadName  = pickStr('customer_name', 'attendee_name');
+      const payloadPhone = pickStr('customer_phone', 'attendee_phone', 'phone');
 
-      syncContactTimezone(bookingEmail, 'webinar_bookacall_redirect');
-      syncContactUtms(bookingEmail, 'webinar_bookacall_redirect');
+      let urlFirst = id.firstname || storedFirst || '';
+      let urlLast  = id.lastname  || storedLast  || '';
+      if (!urlFirst && rawName) {
+        const parts = rawName.split(/\s+/).filter(Boolean);
+        urlFirst = parts[0] || '';
+        if (!urlLast && parts.length > 1) urlLast = parts.slice(1).join(' ');
+      }
+      let splitFirst = '';
+      let splitLast  = '';
+      if (payloadName && !payloadFirst && !payloadLast) {
+        const parts = payloadName.split(/\s+/).filter(Boolean);
+        splitFirst = parts[0] || '';
+        if (parts.length > 1) splitLast = parts.slice(1).join(' ');
+      }
+      const finalEmail = payloadEmail || id.email || storedEmail || '';
+      const finalFirst = payloadFirst || splitFirst || urlFirst;
+      const finalLast  = payloadLast  || splitLast  || urlLast;
+      const finalPhone = payloadPhone || id.phone || storedPhone || '';
+
+      syncContactTimezone(finalEmail, 'webinar_bookacall_redirect');
+      syncContactUtms(finalEmail, 'webinar_bookacall_redirect');
 
       const redirectParams = new URLSearchParams();
-      if (bookingEmail) redirectParams.set('email',     bookingEmail);
-      if (firstname)    redirectParams.set('firstname', firstname);
-      if (lastname)     redirectParams.set('lastname',  lastname);
-      if (bookingPhone) redirectParams.set('phone',     bookingPhone);
+      if (finalEmail) redirectParams.set('email',     finalEmail);
+      if (finalFirst) redirectParams.set('firstname', finalFirst);
+      if (finalLast)  redirectParams.set('lastname',  finalLast);
+      if (finalPhone) redirectParams.set('phone',     finalPhone);
       redirectParams.set('source', 'webinar');
 
       const target = `${REDIRECT_TO}?${redirectParams.toString()}`;
