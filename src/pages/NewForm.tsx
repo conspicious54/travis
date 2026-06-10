@@ -1,23 +1,25 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Flame, Lock } from 'lucide-react';
+import { ChevronsRight, Flame } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
 
 /* ───── /newform - webinar opt-in form ────────────────────────────
-   Conversion-optimized rebuild of the original ClickFunnels opt-in:
-   - Promise-first headline (the outcome the visitor wants), with
-     the $140B credibility stat demoted to a small proof line under
-     the eyebrow chip
-   - 3 fields instead of 4 (single full-name field, split on submit)
-   - What-you-get bullets next to the CTA so the form reads as a
-     value trade, not data entry
-   - Reassurance + lock icon under the button
+   1:1 rebuild of the existing ClickFunnels opt-in page (headlines,
+   4 separate form fields, "Fill in the form above..." subtext,
+   "SIGN UP TO WATCH NOW" CTA, SMS consent, countdown, full
+   disclaimer footer) - only difference is the visual styling,
+   which now matches the rest of the site (orange/amber gradient,
+   white card, lucide icons) instead of CF's defaults. The
+   wordmark in the original header is intentionally dropped.
 
-   Wiring is unchanged from the prior version: identifyUser() +
-   POST to /.netlify/functions/register-webinar with stage
-   'newform_optin', then forward identity in the URL to /training.
+   On submit:
+   - identifyUser() in PostHog
+   - POSTs to /.netlify/functions/register-webinar with stage
+     'newform_optin' so the existing Zapier webhook routes the
+     lead the same way /live-training does
+   - Forwards identity in the URL to REDIRECT_TO
 ────────────────────────────────────────────────────────────────── */
 
 /* ─── Config - tune as needed ──────────────────────────────────── */
@@ -73,48 +75,35 @@ function formatCountdown(deadline: number): { h: string; m: string; s: string } 
   return { h, m, s };
 }
 
-// Split a single full-name field into first + last. "Mary Jane Smith"
-// keeps "Mary" as first and "Jane Smith" as last so compound surnames
-// stay intact. Single-token names go entirely into firstname.
-function splitName(full: string): { first: string; last: string } {
-  const trimmed = full.trim().replace(/\s+/g, ' ');
-  if (!trimmed) return { first: '', last: '' };
-  const parts = trimmed.split(' ');
-  return {
-    first: parts[0] || '',
-    last:  parts.length > 1 ? parts.slice(1).join(' ') : '',
-  };
-}
-
-function initialFromUrl(): { name: string; email: string; phone: string } {
-  if (typeof window === 'undefined') return { name: '', email: '', phone: '' };
+function initialFromUrl(): { firstname: string; lastname: string; email: string; phone: string } {
+  if (typeof window === 'undefined') return { firstname: '', lastname: '', email: '', phone: '' };
   const id = getCleanIdentity(new URLSearchParams(window.location.search));
-  const name = [id.firstname, id.lastname].filter(Boolean).join(' ').trim();
   return {
-    name,
-    email: id.email || '',
-    phone: id.phone || '',
+    firstname: id.firstname || '',
+    lastname:  id.lastname  || '',
+    email:     id.email     || '',
+    phone:     id.phone     || '',
   };
 }
 
 export function NewForm() {
   const seed = useMemo(initialFromUrl, []);
-  const [name, setName]     = useState(seed.name);
-  const [email, setEmail]   = useState(seed.email);
-  const [phone, setPhone]   = useState(seed.phone);
+  const [firstname, setFirstname] = useState(seed.firstname);
+  const [lastname, setLastname]   = useState(seed.lastname);
+  const [email, setEmail]         = useState(seed.email);
+  const [phone, setPhone]         = useState(seed.phone);
   const [dialCountry, setDialCountry] = useState<string>('US');
-  const [error, setError]   = useState('');
+  const [error, setError]         = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [country, setCountry] = useState<CountryInfo | null>(null);
+  const [country, setCountry]     = useState<CountryInfo | null>(null);
   const [deadline] = useState<number>(() => getCountdownDeadline());
   const [, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
-    document.title = 'Free Training - How to Hit $100K on Amazon in 2026';
+    document.title = 'Passion Product Formula - Free Training';
     trackEvent('newform_page_viewed', {
       email_prefilled: !!seed.email,
       phone_prefilled: !!seed.phone,
-      name_prefilled:  !!seed.name,
     });
     getCountry().then((info) => {
       setCountry(info);
@@ -128,7 +117,7 @@ export function NewForm() {
         source: info.source,
       });
     });
-  }, [seed.email, seed.phone, seed.name]);
+  }, [seed.email, seed.phone]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -142,17 +131,19 @@ export function NewForm() {
     e.preventDefault();
     setError('');
 
-    const { first, last } = splitName(name);
+    const cleanFirst = firstname.trim();
+    const cleanLast  = lastname.trim();
     const cleanEmail = email.trim().toLowerCase();
     const cleanPhone = phone.trim();
 
-    if (!first) { setError('Please enter your name.'); return; }
+    if (!cleanFirst) { setError('Please enter your first name.'); return; }
+    if (!cleanLast)  { setError('Please enter your last name.'); return; }
     if (!cleanEmail || !cleanEmail.includes('@')) {
       setError('Please enter a valid email address.');
       return;
     }
     if (!cleanPhone) {
-      setError('Please enter your phone so we can text you the training link.');
+      setError('Please enter your phone number so we can text you a reminder.');
       return;
     }
 
@@ -166,8 +157,8 @@ export function NewForm() {
     const audience = countryInfo?.audience ?? 'non_target';
 
     identifyUser(cleanEmail, {
-      first_name: first,
-      last_name: last,
+      first_name: cleanFirst,
+      last_name: cleanLast,
       phone: fullPhone,
       country_code: countryInfo?.code,
       country_name: countryInfo?.name,
@@ -204,16 +195,16 @@ export function NewForm() {
 
     const fwd = new URLSearchParams();
     fwd.set('email', cleanEmail);
-    if (first)    fwd.set('firstname', first);
-    if (last)     fwd.set('lastname',  last);
-    if (fullPhone) fwd.set('phone',    fullPhone);
+    if (cleanFirst) fwd.set('firstname', cleanFirst);
+    if (cleanLast)  fwd.set('lastname',  cleanLast);
+    if (fullPhone)  fwd.set('phone',     fullPhone);
     window.location.href = `${REDIRECT_TO}?${fwd.toString()}`;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50/50 via-white to-white text-gray-900">
-      {/* Minimal header - just the flame mark, centered. No wordmark. */}
-      <header className="bg-white/80 backdrop-blur border-b border-gray-100">
+    <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white text-gray-900">
+      {/* Minimal header - just the flame mark. Wordmark intentionally dropped. */}
+      <header className="bg-white border-b border-gray-100">
         <div className="max-w-3xl mx-auto px-5 py-5 flex items-center justify-center">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/30 to-amber-500/30 rounded-full blur-md" />
@@ -225,180 +216,155 @@ export function NewForm() {
       </header>
 
       <main className="max-w-3xl mx-auto px-5 pt-10 md:pt-14 pb-16">
-        {/* Eyebrow chip */}
-        <div className="text-center mb-5">
-          <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider">
-            <Flame className="w-3.5 h-3.5" />
-            Free Live Training
-          </div>
-        </div>
-
-        {/* Hero - promise-first */}
-        <div className="text-center mb-8 md:mb-10">
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-[1.02] mb-5">
-            How First-Time Amazon Sellers Are{' '}
+        {/* Hero - copy verbatim from the original CF page */}
+        <div className="text-center mb-8">
+          <p className="text-base md:text-lg text-gray-700 leading-snug max-w-2xl mx-auto mb-3">
+            Last Year, First Time Amazon Sellers Made Over <span className="font-bold text-gray-900">$140 Billion</span> In Sales
+          </p>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-[1.05]">
             <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
-              Hitting $100K in 2026
+              Learn the Exact Process I Use to Help Sellers Reach $100K on Amazon in 2026
             </span>
           </h1>
-
-          <p className="text-lg md:text-xl text-gray-700 leading-snug max-w-2xl mx-auto">
-            The exact step-by-step process Travis uses to help students launch profitable products on Amazon - even if you've never sold online before.
-          </p>
-
-          {/* Credibility stat - demoted from headline */}
-          <p className="mt-5 text-sm text-gray-500 max-w-xl mx-auto">
-            Last year, first-time Amazon sellers earned over <span className="font-semibold text-gray-700">$140 billion</span>. Here's how to claim your share.
-          </p>
         </div>
 
-        {/* Form card with what-you-get sidebar on desktop */}
+        {/* Form card */}
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
-            <div className="grid md:grid-cols-5">
-              {/* What you get - left rail on desktop, top on mobile */}
-              <div className="md:col-span-2 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white p-6 md:p-7">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-orange-300 mb-3">What you'll get</div>
-                <ul className="space-y-3.5">
-                  {[
-                    { title: 'The full 60-min training', detail: 'Live, with real product breakdowns' },
-                    { title: 'Free product research bonuses', detail: 'Worksheets + Travis\'s product scorecard' },
-                    { title: 'Live Q&A access', detail: 'Ask Travis directly in the chat' },
-                  ].map((item) => (
-                    <li key={item.title} className="flex gap-2.5">
-                      <CheckCircle2 className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <div className="text-sm font-bold leading-tight">{item.title}</div>
-                        <div className="text-xs text-slate-300 mt-0.5">{item.detail}</div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+            <form onSubmit={handleSubmit} className="p-5 md:p-7 space-y-4">
+              {/* First + last name */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="firstname" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    First Name
+                  </label>
+                  <input
+                    id="firstname"
+                    type="text"
+                    autoComplete="given-name"
+                    required
+                    placeholder="Your first name"
+                    value={firstname}
+                    onChange={(e) => setFirstname(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="lastname" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Last Name
+                  </label>
+                  <input
+                    id="lastname"
+                    type="text"
+                    autoComplete="family-name"
+                    required
+                    placeholder="Your last name"
+                    value={lastname}
+                    onChange={(e) => setLastname(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+                  />
+                </div>
               </div>
 
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="md:col-span-3 p-6 md:p-7 space-y-3.5">
-                <div>
-                  <label htmlFor="name" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Full name
-                  </label>
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+                />
+              </div>
+
+              {/* Phone with country dial selector */}
+              <div>
+                <label htmlFor="phone" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Phone
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    aria-label="Country dial code"
+                    value={dialCountry}
+                    onChange={(e) => setDialCountry(e.target.value)}
+                    className="appearance-none pl-3 pr-8 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+                  >
+                    {COUNTRY_DIAL.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.flag} {c.code} ({c.dial})
+                      </option>
+                    ))}
+                  </select>
                   <input
-                    id="name"
-                    type="text"
-                    autoComplete="name"
-                    autoFocus
+                    id="phone"
+                    type="tel"
+                    autoComplete="tel"
                     required
-                    placeholder="First and last"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+                    placeholder="Mobile number"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="flex-1 px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label htmlFor="email" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
-                  />
+              <p className="text-center text-sm text-gray-700">
+                Fill in the form above so we can send you your{' '}
+                <span className="font-bold underline">FREE "AMAZON FBA PASSION PRODUCT" BONUSES</span>!
+              </p>
+
+              {error && (
+                <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                  {error}
                 </div>
+              )}
 
-                <div>
-                  <label htmlFor="phone" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Phone
-                  </label>
-                  <div className="flex gap-2">
-                    <select
-                      aria-label="Country dial code"
-                      value={dialCountry}
-                      onChange={(e) => setDialCountry(e.target.value)}
-                      className="appearance-none pl-3 pr-7 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
-                    >
-                      {COUNTRY_DIAL.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.flag} {c.dial}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      id="phone"
-                      type="tel"
-                      autoComplete="tel"
-                      required
-                      placeholder="Mobile number"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="flex-1 px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">For the join link + reminder text 5 min before we start.</p>
-                </div>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
+              >
+                <ChevronsRight className="w-6 h-6" />
+                {submitting ? 'Reserving Your Spot...' : 'SIGN UP TO WATCH NOW'}
+              </button>
 
-                {error && (
-                  <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-700">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-base md:text-lg font-black tracking-wide py-4 rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
-                >
-                  {submitting ? 'Reserving Your Spot...' : 'Reserve My Free Spot'}
-                  {!submitting && <ArrowRight className="w-5 h-5" />}
-                </button>
-
-                {/* Reassurance directly under the CTA */}
-                <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500">
-                  <Lock className="w-3.5 h-3.5" />
-                  100% free. No credit card. Unsubscribe anytime.
-                </div>
-
-                {/* SMS consent - legally required, kept verbatim */}
-                <p className="text-[11px] text-gray-400 leading-relaxed pt-1">
-                  By submitting this form, you agree to receive SMS messages from Passion Product, including
-                  appointment reminders and notifications. Message frequency varies. Message and data rates may apply.
-                  Reply OUT to unsubscribe. Reply HELP for help. Consent is not a condition of purchase.
-                </p>
-              </form>
-            </div>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                By submitting this form, you agree to receive SMS messages from Passion Product, including
+                appointment reminders and notifications. Message frequency varies. Message and data rates may apply.
+                Reply OUT to unsubscribe. Reply HELP for help. Consent is not a condition of purchase.
+              </p>
+            </form>
           </div>
         </div>
 
-        {/* Countdown - smaller, secondary */}
+        {/* Countdown - matches the original "Bonus training expires in:" block */}
         <div className="text-center mt-10">
-          <p className="text-xs font-bold text-orange-600 uppercase tracking-widest mb-3">Bonus training expires in</p>
-          <div className="inline-flex items-center gap-2 md:gap-3">
+          <p className="text-base md:text-lg font-bold text-orange-600 mb-4">Bonus training expires in:</p>
+          <div className="flex items-center justify-center gap-3 md:gap-5">
             {[
-              { v: ttl.h, label: 'hrs' },
-              { v: ttl.m, label: 'min' },
-              { v: ttl.s, label: 'sec' },
-            ].map((unit, i) => (
-              <React.Fragment key={unit.label}>
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xl md:text-2xl font-black tabular-nums shadow-md">
-                    {unit.v}
-                  </div>
-                  <div className="mt-1 text-[10px] font-bold text-gray-500 tracking-widest uppercase">{unit.label}</div>
+              { v: ttl.h, label: 'HOURS' },
+              { v: ttl.m, label: 'MINUTES' },
+              { v: ttl.s, label: 'SECONDS' },
+            ].map((unit) => (
+              <div key={unit.label} className="flex flex-col items-center">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-slate-900 text-white flex items-center justify-center text-2xl md:text-3xl font-black tabular-nums">
+                  {unit.v}
                 </div>
-                {i < 2 && <div className="text-xl text-gray-300 font-black -mt-4">:</div>}
-              </React.Fragment>
+                <div className="mt-1.5 text-[10px] md:text-xs font-bold text-gray-500 tracking-widest">{unit.label}</div>
+              </div>
             ))}
           </div>
         </div>
       </main>
 
-      {/* Footer */}
+      {/* Footer - disclaimer blocks copied verbatim from the original */}
       <footer className="bg-slate-900 text-slate-300">
         <div className="max-w-4xl mx-auto px-5 py-10">
           <div className="flex flex-col items-center gap-3 mb-6">
