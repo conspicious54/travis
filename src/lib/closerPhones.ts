@@ -49,9 +49,8 @@ const CLOSER_PHONES: Record<string, CloserPhoneMap> = {
   },
   "benjamin o'reilly": {
     us:   { display: '(272) 359-9857',   raw: '+12723599857',  label: 'Benjamin - US' },
-    // Benjamin has no UK or AU line yet - fall back to Santiago for those regions
-    eu:   { display: '+44 7723 573445',  raw: '+447723573445', label: 'Santiago - UK' },
-    aunz: { display: '+61 485 041 884',  raw: '+61485041884',  label: 'Santiago - AU' },
+    eu:   { display: '+44 7458 157796',  raw: '+447458157796', label: 'Benjamin - UK' },
+    aunz: { display: '+61 468 081 873',  raw: '+61468081873',  label: 'Benjamin - AU' },
   },
 };
 
