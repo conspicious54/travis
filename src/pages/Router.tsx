@@ -152,6 +152,50 @@ function CapitalQuestion({ detectedCountry }: { detectedCountry: string }) {
   );
 }
 
+/* ───── server-side identity bridge ────────────────────────────────
+   Polls /.netlify/functions/identity-lookup until we get a hit or
+   exhaust ~4 seconds of retries. The CF webhook that populates the
+   store is async; if it cold-starts, the visitor's redirect can win
+   the race. Retries solve that with minimal UX impact (the router
+   is showing the loading animation anyway during this window).
+
+   On success: posthog.identify with the recovered email + names.
+   On failure: silent no-op - downstream pages will identify the
+   visitor later via their own mechanisms (Garlic-restore on
+   /nextstep, HubSpot postMessage on /book, etc).
+─────────────────────────────────────────────────────────────────── */
+async function runServerSideIdentityBridge(): Promise<void> {
+  const delaysMs = [0, 250, 500, 800, 1200, 1700]; // total ~4.5s
+  for (let i = 0; i < delaysMs.length; i++) {
+    if (delaysMs[i] > 0) await new Promise((r) => setTimeout(r, delaysMs[i]));
+    try {
+      const res = await fetch('/.netlify/functions/identity-lookup', {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data?.found && typeof data.email === 'string' && data.email.includes('@')) {
+        identifyUser(data.email, {
+          first_name: data.firstname || undefined,
+          last_name: data.lastname || undefined,
+          phone: data.phone || undefined,
+        });
+        trackEvent('router_identity_bridged', {
+          source: 'server_bridge',
+          attempt: i + 1,
+          delay_ms_so_far: delaysMs.slice(0, i + 1).reduce((a, b) => a + b, 0),
+        });
+        return;
+      }
+    } catch {
+      // Network hiccup - just retry on next loop iteration.
+    }
+  }
+  trackEvent('router_identity_bridge_missed', {
+    attempts: delaysMs.length,
+  });
+}
+
 /* ─────────────────────── main export ──────────────────────────────── */
 
 export function Router() {
@@ -181,6 +225,15 @@ export function Router() {
       });
     } else if (incomingPhid) {
       identifyUser(incomingPhid);
+    } else {
+      // Server-side identity bridge - only fire when URL didn't carry
+      // identity directly. CF and travisfba.com are different root
+      // domains, so we can't share cookies or localStorage; the bridge
+      // works via a CF webhook that wrote the visitor's identity into
+      // Netlify Blobs keyed by sha256(ip + user_agent). We retry a few
+      // times to handle the webhook-vs-redirect race (the webhook is
+      // async; the redirect can win if our function had a cold start).
+      void runServerSideIdentityBridge();
     }
 
     // PostHog: announce the router was hit. Country comes later (from
