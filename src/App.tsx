@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DarkMode } from './pages/DarkMode';
 import { LightMode } from './pages/LightMode';
+import { HomeRedirect } from './pages/HomeRedirect';
 import { BookCall } from './pages/BookCall';
 import { Training } from './pages/Training';
 import { TrainingNew } from './pages/TrainingNew';
@@ -49,7 +50,8 @@ function AppWrapper() {
           <QuestionnaireProvider>
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<DarkMode />} />
+                <Route path="/" element={<HomeRedirect />} />
+                <Route path="/old-home" element={<DarkMode />} />
                 <Route path="/getstarted" element={<LightMode />} />
                 <Route path="/bookacall" element={<BookCall />} />
                 <Route path="/training" element={<Training />} />
