@@ -23,6 +23,16 @@ export function HomeRedirect() {
       for (const [k, v] of incoming.entries()) {
         if (v) target.searchParams.set(k, v);
       }
+      // If the incoming visit had NO utm_source, tag it with one that
+      // makes it clear they came in via the travisfba.com homepage
+      // redirect - distinguishes them from people who hit
+      // start.travismarziani.com directly via YouTube, ads, etc. If
+      // the incoming URL already carried a utm_source, leave it alone
+      // so paid / campaign attribution survives.
+      if (!target.searchParams.get('utm_source')) {
+        target.searchParams.set('utm_source', 'travisfba');
+        target.searchParams.set('utm_medium', 'redirect');
+      }
     } catch {
       /* no-op */
     }
