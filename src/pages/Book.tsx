@@ -1,39 +1,26 @@
 import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
-import { identifyUser, trackBookingPageViewed, trackBookingCompleted } from '../lib/posthog';
+import { identifyUser, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
-import { getCleanParam, getCleanIdentity, buildCanonicalIdentityForward } from '../lib/urlParams';
+import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
 
-/* ───── /book - embedded HubSpot closer scheduler ─────────────────
-   Embeds the HubSpot meeting scheduler in an iframe and listens
-   for the postMessage event HubSpot fires when a meeting is booked.
+/* ───── /book - embedded OnceHub closer scheduler ─────────────────
+   The closer scheduler now runs on OnceHub (calendar BKC-Q45L7MVX52)
+   instead of HubSpot's native meetings iframe - the closer team
+   wanted OnceHub's scheduling UX + routing logic.
 
-   On booking success, stores the full meeting payload in localStorage
-   then redirects to /trainingnew/closer which reads it and personalizes
-   the calendar button.
-
-   Also reads any Typeform answers from the URL on load and persists
-   them so the closer page can use them too.
+   Mirrors WebinarBook.tsx's identity/UTM/timezone/personalization
+   wiring. On booking success the OnceHub payload's identity wins
+   over URL/localStorage (visitor may have typed a different email
+   into the booking form than they arrived with) and we redirect
+   to /trainingnew/closer with the meeting details for the
+   confirmation page to hydrate from.
 ────────────────────────────────────────────────────────────────── */
 
-const HUBSPOT_EMBED_URL = 'https://meetings-na2.hubspot.com/passionproduct/closer?embed=true';
+const ONCEHUB_CALENDAR_ID = 'BKC-Q45L7MVX52';
 const STORAGE_KEY = 'pp_booking_data';
-const MEETING_KEY = 'pp_meeting_data';
 const REDIRECT_TO = '/trainingnew/closer';
-
-const TYPEFORM_FIELDS = [
-  'firstname',
-  'lastname',
-  'phone',
-  'email',
-  'location',
-  'reason',
-  'tried',
-  'travis',
-  'value',
-  'money',
-];
 
 function persistTypeformAnswers() {
   if (typeof window === 'undefined') return;
@@ -63,15 +50,46 @@ function persistTypeformAnswers() {
   }
 }
 
-function buildEmbedUrl(): string {
-  if (typeof window === 'undefined') return HUBSPOT_EMBED_URL;
+/* OnceHub fires events as type: "oncehub.booking_calendar.<action>".
+   Match broadly on any booking-related success terminology. */
+function isOncehubBookingConfirmed(data: unknown): boolean {
+  if (!data) return false;
+  let typeStr = '';
+  if (typeof data === 'string') {
+    typeStr = data.toLowerCase();
+  } else if (typeof data === 'object') {
+    const d = data as Record<string, unknown>;
+    typeStr = [
+      typeof d.type === 'string' ? d.type : '',
+      typeof d.eventType === 'string' ? d.eventType : '',
+      typeof d.eventName === 'string' ? d.eventName : '',
+    ].join(' ').toLowerCase();
+  }
+  if (!typeStr.includes('booking')) return false;
+  return (
+    typeStr.includes('confirmed') ||
+    typeStr.includes('succeeded') ||
+    typeStr.includes('success') ||
+    typeStr.includes('complete') ||
+    typeStr.includes('scheduled')
+  );
+}
+
+function getOncehubPrefill(): { name?: string; email?: string; phone?: string } {
+  if (typeof window === 'undefined') return {};
   const params = new URLSearchParams(window.location.search);
-  // Forward the first valid value across every identity alias under
-  // canonical keys, so the HubSpot iframe is pre-filled correctly
-  // whether the source param was `email`, `utm_email`, etc.
-  const forward = buildCanonicalIdentityForward(params);
-  if (forward.toString() === '') return HUBSPOT_EMBED_URL;
-  return `${HUBSPOT_EMBED_URL}&${forward.toString()}`;
+  const id = getCleanIdentity(params);
+  const rawName = getCleanParam(params, 'name') || getCleanParam(params, 'fullname') || getCleanParam(params, 'full_name');
+  const name =
+    rawName ||
+    [id.firstname, id.lastname].filter(Boolean).join(' ').trim() ||
+    id.firstname ||
+    undefined;
+  return {
+    name: name || undefined,
+    email: id.email || undefined,
+    phone: id.phone || undefined,
+  };
 }
 
 export function Book() {
@@ -79,15 +97,9 @@ export function Book() {
 
   useEffect(() => {
     persistTypeformAnswers();
-    // Capture any utm_* params on the URL into sessionStorage so we
-    // still have them when meetingBookSucceeded fires after the user
-    // interacts with the HubSpot iframe.
     persistUtmsFromUrl();
     trackBookingPageViewed('closer');
 
-    // Identify user using the canonical identity lookup - this
-    // picks the first valid email across [email, utm_email, ...]
-    // so a real value under any alias is used.
     const params = new URLSearchParams(window.location.search);
     const id = getCleanIdentity(params);
     if (id.email) {
@@ -98,179 +110,231 @@ export function Book() {
       });
     }
 
-    // Listen for HubSpot's meeting booked postMessage
     const handleMessage = (event: MessageEvent) => {
-      // HubSpot meeting events come from hubspot.com / hsforms.com / meetings.hubspot.com
       const origin = event.origin || '';
-      if (
-        !origin.includes('hubspot.com') &&
-        !origin.includes('hsforms.com') &&
-        !origin.includes('hsforms.net')
-      ) {
+      if (!origin.includes('oncehub.com') && !origin.includes('scheduleonce.com')) {
         return;
       }
 
-      const data = event.data;
-      if (!data || typeof data !== 'object') return;
+      // Diagnostic - log every OnceHub postMessage to PostHog so we can
+      // refine isOncehubBookingConfirmed if a new event shape appears.
+      let preview = '';
+      try {
+        preview = typeof event.data === 'string' ? event.data.slice(0, 800) : JSON.stringify(event.data).slice(0, 800);
+      } catch { /* no-op */ }
+      trackEvent('oncehub_postmessage_received', {
+        booking_type: 'closer',
+        origin,
+        preview,
+      });
 
-      // HubSpot fires events with meetingBookSucceeded
-      if (data.meetingBookSucceeded || data.eventName === 'meetingBookSucceeded') {
-        const payload = data.meetingsPayload || data.payload || data;
+      if (!isOncehubBookingConfirmed(event.data)) return;
 
-        // eslint-disable-next-line no-console
-        console.log('[HubSpot meetingBookSucceeded payload]', payload);
-        // eslint-disable-next-line no-console
-        console.log('[HubSpot payload JSON]', JSON.stringify(payload, null, 2));
+      // eslint-disable-next-line no-console
+      console.log('[OnceHub booking confirmed - closer]', event.data);
 
-        /* ───── Documented HubSpot meetingsPayload shape ─────────────
-         *   meetingsPayload.bookingResponse.event.dateString    (meeting start, ISO w/ time)
-         *   meetingsPayload.bookingResponse.event.duration      (ms)
-         *   meetingsPayload.bookingResponse.postResponse.organizer.name
-         *   meetingsPayload.bookingResponse.postResponse.contact.{firstName, email}
-         *
-         * The Zoom / video URL is the HubSpot meeting's "location"
-         * property. HubSpot does not include it in the postMessage
-         * payload - it's only on the server side (CRM engagement
-         * record). So we can't get it via iframe. Workaround: the same
-         * user will receive HubSpot's calendar invite email which has
-         * the Zoom link in it. We link them to "check email" for that.
-         */
-        const bookingResponse = payload?.bookingResponse || {};
-        const eventData = bookingResponse.event || {};
-        const postResponse = bookingResponse.postResponse || {};
-        const organizer = postResponse.organizer || bookingResponse.organizer || {};
-        const contact = postResponse.contact || bookingResponse.contact || {};
+      trackBookingCompleted('closer');
 
-        // Identify FIRST with the email HubSpot just confirmed. Visitors
-        // who arrived without an email in the URL stayed anonymous on
-        // /book up to this point - calling identifyUser here means
-        // trackBookingCompleted and all subsequent events get correctly
-        // attributed to the right Person, AND PostHog will retroactively
-        // merge the pre-identify events under that Person too.
-        const bookingEmail =
-          (contact.email as string | undefined) ||
-          getCleanIdentity(new URLSearchParams(window.location.search)).email ||
-          '';
-        if (bookingEmail) {
-          identifyUser(bookingEmail, {
-            first_name: contact.firstName || undefined,
-            last_name:  contact.lastName  || undefined,
-            phone:      contact.phone     || undefined,
-          });
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlId = getCleanIdentity(urlParams);
+      const rawName = getCleanParam(urlParams, 'name') || getCleanParam(urlParams, 'fullname') || '';
+
+      let storedFirst = '';
+      let storedLast  = '';
+      let storedPhone = '';
+      let storedEmail = '';
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          storedFirst = parsed?.firstname || '';
+          storedLast  = parsed?.lastname  || '';
+          storedPhone = parsed?.phone     || '';
+          storedEmail = parsed?.email     || '';
         }
+      } catch { /* no-op */ }
 
-        trackBookingCompleted('closer');
-
-        // Push the visitor's IANA timezone (e.g. "America/New_York")
-        // onto their HubSpot contact so SMS/email automations can
-        // render meeting times in the recipient's local zone. Fire-
-        // and-forget; sendBeacon survives the redirect below.
-        syncContactTimezone(bookingEmail, 'book_redirect');
-        // Also push UTMs - server only writes empty fields, so
-        // first-touch attribution is preserved on returning contacts.
-        syncContactUtms(bookingEmail, 'book_redirect');
-
-        // dateString is an ISO timestamp like "2026-04-23T19:00:00.000Z"
-        // OR just a bare "2026-04-23" in some versions. Only trust it
-        // if it has a time component.
-        const hasTime = (v: unknown): v is string =>
-          typeof v === 'string' && v.includes('T') && (v.includes(':') || /[Z+-]\d{2}/.test(v));
-
-        let startMs: number | null = null;
-        let startIso = '';
-        if (hasTime(eventData.dateString)) {
-          const d = new Date(eventData.dateString);
-          if (!isNaN(d.getTime())) {
-            startMs = d.getTime();
-            startIso = d.toISOString();
-          }
-        } else if (typeof eventData.dateString === 'number') {
-          // Some versions use epoch ms
-          const d = new Date(eventData.dateString);
-          if (!isNaN(d.getTime())) {
-            startMs = d.getTime();
-            startIso = d.toISOString();
-          }
-        }
-
-        const duration = Number(eventData.duration) || 30 * 60 * 1000;
-        const endMs = startMs !== null ? startMs + duration : null;
-        const endIso = endMs !== null ? new Date(endMs).toISOString() : '';
-
-        // Meeting owner is organizer.name per HubSpot's documented shape
-        const ownerName = (organizer.name as string | undefined) || '';
-
-        // ───── Look for the Zoom / video URL aggressively ───────────
-        // Per HubSpot forums the meeting location is supposed to be
-        // server-side only, but we'll scan the postMessage payload
-        // thoroughly just in case it IS there under a field we don't
-        // know about. Log everything so we can diagnose on real bookings.
-        const allStrings: Array<{ path: string; value: string }> = [];
-        const walkStrings = (obj: unknown, path: string) => {
-          if (obj === null || obj === undefined) return;
-          if (typeof obj === 'string') {
-            allStrings.push({ path, value: obj });
-            return;
-          }
-          if (typeof obj === 'object') {
-            for (const k of Object.keys(obj as Record<string, unknown>)) {
-              walkStrings((obj as Record<string, unknown>)[k], path ? `${path}.${k}` : k);
-            }
-          }
-        };
-        walkStrings(payload, '');
-
-        const VIDEO_HOSTS = /(zoom\.us|meet\.google\.com|teams\.(microsoft|live)\.com|gotomeeting\.com|gotomeet\.me|webex\.com|whereby\.com|meet\.jit\.si|hubspot\.com\/meetings)/i;
-        const joinUrlCandidates = allStrings.filter(s => VIDEO_HOSTS.test(s.value));
-        const locationFields = allStrings.filter(s => /location/i.test(s.path));
-
-        // eslint-disable-next-line no-console
-        console.log('[HubSpot join URL candidates]', joinUrlCandidates);
-        // eslint-disable-next-line no-console
-        console.log('[HubSpot location-ish fields]', locationFields);
-
-        let joinUrl = joinUrlCandidates[0]?.value || '';
-        if (joinUrl && !/^https?:\/\//i.test(joinUrl)) {
-          joinUrl = `https://${joinUrl}`;
-        }
-
-        // Build the redirect URL. If we don't have a real start timestamp,
-        // DON'T pass start/end - confirmation page shows generic fallback.
-        const redirectParams = new URLSearchParams();
-        if (startIso) redirectParams.set('start', startIso);
-        if (endIso) redirectParams.set('end', endIso);
-        if (eventData.title) redirectParams.set('title', eventData.title as string);
-        if (joinUrl) redirectParams.set('join', joinUrl);
-        if (contact.firstName) redirectParams.set('firstname', contact.firstName);
-        if (contact.lastName) redirectParams.set('lastname', contact.lastName);
-        if (contact.email) redirectParams.set('email', contact.email);
-        if (ownerName) redirectParams.set('owner', ownerName);
-
-        const target = redirectParams.toString()
-          ? `${REDIRECT_TO}?${redirectParams.toString()}`
-          : REDIRECT_TO;
-
-        setTimeout(() => {
-          window.location.href = target;
-        }, 800);
+      let firstname = urlId.firstname || storedFirst || '';
+      let lastname  = urlId.lastname  || storedLast  || '';
+      if (!firstname && rawName) {
+        const parts = rawName.split(/\s+/).filter(Boolean);
+        firstname = parts[0] || '';
+        if (!lastname && parts.length > 1) lastname = parts.slice(1).join(' ');
       }
+      const bookingEmail = urlId.email || storedEmail || '';
+      const bookingPhone = urlId.phone || storedPhone || '';
+
+      // Pull whatever meeting details OnceHub's postMessage carries.
+      // Field names from actual OnceHub booking.scheduled payload:
+      //   starting_time, ending_time, subject, host, customer_*, ...
+      // NOT start_time / end_time / etc.
+      const payload: Record<string, unknown> =
+        (typeof event.data === 'object' && event.data !== null
+          ? ((event.data as Record<string, unknown>).payload as Record<string, unknown> | undefined) || (event.data as Record<string, unknown>)
+          : {}) || {};
+      const pickStr = (...keys: string[]): string => {
+        for (const k of keys) {
+          const v = payload[k];
+          if (typeof v === 'string' && v.trim()) return v.trim();
+          if (typeof v === 'number') return String(v);
+        }
+        return '';
+      };
+      const pickNested = (path: string[]): string => {
+        let cur: unknown = payload;
+        for (const seg of path) {
+          if (!cur || typeof cur !== 'object') return '';
+          cur = (cur as Record<string, unknown>)[seg];
+        }
+        return typeof cur === 'string' && cur.trim() ? cur.trim() : '';
+      };
+      const meetingStart =
+        pickStr('starting_time', 'start_time', 'startTime', 'start', 'scheduled_at', 'scheduledAt') ||
+        pickNested(['booking', 'starting_time']) ||
+        pickNested(['event', 'starting_time']);
+      const meetingEnd =
+        pickStr('ending_time', 'end_time', 'endTime', 'end') ||
+        pickNested(['booking', 'ending_time']) ||
+        pickNested(['event', 'ending_time']);
+      const meetingTitle =
+        pickStr('subject', 'title', 'name', 'event_name') ||
+        pickNested(['booking', 'subject']);
+      const ownerName =
+        pickStr('host_name', 'owner_name', 'organizer_name', 'organizer') ||
+        pickNested(['host', 'name']) ||
+        pickNested(['owner', 'name']);
+      // OnceHub uses `virtual_or_physical_location` for the join URL.
+      const joinUrl =
+        pickStr('virtual_or_physical_location', 'join_url', 'joinUrl', 'meeting_url', 'video_url', 'conference_url', 'location') ||
+        pickNested(['conference', 'join_url']) ||
+        pickNested(['conference_details', 'join_url']);
+
+      // OnceHub payload identity WINS over URL/localStorage - the visitor
+      // could have arrived with one email and typed a different one into
+      // the booking form. The OnceHub email is what created the HubSpot
+      // contact + deal, so it's what /trainingnew/closer needs to find
+      // the right record.
+      const payloadEmail = pickStr('customer_email', 'attendee_email', 'guest_email') || pickNested(['customer', 'email']);
+      const payloadFirst = pickStr('customer_first_name', 'attendee_first_name') || pickNested(['customer', 'first_name']);
+      const payloadLast  = pickStr('customer_last_name', 'attendee_last_name')   || pickNested(['customer', 'last_name']);
+      const payloadName  = pickStr('customer_name', 'attendee_name')              || pickNested(['customer', 'name']);
+      const payloadPhone = pickStr('customer_phone', 'attendee_phone', 'phone')   || pickNested(['customer', 'phone']);
+
+      let splitFirst = '';
+      let splitLast  = '';
+      if (payloadName && !payloadFirst && !payloadLast) {
+        const parts = payloadName.split(/\s+/).filter(Boolean);
+        splitFirst = parts[0] || '';
+        if (parts.length > 1) splitLast = parts.slice(1).join(' ');
+      }
+      const finalEmail = payloadEmail || bookingEmail;
+      const finalFirst = payloadFirst || splitFirst || firstname;
+      const finalLast  = payloadLast  || splitLast  || lastname;
+      const finalPhone = payloadPhone || bookingPhone;
+
+      // Identify with the OnceHub-confirmed email so trackBookingCompleted
+      // and downstream events are attributed to the right Person.
+      if (finalEmail) {
+        identifyUser(finalEmail, {
+          first_name: finalFirst || undefined,
+          last_name:  finalLast  || undefined,
+          phone:      finalPhone || undefined,
+        });
+      }
+
+      syncContactTimezone(finalEmail, 'book_redirect');
+      syncContactUtms(finalEmail, 'book_redirect');
+
+      const redirectParams = new URLSearchParams();
+      if (finalEmail)   redirectParams.set('email',     finalEmail);
+      if (finalFirst)   redirectParams.set('firstname', finalFirst);
+      if (finalLast)    redirectParams.set('lastname',  finalLast);
+      if (finalPhone)   redirectParams.set('phone',     finalPhone);
+      if (meetingStart) redirectParams.set('start',     meetingStart);
+      if (meetingEnd)   redirectParams.set('end',       meetingEnd);
+      if (meetingTitle) redirectParams.set('title',     meetingTitle);
+      if (ownerName)    redirectParams.set('owner',     ownerName);
+      if (joinUrl)      redirectParams.set('join',      joinUrl);
+
+      const target = redirectParams.toString()
+        ? `${REDIRECT_TO}?${redirectParams.toString()}`
+        : REDIRECT_TO;
+
+      setTimeout(() => {
+        window.location.href = target;
+      }, 800);
     };
 
     window.addEventListener('message', handleMessage);
 
-    // Inject HubSpot's embed loader script (idempotent)
-    const existing = document.querySelector(
-      'script[src*="MeetingsEmbedCode.js"]'
-    );
+    // OnceHub's cdn.oncehub.com/cal/embed.js loader creates the iframe
+    // inside any div with data-oh-booking-calendar-id. Inject once.
+    const existing = document.querySelector('script[src*="cdn.oncehub.com/cal/embed.js"]');
     if (!existing) {
       const script = document.createElement('script');
-      script.src = 'https://static.hsappstatic.net/MeetingsEmbed/ex/MeetingsEmbedCode.js';
+      script.src = 'https://cdn.oncehub.com/cal/embed.js';
+      script.async = true;
       script.type = 'text/javascript';
       document.body.appendChild(script);
     }
 
+    // After embed.js mounts the iframe, append name/email/phone query
+    // params to its src so OnceHub's booking form is pre-filled.
+    const prefill = getOncehubPrefill();
+    const hasPrefill = !!(prefill.name || prefill.email || prefill.phone);
+    let pollHandle: ReturnType<typeof setInterval> | null = null;
+    if (hasPrefill) {
+      let attempts = 0;
+      const tryAddPrefill = (): boolean => {
+        const iframe = containerRef.current?.querySelector('iframe') as HTMLIFrameElement | null;
+        if (!iframe || !iframe.src) return false;
+        try {
+          const url = new URL(iframe.src);
+          let changed = false;
+          const setIfAbsent = (key: string, value: string) => {
+            if (!url.searchParams.has(key)) {
+              url.searchParams.set(key, value);
+              changed = true;
+            }
+          };
+          if (prefill.name) {
+            setIfAbsent('name', prefill.name);
+            const parts = prefill.name.split(/\s+/).filter(Boolean);
+            if (parts[0]) setIfAbsent('first_name', parts[0]);
+            if (parts.length > 1) setIfAbsent('last_name', parts.slice(1).join(' '));
+          }
+          if (prefill.email) {
+            setIfAbsent('email', prefill.email);
+          }
+          if (prefill.phone) {
+            setIfAbsent('phone', prefill.phone);
+            setIfAbsent('mobile', prefill.phone);
+            setIfAbsent('mobile_phone', prefill.phone);
+            setIfAbsent('phone_number', prefill.phone);
+            setIfAbsent('cellphone', prefill.phone);
+            const e164 = prefill.phone.replace(/[\s()-]/g, '');
+            if (e164 !== prefill.phone) {
+              url.searchParams.set('phone', e164);
+              url.searchParams.set('mobile', e164);
+              url.searchParams.set('mobile_phone', e164);
+              changed = true;
+            }
+          }
+          if (changed) iframe.src = url.toString();
+        } catch { /* no-op */ }
+        return true;
+      };
+      pollHandle = setInterval(() => {
+        attempts++;
+        if (tryAddPrefill() || attempts > 60) {
+          if (pollHandle) clearInterval(pollHandle);
+        }
+      }, 100);
+    }
+
     return () => {
       window.removeEventListener('message', handleMessage);
+      if (pollHandle) clearInterval(pollHandle);
     };
   }, []);
 
@@ -315,7 +379,7 @@ export function Book() {
           </p>
         </div>
 
-        {/* Embedded scheduler with framing */}
+        {/* Embedded OnceHub scheduler with framing */}
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
@@ -325,8 +389,8 @@ export function Book() {
             </div>
             <div
               ref={containerRef}
-              className="meetings-iframe-container"
-              data-src={buildEmbedUrl()}
+              data-oh-booking-calendar-id={ONCEHUB_CALENDAR_ID}
+              style={{ minWidth: 320, height: 700 }}
             />
           </div>
         </div>

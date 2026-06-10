@@ -1,32 +1,26 @@
 import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
-import { identifyUser, trackBookingPageViewed, trackBookingCompleted } from '../lib/posthog';
+import { identifyUser, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
-import { getCleanParam, getCleanIdentity, buildCanonicalIdentityForward } from '../lib/urlParams';
+import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
 
-/* ───── /bookacall - embedded HubSpot setter scheduler ─────────────
-   Same flow as /book but for the setter team. Captures the booking
-   payload in localStorage and redirects to /trainingnew/setter.
+/* ───── /bookacall - embedded OnceHub setter scheduler ─────────────
+   Setter scheduler now runs on OnceHub (calendar BKC-P9JY2GLKJX)
+   instead of HubSpot's native meetings iframe.
+
+   The setter call is a PHONE CALL, not a video meeting, so we don't
+   need to forward start times / join URLs / owner names like /book
+   does - the confirmation page (/trainingnew/setter) only needs
+   identity to look up the visitor's region and pick the right Kixie
+   line. We still let the OnceHub payload identity override URL/
+   localStorage in case the visitor typed a different email into
+   the OnceHub form.
 ────────────────────────────────────────────────────────────────── */
 
-const HUBSPOT_EMBED_URL = 'https://meetings-na2.hubspot.com/passionproduct/introduction?embed=true';
+const ONCEHUB_CALENDAR_ID = 'BKC-P9JY2GLKJX';
 const STORAGE_KEY = 'pp_booking_data';
-const MEETING_KEY = 'pp_meeting_data';
 const REDIRECT_TO = '/trainingnew/setter';
-
-const TYPEFORM_FIELDS = [
-  'firstname',
-  'lastname',
-  'phone',
-  'email',
-  'location',
-  'reason',
-  'tried',
-  'travis',
-  'value',
-  'money',
-];
 
 function persistTypeformAnswers() {
   if (typeof window === 'undefined') return;
@@ -34,8 +28,6 @@ function persistTypeformAnswers() {
   const data: Record<string, string> = {
     _captured_at: new Date().toISOString(),
   };
-  // Identity fields use the canonical alias lookup - e.g. utm_email
-  // folds into the canonical `email` key when `email=_____`.
   const id = getCleanIdentity(params);
   if (id.firstname) data.firstname = id.firstname;
   if (id.lastname)  data.lastname  = id.lastname;
@@ -54,12 +46,44 @@ function persistTypeformAnswers() {
   }
 }
 
-function buildEmbedUrl(): string {
-  if (typeof window === 'undefined') return HUBSPOT_EMBED_URL;
+function isOncehubBookingConfirmed(data: unknown): boolean {
+  if (!data) return false;
+  let typeStr = '';
+  if (typeof data === 'string') {
+    typeStr = data.toLowerCase();
+  } else if (typeof data === 'object') {
+    const d = data as Record<string, unknown>;
+    typeStr = [
+      typeof d.type === 'string' ? d.type : '',
+      typeof d.eventType === 'string' ? d.eventType : '',
+      typeof d.eventName === 'string' ? d.eventName : '',
+    ].join(' ').toLowerCase();
+  }
+  if (!typeStr.includes('booking')) return false;
+  return (
+    typeStr.includes('confirmed') ||
+    typeStr.includes('succeeded') ||
+    typeStr.includes('success') ||
+    typeStr.includes('complete') ||
+    typeStr.includes('scheduled')
+  );
+}
+
+function getOncehubPrefill(): { name?: string; email?: string; phone?: string } {
+  if (typeof window === 'undefined') return {};
   const params = new URLSearchParams(window.location.search);
-  const forward = buildCanonicalIdentityForward(params);
-  if (forward.toString() === '') return HUBSPOT_EMBED_URL;
-  return `${HUBSPOT_EMBED_URL}&${forward.toString()}`;
+  const id = getCleanIdentity(params);
+  const rawName = getCleanParam(params, 'name') || getCleanParam(params, 'fullname') || getCleanParam(params, 'full_name');
+  const name =
+    rawName ||
+    [id.firstname, id.lastname].filter(Boolean).join(' ').trim() ||
+    id.firstname ||
+    undefined;
+  return {
+    name: name || undefined,
+    email: id.email || undefined,
+    phone: id.phone || undefined,
+  };
 }
 
 export function BookCall() {
@@ -67,8 +91,6 @@ export function BookCall() {
 
   useEffect(() => {
     persistTypeformAnswers();
-    // Capture utm_* from the URL into sessionStorage so it survives
-    // the HubSpot iframe interaction.
     persistUtmsFromUrl();
     trackBookingPageViewed('setter');
 
@@ -84,86 +106,171 @@ export function BookCall() {
 
     const handleMessage = (event: MessageEvent) => {
       const origin = event.origin || '';
-      if (
-        !origin.includes('hubspot.com') &&
-        !origin.includes('hsforms.com') &&
-        !origin.includes('hsforms.net')
-      ) {
+      if (!origin.includes('oncehub.com') && !origin.includes('scheduleonce.com')) {
         return;
       }
 
-      const data = event.data;
-      if (!data || typeof data !== 'object') return;
+      let preview = '';
+      try {
+        preview = typeof event.data === 'string' ? event.data.slice(0, 800) : JSON.stringify(event.data).slice(0, 800);
+      } catch { /* no-op */ }
+      trackEvent('oncehub_postmessage_received', {
+        booking_type: 'setter',
+        origin,
+        preview,
+      });
 
-      if (data.meetingBookSucceeded || data.eventName === 'meetingBookSucceeded') {
-        const payload = data.meetingsPayload || data.payload || data;
+      if (!isOncehubBookingConfirmed(event.data)) return;
 
-        // eslint-disable-next-line no-console
-        console.log('[HubSpot meetingBookSucceeded payload - setter]', payload);
+      // eslint-disable-next-line no-console
+      console.log('[OnceHub booking confirmed - setter]', event.data);
 
-        // Setter is a PHONE CALL, not a video meeting. Only carry the
-        // contact info forward. No start time, no join URL, no calendar
-        // event. The setter page relies on phone-number contact saving,
-        // not meeting details.
-        const contact =
-          payload?.bookingResponse?.postResponse?.contact ||
-          payload?.bookingResponse?.contact ||
-          payload?.contact ||
-          {};
+      trackBookingCompleted('setter');
 
-        // Identify FIRST with the HubSpot-confirmed email so subsequent
-        // events on this page are attributed correctly. Visitors who
-        // arrived without an email in the URL (more common on /bookacall
-        // than /book - more direct/YouTube traffic) stay anonymous up
-        // to this point; identifying here means trackBookingCompleted
-        // and all later events get the right Person attribution.
-        const bookingEmail =
-          (contact.email as string | undefined) ||
-          getCleanIdentity(new URLSearchParams(window.location.search)).email ||
-          '';
-        if (bookingEmail) {
-          identifyUser(bookingEmail, {
-            first_name: contact.firstName || undefined,
-            last_name:  contact.lastName  || undefined,
-            phone:      contact.phone     || undefined,
-          });
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlId = getCleanIdentity(urlParams);
+      const rawName = getCleanParam(urlParams, 'name') || getCleanParam(urlParams, 'fullname') || '';
+
+      let storedFirst = '';
+      let storedEmail = '';
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          storedFirst = parsed?.firstname || '';
+          storedEmail = parsed?.email     || '';
         }
+      } catch { /* no-op */ }
 
-        trackBookingCompleted('setter');
-
-        // Push timezone + UTMs to HubSpot. UTM sync respects existing
-        // values so first-touch attribution is preserved.
-        syncContactTimezone(bookingEmail, 'bookacall_redirect');
-        syncContactUtms(bookingEmail, 'bookacall_redirect');
-
-        const redirectParams = new URLSearchParams();
-        if (contact.firstName) redirectParams.set('firstname', contact.firstName);
-        if (contact.email) redirectParams.set('email', contact.email);
-
-        const target = redirectParams.toString()
-          ? `${REDIRECT_TO}?${redirectParams.toString()}`
-          : REDIRECT_TO;
-
-        setTimeout(() => {
-          window.location.href = target;
-        }, 800);
+      let firstname = urlId.firstname || storedFirst || '';
+      if (!firstname && rawName) {
+        firstname = rawName.split(/\s+/)[0] || '';
       }
+      const bookingEmail = urlId.email || storedEmail || '';
+
+      // OnceHub payload identity wins over URL/localStorage.
+      const payload: Record<string, unknown> =
+        (typeof event.data === 'object' && event.data !== null
+          ? ((event.data as Record<string, unknown>).payload as Record<string, unknown> | undefined) || (event.data as Record<string, unknown>)
+          : {}) || {};
+      const pickStr = (...keys: string[]): string => {
+        for (const k of keys) {
+          const v = payload[k];
+          if (typeof v === 'string' && v.trim()) return v.trim();
+          if (typeof v === 'number') return String(v);
+        }
+        return '';
+      };
+      const pickNested = (path: string[]): string => {
+        let cur: unknown = payload;
+        for (const seg of path) {
+          if (!cur || typeof cur !== 'object') return '';
+          cur = (cur as Record<string, unknown>)[seg];
+        }
+        return typeof cur === 'string' && cur.trim() ? cur.trim() : '';
+      };
+      const payloadEmail = pickStr('customer_email', 'attendee_email', 'guest_email') || pickNested(['customer', 'email']);
+      const payloadFirst = pickStr('customer_first_name', 'attendee_first_name') || pickNested(['customer', 'first_name']);
+      const payloadName  = pickStr('customer_name', 'attendee_name')              || pickNested(['customer', 'name']);
+      const payloadPhone = pickStr('customer_phone', 'attendee_phone', 'phone')   || pickNested(['customer', 'phone']);
+
+      let splitFirst = '';
+      if (payloadName && !payloadFirst) {
+        splitFirst = payloadName.split(/\s+/)[0] || '';
+      }
+      const finalEmail = payloadEmail || bookingEmail;
+      const finalFirst = payloadFirst || splitFirst || firstname;
+      const finalPhone = payloadPhone || '';
+
+      if (finalEmail) {
+        identifyUser(finalEmail, {
+          first_name: finalFirst || undefined,
+          phone:      finalPhone || undefined,
+        });
+      }
+
+      syncContactTimezone(finalEmail, 'bookacall_redirect');
+      syncContactUtms(finalEmail, 'bookacall_redirect');
+
+      const redirectParams = new URLSearchParams();
+      if (finalFirst) redirectParams.set('firstname', finalFirst);
+      if (finalEmail) redirectParams.set('email',     finalEmail);
+
+      const target = redirectParams.toString()
+        ? `${REDIRECT_TO}?${redirectParams.toString()}`
+        : REDIRECT_TO;
+
+      setTimeout(() => {
+        window.location.href = target;
+      }, 800);
     };
 
     window.addEventListener('message', handleMessage);
 
-    const existing = document.querySelector(
-      'script[src*="MeetingsEmbedCode.js"]'
-    );
+    const existing = document.querySelector('script[src*="cdn.oncehub.com/cal/embed.js"]');
     if (!existing) {
       const script = document.createElement('script');
-      script.src = 'https://static.hsappstatic.net/MeetingsEmbed/ex/MeetingsEmbedCode.js';
+      script.src = 'https://cdn.oncehub.com/cal/embed.js';
+      script.async = true;
       script.type = 'text/javascript';
       document.body.appendChild(script);
     }
 
+    const prefill = getOncehubPrefill();
+    const hasPrefill = !!(prefill.name || prefill.email || prefill.phone);
+    let pollHandle: ReturnType<typeof setInterval> | null = null;
+    if (hasPrefill) {
+      let attempts = 0;
+      const tryAddPrefill = (): boolean => {
+        const iframe = containerRef.current?.querySelector('iframe') as HTMLIFrameElement | null;
+        if (!iframe || !iframe.src) return false;
+        try {
+          const url = new URL(iframe.src);
+          let changed = false;
+          const setIfAbsent = (key: string, value: string) => {
+            if (!url.searchParams.has(key)) {
+              url.searchParams.set(key, value);
+              changed = true;
+            }
+          };
+          if (prefill.name) {
+            setIfAbsent('name', prefill.name);
+            const parts = prefill.name.split(/\s+/).filter(Boolean);
+            if (parts[0]) setIfAbsent('first_name', parts[0]);
+            if (parts.length > 1) setIfAbsent('last_name', parts.slice(1).join(' '));
+          }
+          if (prefill.email) {
+            setIfAbsent('email', prefill.email);
+          }
+          if (prefill.phone) {
+            setIfAbsent('phone', prefill.phone);
+            setIfAbsent('mobile', prefill.phone);
+            setIfAbsent('mobile_phone', prefill.phone);
+            setIfAbsent('phone_number', prefill.phone);
+            setIfAbsent('cellphone', prefill.phone);
+            const e164 = prefill.phone.replace(/[\s()-]/g, '');
+            if (e164 !== prefill.phone) {
+              url.searchParams.set('phone', e164);
+              url.searchParams.set('mobile', e164);
+              url.searchParams.set('mobile_phone', e164);
+              changed = true;
+            }
+          }
+          if (changed) iframe.src = url.toString();
+        } catch { /* no-op */ }
+        return true;
+      };
+      pollHandle = setInterval(() => {
+        attempts++;
+        if (tryAddPrefill() || attempts > 60) {
+          if (pollHandle) clearInterval(pollHandle);
+        }
+      }, 100);
+    }
+
     return () => {
       window.removeEventListener('message', handleMessage);
+      if (pollHandle) clearInterval(pollHandle);
     };
   }, []);
 
@@ -208,7 +315,7 @@ export function BookCall() {
           </p>
         </div>
 
-        {/* Embedded scheduler with framing */}
+        {/* Embedded OnceHub scheduler with framing */}
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
@@ -218,8 +325,8 @@ export function BookCall() {
             </div>
             <div
               ref={containerRef}
-              className="meetings-iframe-container"
-              data-src={buildEmbedUrl()}
+              data-oh-booking-calendar-id={ONCEHUB_CALENDAR_ID}
+              style={{ minWidth: 320, height: 700 }}
             />
           </div>
         </div>
