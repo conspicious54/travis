@@ -203,25 +203,13 @@ export function NewForm() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white text-gray-900">
-      {/* Minimal header - just the flame mark. Wordmark intentionally dropped. */}
-      <header className="bg-white border-b border-gray-100">
-        <div className="max-w-3xl mx-auto px-5 py-5 flex items-center justify-center">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/30 to-amber-500/30 rounded-full blur-md" />
-            <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-md shadow-orange-500/30">
-              <Flame className="w-5 h-5 text-white" />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-5 pt-10 md:pt-14 pb-16">
+      <main className="max-w-4xl mx-auto px-5 pt-12 md:pt-20 pb-16">
         {/* Hero - copy verbatim from the original CF page */}
-        <div className="text-center mb-8">
-          <p className="text-base md:text-lg text-gray-700 leading-snug max-w-2xl mx-auto mb-3">
+        <div className="text-center mb-10 md:mb-12">
+          <p className="text-lg md:text-2xl text-gray-700 leading-snug max-w-3xl mx-auto mb-4 md:mb-5">
             Last Year, First Time Amazon Sellers Made Over <span className="font-bold text-gray-900">$140 Billion</span> In Sales
           </p>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-[1.05]">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02]">
             <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
               Learn the Exact Process I Use to Help Sellers Reach $100K on Amazon in 2026
             </span>
