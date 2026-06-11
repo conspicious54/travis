@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowDown, CheckCircle2, Flame } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
+import { ExitIntentPopup } from '../components/ExitIntentPopup';
 
 /* ───── /nextstep - VSL training page ──────────────────────────────
    Rebuild of the CF "next step" VSL page in the site's design
@@ -534,6 +535,12 @@ export function NextStep() {
           </p>
         </div>
       </footer>
+
+      {/* Exit-intent popup - same component the light-mode landing
+          pages use. Triggers on mouse leaving the viewport via the
+          top edge (signal that the visitor is about to close the
+          tab). Light theme matches this page's orange/white styling. */}
+      <ExitIntentPopup theme="light" />
     </div>
   );
 }
