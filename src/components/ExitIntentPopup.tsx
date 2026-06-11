@@ -15,6 +15,7 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
   const isLight = theme === 'light';
   const isBookingPage = location.pathname === '/bookacall';
   const isTrainingPage = location.pathname === '/training';
+  const isNextStepPage = location.pathname === '/nextstep';
   const isGetStartedPage = location.pathname === '/getstarted';
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
   };
 
   // Booking page exit popup
-  if (isBookingPage || isTrainingPage) {
+  if (isBookingPage || isTrainingPage || isNextStepPage) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
         <div 
