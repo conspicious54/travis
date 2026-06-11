@@ -28,6 +28,11 @@ import { getCleanIdentity } from '../lib/urlParams';
 const PRIMARY_CTA_DESTINATION = '/book';
 const UNLOCK_DURATION_MS = 2 * 60 * 1000; // 2 mins, per the screenshot
 const UNLOCK_STORAGE_KEY = 'pp_nextstep_unlock_started_at';
+// Green CTAs behave conditionally: if the visitor has watched less
+// than VIDEO_DEPTH_THRESHOLD_MS of the VSL, the click scrolls them
+// back UP to the video instead of navigating away. Once they're
+// past the threshold they're committed - send them to /book.
+const VIDEO_DEPTH_THRESHOLD_MS = 5 * 60 * 1000; // 5 min
 const VIDALYTICS_EMBED_ID = 'vidalytics_embed_F2Z6Y1CWfo1bLNCe';
 const VIDALYTICS_EMBED_URL =
   'https://fast.vidalytics.com/embeds/IV7bqBJ_/F2Z6Y1CWfo1bLNCe/';
@@ -216,8 +221,12 @@ function VideoPlaceholder() {
 
 export function NextStep() {
   const testimonialsRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLDivElement>(null);
+  const playingRef = useRef(false);
   const [deadline] = useState<number>(() => getUnlockDeadline());
   const [, setNow] = useState<number>(() => Date.now());
+  const [videoInteracted, setVideoInteracted] = useState(false);
+  const [videoPlayedMs, setVideoPlayedMs] = useState(0);
 
   // identify from URL params (from /newform or other opt-in step)
   useEffect(() => {
@@ -241,18 +250,102 @@ export function NextStep() {
     return () => clearInterval(t);
   }, []);
 
+  /* Video play tracking. Vidalytics injects an HTMLMediaElement
+     somewhere inside the container after its loader runs - watch
+     for it with a MutationObserver and attach play/pause/ended
+     listeners. While the media is playing, tick the accumulated
+     time every second. If Vidalytics ever changes their internals
+     and the media element never gets attached, the click handler
+     on the video container is a fallback signal that at least
+     stops the bouncing "Hit Play" prompt. */
+  useEffect(() => {
+    const container = videoRef.current;
+    if (!container) return;
+
+    let attachedEl: HTMLMediaElement | null = null;
+    const onPlay = () => {
+      playingRef.current = true;
+      setVideoInteracted(true);
+    };
+    const onPause = () => { playingRef.current = false; };
+    const onEnded = () => { playingRef.current = false; };
+
+    const tryAttach = () => {
+      if (attachedEl && document.contains(attachedEl)) return;
+      const found = container.querySelector('video, audio') as HTMLMediaElement | null;
+      if (!found || found === attachedEl) return;
+      // detach from any prior element first
+      if (attachedEl) {
+        attachedEl.removeEventListener('play', onPlay);
+        attachedEl.removeEventListener('pause', onPause);
+        attachedEl.removeEventListener('ended', onEnded);
+      }
+      attachedEl = found;
+      found.addEventListener('play', onPlay);
+      found.addEventListener('pause', onPause);
+      found.addEventListener('ended', onEnded);
+      // if Vidalytics autoplays, capture immediately
+      if (!found.paused) onPlay();
+    };
+
+    tryAttach();
+    const observer = new MutationObserver(tryAttach);
+    observer.observe(container, { childList: true, subtree: true });
+
+    const tick = setInterval(() => {
+      if (playingRef.current) {
+        setVideoPlayedMs((prev) => prev + 1000);
+      }
+    }, 1000);
+
+    return () => {
+      observer.disconnect();
+      clearInterval(tick);
+      if (attachedEl) {
+        attachedEl.removeEventListener('play', onPlay);
+        attachedEl.removeEventListener('pause', onPause);
+        attachedEl.removeEventListener('ended', onEnded);
+      }
+    };
+  }, []);
+
   // re-derive on every render so the displayed time stays current
   // (now tick lives in state so this recomputes once per second)
   const live = formatMS(deadline);
   const unlocked = live.remaining <= 0;
+  const videoDeepEnough = videoPlayedMs >= VIDEO_DEPTH_THRESHOLD_MS;
 
   const scrollToTestimonials = () => {
     trackEvent('nextstep_orange_cta_clicked');
     testimonialsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const onCtaClick = (position: string) => {
-    trackEvent('nextstep_green_cta_clicked', { position });
+  const scrollToVideo = () => {
+    videoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleVideoContainerClick = () => {
+    // Fallback signal in case the underlying <video> element's play
+    // event never fires (e.g. Vidalytics changes their player guts).
+    // No-op if already interacted.
+    if (!videoInteracted) setVideoInteracted(true);
+  };
+
+  /* Green CTA click handler. Two paths:
+     - If the visitor has watched < VIDEO_DEPTH_THRESHOLD_MS of the
+       VSL, intercept the navigation and scroll them back up to the
+       video. They aren't ready yet.
+     - If they've watched enough, let the <Link> navigation through. */
+  const onCtaClick = (position: string, e: React.MouseEvent) => {
+    trackEvent('nextstep_green_cta_clicked', {
+      position,
+      video_played_ms: videoPlayedMs,
+      sent_to_book: videoDeepEnough,
+    });
+    if (!videoDeepEnough) {
+      e.preventDefault();
+      scrollToVideo();
+    }
   };
 
   // Pre-build the CTA href, forwarding identity from the URL so the
@@ -270,6 +363,25 @@ export function NextStep() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/30 via-white to-white text-gray-900">
+      {/* Page-scoped keyframes:
+          - nextstep-bounce: subtle ~4px vertical nudge for the
+            "Hit Play" prompt until the visitor interacts with the
+            video. Smaller amplitude than Tailwind's animate-bounce
+            so it reads as a hint, not a jump.
+          - nextstep-unlock: the moment the timer hits 0 and the
+            countdown widget swaps to the green CTA, a quick pop
+            scale draws the eye to it. */}
+      <style>{`
+        @keyframes nextstep-bounce {
+          0%, 100% { transform: translateY(0); }
+          50%      { transform: translateY(-4px); }
+        }
+        @keyframes nextstep-unlock {
+          0%   { transform: scale(0.94); opacity: 0; }
+          60%  { transform: scale(1.03); opacity: 1; }
+          100% { transform: scale(1);    opacity: 1; }
+        }
+      `}</style>
       <main className="max-w-5xl mx-auto px-5 pt-4 md:pt-6 pb-16">
         {/* Hero - compact stylized header */}
         <div className="text-center mb-3 md:mb-4">
@@ -280,7 +392,13 @@ export function NextStep() {
           <h1 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] mb-2 text-slate-900">
             How I Used <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">&ldquo;The Passion Product Formula&rdquo;</span> to Create a 7-Figure Amazon Business in Under 3 Months
           </h1>
-          <p className="text-sm md:text-base text-gray-600 flex items-center justify-center gap-2">
+          {/* Subtle bounce on the "Hit Play" prompt until the visitor
+              starts the video. nextstep-bounce keyframe defined inline
+              below the JSX - smaller amplitude than Tailwind's
+              animate-bounce so it nudges rather than jumps. */}
+          <p
+            className={`text-sm md:text-base text-gray-600 flex items-center justify-center gap-2 ${videoInteracted ? '' : '[animation:nextstep-bounce_1.4s_ease-in-out_infinite]'}`}
+          >
             <ArrowDown className="w-3.5 h-3.5 text-orange-600" />
             <span><span className="font-bold text-orange-600">"Hit Play"</span> To Watch The Free Training</span>
             <ArrowDown className="w-3.5 h-3.5 text-orange-600" />
@@ -288,7 +406,7 @@ export function NextStep() {
         </div>
 
         {/* VSL video */}
-        <div className="relative max-w-4xl mx-auto">
+        <div ref={videoRef} className="relative max-w-4xl mx-auto" onClick={handleVideoContainerClick}>
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
           <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-black">
             <VidalyticsEmbed />
@@ -300,26 +418,40 @@ export function NextStep() {
           Curious how I guide Amazon sellers to success in record time?
         </p>
 
-        {/* Resource-unlock countdown */}
-        <div className="max-w-md mx-auto bg-white rounded-xl border border-gray-200 shadow-sm p-3 md:p-4 mb-5">
-          <p className="text-center text-xs md:text-sm font-semibold text-gray-700 mb-2">
-            {unlocked ? 'Your Amazon Resources Are Unlocked!' : 'Your Amazon Resources Will Unlock In:'}
-          </p>
+        {/* Resource-unlock countdown.
+            While the timer is counting down, this is a small white
+            card with the digits. The moment it hits 0 the entire
+            widget transforms into a full green "YES! I'm Ready To
+            Learn More" CTA button - same scroll-back-if-shallow
+            logic as the post-testimonial green CTAs. */}
+        <div className="max-w-md mx-auto mb-5">
           {unlocked ? (
-            <div className="text-center text-green-600 text-2xl font-black flex items-center justify-center gap-2">
-              <CheckCircle2 className="w-7 h-7" />
-              Ready
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2.5">
-              <div className="flex flex-col items-center">
-                <div className="text-2xl md:text-3xl font-black text-slate-900 tabular-nums leading-none">{live.m}</div>
-                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Minutes</div>
+            <Link
+              to={ctaHref}
+              onClick={(e) => onCtaClick('unlock_timer', e)}
+              className="block w-full text-center bg-green-500 hover:bg-green-600 text-white font-black tracking-tight px-6 py-4 md:py-5 rounded-xl shadow-lg shadow-green-500/30 transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 [animation:nextstep-unlock_500ms_ease-out]"
+            >
+              <div className="flex items-center justify-center gap-2 text-[10px] md:text-[11px] uppercase tracking-widest text-green-50/90 mb-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Your Amazon Resources Are Unlocked
               </div>
-              <div className="text-2xl font-black text-gray-300 leading-none">:</div>
-              <div className="flex flex-col items-center">
-                <div className="text-2xl md:text-3xl font-black text-slate-900 tabular-nums leading-none">{live.s}</div>
-                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Seconds</div>
+              <div className="text-base md:text-xl">YES! I'm Ready To Learn More</div>
+            </Link>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 md:p-4">
+              <p className="text-center text-xs md:text-sm font-semibold text-gray-700 mb-2">
+                Your Amazon Resources Will Unlock In:
+              </p>
+              <div className="flex items-center justify-center gap-2.5">
+                <div className="flex flex-col items-center">
+                  <div className="text-2xl md:text-3xl font-black text-slate-900 tabular-nums leading-none">{live.m}</div>
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Minutes</div>
+                </div>
+                <div className="text-2xl font-black text-gray-300 leading-none">:</div>
+                <div className="flex flex-col items-center">
+                  <div className="text-2xl md:text-3xl font-black text-slate-900 tabular-nums leading-none">{live.s}</div>
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Seconds</div>
+                </div>
               </div>
             </div>
           )}
@@ -362,7 +494,7 @@ export function NextStep() {
                 <div className="flex justify-center pt-2">
                   <Link
                     to={ctaHref}
-                    onClick={() => onCtaClick(`after_testimonial_${idx + 1}`)}
+                    onClick={(e) => onCtaClick(`after_testimonial_${idx + 1}`, e)}
                     className="inline-block bg-green-500 hover:bg-green-600 text-white text-base md:text-lg font-black tracking-tight px-8 md:px-12 py-4 md:py-5 rounded-lg shadow-md shadow-green-500/25 transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                   >
                     YES! I'm Ready To Learn More
