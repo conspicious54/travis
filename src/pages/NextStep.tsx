@@ -126,7 +126,10 @@ const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
-const AS_SEEN_ON = ['Helium 10', 'Jungle Scout', 'amazon ads', 'Prosper Show', 'HUFFPOST', 'Forbes', 'Medium'];
+// Composite "As seen on" logo strip (black & white, all logos baked
+// into one image so we get pixel-perfect spacing without juggling
+// 7 individual SVGs at different intrinsic sizes).
+const LOGOS_IMG_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos%20black%20and%20white%203.jpg';
 
 function getUnlockDeadline(): number {
   if (typeof window === 'undefined') return Date.now() + UNLOCK_DURATION_MS;
@@ -267,16 +270,20 @@ export function NextStep() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/30 via-white to-white text-gray-900">
-      <main className="max-w-5xl mx-auto px-5 pt-10 md:pt-14 pb-16">
-        {/* Hero - copy verbatim from the CF page */}
-        <div className="text-center mb-6">
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05] mb-4 text-slate-900">
-            How I Used <span className="whitespace-nowrap">&ldquo;The Passion Product</span> Formula&rdquo; to Create a 7-Figure Amazon Business in Under 3 Months
+      <main className="max-w-5xl mx-auto px-5 pt-4 md:pt-6 pb-16">
+        {/* Hero - compact stylized header */}
+        <div className="text-center mb-3 md:mb-4">
+          <div className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-wider mb-2.5">
+            <Flame className="w-3 h-3" />
+            Free Training
+          </div>
+          <h1 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] mb-2 text-slate-900">
+            How I Used <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">&ldquo;The Passion Product Formula&rdquo;</span> to Create a 7-Figure Amazon Business in Under 3 Months
           </h1>
-          <p className="text-base md:text-lg text-gray-600 flex items-center justify-center gap-2">
-            <ArrowDown className="w-4 h-4 text-orange-600" />
+          <p className="text-sm md:text-base text-gray-600 flex items-center justify-center gap-2">
+            <ArrowDown className="w-3.5 h-3.5 text-orange-600" />
             <span><span className="font-bold text-orange-600">"Hit Play"</span> To Watch The Free Training</span>
-            <ArrowDown className="w-4 h-4 text-orange-600" />
+            <ArrowDown className="w-3.5 h-3.5 text-orange-600" />
           </p>
         </div>
 
@@ -289,13 +296,13 @@ export function NextStep() {
         </div>
 
         {/* Sub-prompt under video */}
-        <p className="text-center text-gray-600 text-base md:text-lg mt-8 mb-6">
+        <p className="text-center text-gray-600 text-sm md:text-base mt-4 mb-3">
           Curious how I guide Amazon sellers to success in record time?
         </p>
 
         {/* Resource-unlock countdown */}
-        <div className="max-w-md mx-auto bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-10">
-          <p className="text-center text-sm md:text-base font-semibold text-gray-700 mb-3">
+        <div className="max-w-md mx-auto bg-white rounded-xl border border-gray-200 shadow-sm p-3 md:p-4 mb-5">
+          <p className="text-center text-xs md:text-sm font-semibold text-gray-700 mb-2">
             {unlocked ? 'Your Amazon Resources Are Unlocked!' : 'Your Amazon Resources Will Unlock In:'}
           </p>
           {unlocked ? (
@@ -304,44 +311,43 @@ export function NextStep() {
               Ready
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-2.5">
               <div className="flex flex-col items-center">
-                <div className="text-3xl md:text-4xl font-black text-slate-900 tabular-nums">{live.m}</div>
-                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">Minutes</div>
+                <div className="text-2xl md:text-3xl font-black text-slate-900 tabular-nums leading-none">{live.m}</div>
+                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Minutes</div>
               </div>
-              <div className="text-3xl font-black text-gray-300">:</div>
+              <div className="text-2xl font-black text-gray-300 leading-none">:</div>
               <div className="flex flex-col items-center">
-                <div className="text-3xl md:text-4xl font-black text-slate-900 tabular-nums">{live.s}</div>
-                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">Seconds</div>
+                <div className="text-2xl md:text-3xl font-black text-slate-900 tabular-nums leading-none">{live.s}</div>
+                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Seconds</div>
               </div>
             </div>
           )}
         </div>
 
         {/* As seen on */}
-        <div className="text-center mb-10">
-          <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-5">As seen on...</h2>
-          <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-slate-700 opacity-80">
-            {AS_SEEN_ON.map((logo) => (
-              <span key={logo} className="text-base md:text-lg font-bold tracking-tight">
-                {logo}
-              </span>
-            ))}
-          </div>
+        <div className="text-center mb-5">
+          <h2 className="text-sm md:text-base font-bold text-slate-500 uppercase tracking-widest mb-3">As seen on</h2>
+          <img
+            src={LOGOS_IMG_URL}
+            alt="Featured on Helium 10, Jungle Scout, Amazon Ads, Prosper Show, HuffPost, Forbes, Medium"
+            loading="lazy"
+            className="max-w-full md:max-w-3xl mx-auto h-auto opacity-80"
+          />
         </div>
 
         {/* Primary scroll-down CTA */}
         <button
           type="button"
           onClick={scrollToTestimonials}
-          className="w-full max-w-3xl mx-auto flex bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-lg md:text-2xl font-black tracking-tight py-4 md:py-5 px-6 rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 items-center justify-center gap-3"
+          className="w-full max-w-3xl mx-auto flex bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-base md:text-xl font-black tracking-tight py-3 md:py-4 px-6 rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 items-center justify-center gap-3"
         >
-          <ArrowDown className="w-6 h-6 flex-shrink-0" />
+          <ArrowDown className="w-5 h-5 flex-shrink-0" />
           <span>Watch how this system changes lives...</span>
         </button>
 
         {/* Lead-in to testimonials */}
-        <p className="text-center text-gray-600 italic text-sm md:text-base mt-10 mb-8 max-w-2xl mx-auto">
+        <p className="text-center text-gray-600 italic text-sm md:text-base mt-7 mb-6 max-w-2xl mx-auto">
           These are just a handful of the hundreds of success stories created through the Passion Product blueprint.
         </p>
 
