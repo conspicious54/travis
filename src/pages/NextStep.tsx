@@ -26,7 +26,7 @@ import { ExitIntentPopup } from '../components/ExitIntentPopup';
 ─────────────────────────────────────────────────────────────────── */
 
 /* ─── Config - tune as needed ──────────────────────────────────── */
-const PRIMARY_CTA_DESTINATION = '/book';
+const PRIMARY_CTA_DESTINATION = '/applynow';
 const UNLOCK_DURATION_MS = 2 * 60 * 1000; // 2 mins, per the screenshot
 const UNLOCK_STORAGE_KEY = 'pp_nextstep_unlock_started_at';
 // Green CTAs behave conditionally: if the visitor has watched less

@@ -18,6 +18,7 @@ import { Book } from './pages/Book';
 import { NewForm } from './pages/NewForm';
 import { MoveForward } from './pages/MoveForward';
 import { NextStep } from './pages/NextStep';
+import { ApplyNow } from './pages/ApplyNow';
 import { WebinarBook } from './pages/WebinarBook';
 import { WebinarBookCall } from './pages/WebinarBookCall';
 import { RealCost } from './pages/RealCost';
@@ -71,6 +72,7 @@ function AppWrapper() {
                 <Route path="/newform" element={<NewForm />} />
                 <Route path="/moveforward" element={<MoveForward />} />
                 <Route path="/nextstep" element={<NextStep />} />
+                <Route path="/applynow" element={<ApplyNow />} />
                 <Route path="/webinar/book" element={<WebinarBook />} />
                 <Route path="/webinar/bookacall" element={<WebinarBookCall />} />
                 <Route path="/realcost" element={<RealCost />} />
