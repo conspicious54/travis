@@ -16,6 +16,15 @@ declare global {
         properties: Record<string, any>,
         setOnce?: Record<string, any>
       ) => void;
+      /* Feature flags / experiments. The vanilla PostHog snippet in
+         index.html stubs these on init and the script fills them in
+         once loaded. Declaring them on the Window so TypeScript sees
+         them, and so getVariant() / useFeatureFlag() below have a
+         single typed surface. */
+      getFeatureFlag: (key: string) => string | boolean | undefined;
+      isFeatureEnabled: (key: string) => boolean | undefined;
+      onFeatureFlags: (cb: (flags: string[]) => void) => void;
+      reloadFeatureFlags: () => void;
     };
   }
 }
@@ -170,4 +179,85 @@ export function trackContactSaved(region: string, platform: string) {
 
 export function trackScrollIndicatorVisible() {
   trackEvent('scroll_indicator_seen');
+}
+
+/* ───── Feature flags / Experiments ────────────────────────────────
+   PostHog Experiments work via feature flags. When you create an
+   experiment in the PostHog UI, it generates a feature flag whose
+   value is the variant key for the visitor (e.g. 'control',
+   'variant-a'). PostHog handles sticky bucketing per distinct_id,
+   so the same visitor always sees the same variant - even across
+   anonymous→identified transitions (we have person_profiles:'always'
+   in index.html, which is what makes that stitching work).
+
+   Helpers below give us a typed, async-safe surface. The PostHog
+   feature-flag payload loads asynchronously; reading the flag
+   before it's loaded returns undefined. Two patterns:
+
+   1) One-shot read (e.g. fire a tracking event with the variant):
+        const variant = getVariant('newform-headline-test');
+
+   2) Render based on flag (recommended for UI variants):
+        const variant = useFeatureFlag('newform-headline-test');
+        if (variant === undefined) return <Skeleton />; // still loading
+        return variant === 'variant-a' ? <HeadlineA /> : <HeadlineDefault />;
+
+   Diagnostic: PostHog autocaptures `$feature_flag_called` whenever
+   getFeatureFlag is called, so you can see in the experiment UI
+   that the flag is firing as expected. No extra wiring needed.
+─────────────────────────────────────────────────────────────────── */
+
+import { useEffect, useState } from 'react';
+
+/** One-shot synchronous read of a feature flag's variant value.
+    Returns undefined until PostHog has loaded the flag payload.
+    For UI rendering prefer useFeatureFlag (hook) which re-renders
+    when the flag arrives. */
+export function getVariant(flagKey: string): string | boolean | undefined {
+  return ph()?.getFeatureFlag(flagKey);
+}
+
+/** Sync read: is a boolean flag enabled. Returns undefined while
+    flags are still loading. */
+export function isEnabled(flagKey: string): boolean | undefined {
+  return ph()?.isFeatureEnabled(flagKey);
+}
+
+/** React hook that reads a feature flag and re-renders when the
+    flag payload arrives. Returns undefined while flags are loading
+    so callers can render a control / skeleton in that window.
+
+    Example - A/B test the /newform headline:
+      const variant = useFeatureFlag('newform-headline-test');
+      // variant is 'control' | 'variant-a' | 'variant-b' | undefined
+      const headline = variant === 'variant-a'
+        ? 'How First-Time Sellers Hit $100K on Amazon'
+        : 'Learn the Exact Process I Use...'; // control / undefined
+      return <h1>{headline}</h1>;
+
+    PostHog automatically fires $feature_flag_called when the flag
+    is read, so the exposure event is tracked without extra code.
+    Tie the experiment goal to any downstream event (e.g.
+    newform_submitted, applynow_typeform_completed) in the
+    PostHog UI when you create the experiment. */
+export function useFeatureFlag(flagKey: string): string | boolean | undefined {
+  const [value, setValue] = useState<string | boolean | undefined>(() => {
+    return typeof window !== 'undefined' ? ph()?.getFeatureFlag(flagKey) : undefined;
+  });
+  useEffect(() => {
+    const p = ph();
+    if (!p) return;
+    // Re-check on mount in case flags loaded between initial state
+    // and effect (race during fast navigations).
+    const current = p.getFeatureFlag(flagKey);
+    if (current !== value) setValue(current);
+    // Subscribe: PostHog fires the callback once flags are loaded
+    // and again whenever they change (e.g. after identifyUser
+    // triggers a re-evaluation because the identified user matches
+    // a different cohort than the anonymous one).
+    p.onFeatureFlags(() => {
+      setValue(p.getFeatureFlag(flagKey));
+    });
+  }, [flagKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  return value;
 }
