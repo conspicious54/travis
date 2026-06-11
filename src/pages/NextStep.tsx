@@ -36,6 +36,16 @@ const UNLOCK_STORAGE_KEY = 'pp_nextstep_unlock_started_at';
 // back UP to the video instead of navigating away. Once they're
 // past the threshold they're committed - send them to /book.
 const VIDEO_DEPTH_THRESHOLD_MS = 5 * 60 * 1000; // 5 min
+
+/* Video watch-time milestones (in seconds) - emitted as PostHog
+   `nextstep_video_milestone` events when accumulated play-time
+   crosses each one. Granular for the first 5 minutes (where most
+   drop-off happens), then every 5 min after that out to one hour. */
+const VIDEO_MILESTONES_S = [
+   60,  120,  180,  240,  300,            // 1-5 min: every 1 min
+  600,  900, 1200, 1500, 1800,            // 6-30 min: every 5 min
+ 2100, 2400, 2700, 3000, 3300, 3600,      // 31-60 min: every 5 min
+];
 const VIDALYTICS_EMBED_ID = 'vidalytics_embed_F2Z6Y1CWfo1bLNCe';
 const VIDALYTICS_EMBED_URL =
   'https://fast.vidalytics.com/embeds/IV7bqBJ_/F2Z6Y1CWfo1bLNCe/';
@@ -226,6 +236,12 @@ export function NextStep() {
   const testimonialsRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLDivElement>(null);
   const playingRef = useRef(false);
+  // Truth-of-record for accumulated play time. State (videoPlayedMs)
+  // mirrors this for re-render but the ref is what the milestone
+  // check reads to avoid stale-closure issues inside setInterval.
+  const playedMsRef = useRef(0);
+  const videoStartedFiredRef = useRef(false);
+  const firedMilestonesRef = useRef<Set<number>>(new Set());
   const [deadline] = useState<number>(() => getUnlockDeadline());
   const [, setNow] = useState<number>(() => Date.now());
   const [videoInteracted, setVideoInteracted] = useState(false);
@@ -272,6 +288,14 @@ export function NextStep() {
     const onPlay = () => {
       playingRef.current = true;
       setVideoInteracted(true);
+      // Fire nextstep_video_started exactly once - the underlying
+      // media element's 'play' is the only reliable signal that they
+      // actually started watching (clicking the container alone
+      // doesn't mean playback began).
+      if (!videoStartedFiredRef.current) {
+        videoStartedFiredRef.current = true;
+        trackEvent('nextstep_video_started');
+      }
     };
     const onPause = () => { playingRef.current = false; };
     const onEnded = () => { playingRef.current = false; };
@@ -299,8 +323,22 @@ export function NextStep() {
     observer.observe(container, { childList: true, subtree: true });
 
     const tick = setInterval(() => {
-      if (playingRef.current) {
-        setVideoPlayedMs((prev) => prev + 1000);
+      if (!playingRef.current) return;
+      playedMsRef.current += 1000;
+      setVideoPlayedMs(playedMsRef.current);
+      // Fire any watch-time milestones we just crossed. The list is
+      // small (~16 items) so a per-tick linear scan is fine, and
+      // checking against firedMilestonesRef means each milestone
+      // fires at most once per page load.
+      const newSec = Math.floor(playedMsRef.current / 1000);
+      for (const ms of VIDEO_MILESTONES_S) {
+        if (newSec >= ms && !firedMilestonesRef.current.has(ms)) {
+          firedMilestonesRef.current.add(ms);
+          trackEvent('nextstep_video_milestone', {
+            seconds: ms,
+            minutes: Math.round((ms / 60) * 10) / 10,
+          });
+        }
       }
     }, 1000);
 

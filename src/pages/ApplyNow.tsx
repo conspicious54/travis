@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Flame } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
@@ -39,6 +39,11 @@ const LOGOS_IMG_URL    = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Lo
 
 export function ApplyNow() {
   const formRef = useRef<HTMLDivElement>(null);
+  const typeformStartedFiredRef = useRef(false);
+  const typeformCompletedFiredRef = useRef(false);
+  // Track screen index off of postMessage payloads so we can attach
+  // it to the completed event and the started event.
+  const [, setTypeformScreenCount] = useState(0);
 
   // Identify visitor + persist UTMs from URL params (forwarded from
   // /nextstep). Once we have an email, push attribution to HubSpot
@@ -73,6 +78,100 @@ export function ApplyNow() {
     s.src = '//embed.typeform.com/next/embed.js';
     s.async = true;
     document.body.appendChild(s);
+  }, []);
+
+  /* Typeform postMessage listener. The Typeform embed fires
+     postMessages with event types like:
+       form-ready          - iframe loaded
+       form-screen-changed - moved to a new question
+       form-submit         - the form was submitted
+     We listen on window for messages from typeform.com / tfaforms.com
+     origins and fire PostHog events at the start + completion
+     milestones. A diagnostic event also captures every message
+     preview so if Typeform changes their event shape we'll see it.
+     Source: https://www.typeform.com/help/a/embed-events-listener-360042200211/ */
+  useEffect(() => {
+    if (!TYPEFORM_LIVE_ID) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      const origin = event.origin || '';
+      if (!origin.includes('typeform.com')) return;
+
+      const data = event.data;
+      if (!data) return;
+
+      // Build a single lowercased type string from whichever field
+      // Typeform happens to use (string-payload or object with type/
+      // eventType/eventName).
+      let typeStr = '';
+      if (typeof data === 'string') {
+        typeStr = data.toLowerCase();
+      } else if (typeof data === 'object') {
+        const d = data as Record<string, unknown>;
+        typeStr = [
+          typeof d.type === 'string' ? d.type : '',
+          typeof d.eventType === 'string' ? d.eventType : '',
+          typeof d.eventName === 'string' ? d.eventName : '',
+        ].join(' ').toLowerCase();
+      }
+
+      // Diagnostic - log every Typeform postMessage to PostHog so
+      // we can confirm what events actually fire and refine matching
+      // if Typeform changes their shape. Cheap and bounded preview.
+      let preview = '';
+      try {
+        preview = typeof data === 'string' ? data.slice(0, 500) : JSON.stringify(data).slice(0, 500);
+      } catch { /* no-op */ }
+      trackEvent('typeform_postmessage_received', {
+        booking_type: 'applynow',
+        origin,
+        type_str: typeStr.slice(0, 120),
+        preview,
+      });
+
+      // Started: first screen change away from the welcome screen
+      // (i.e. they answered at least one thing). Use any
+      // screen-change variant to be defensive.
+      if (
+        !typeformStartedFiredRef.current &&
+        (typeStr.includes('screen-changed') || typeStr.includes('screen_change'))
+      ) {
+        typeformStartedFiredRef.current = true;
+        setTypeformScreenCount((c) => c + 1);
+        trackEvent('applynow_typeform_started', {
+          form_id: TYPEFORM_LIVE_ID,
+        });
+      } else if (typeStr.includes('screen-changed') || typeStr.includes('screen_change')) {
+        setTypeformScreenCount((c) => c + 1);
+      }
+
+      // Completed: form-submit fires when the visitor submits the
+      // final answer.
+      if (
+        !typeformCompletedFiredRef.current &&
+        (typeStr.includes('submit') || typeStr.includes('complete'))
+      ) {
+        typeformCompletedFiredRef.current = true;
+        // Pull URL identity + UTMs so we know which attribution the
+        // submission carried (matches what we sent into data-tf-hidden).
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = getCleanIdentity(urlParams);
+        trackEvent('applynow_typeform_completed', {
+          form_id: TYPEFORM_LIVE_ID,
+          email_in_url: !!id.email,
+          firstname_in_url: !!id.firstname,
+        });
+        // Sync to HubSpot under a distinct stage tag so the contact
+        // shows the application step as completed (not just viewed).
+        if (id.email) {
+          syncContactTimezone(id.email, 'applynow_submit');
+          syncContactUtms(id.email, 'applynow_submit');
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
   const scrollToForm = () => {
