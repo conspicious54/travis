@@ -5,7 +5,11 @@ import { getCleanParam } from '../lib/urlParams';
 
 type RouterState = 'loading' | 'dq-question' | 'redirecting';
 
-const GROUP_A_URL = "https://start.travismarziani.com/nextstep";
+// Qualified-country flow now lives on travisfba.com - relative URL
+// so the visitor stays on the same root domain (no cross-domain
+// identity bridge needed downstream). The CF version at
+// start.travismarziani.com/nextstep is being retired as we migrate.
+const GROUP_A_URL = "/nextstep";
 const GROUP_B_URL = "https://start.travismarziani.com/passion-product-fasttrack";
 const DQ_YES_URL = "https://thepassionproductformula.com/waitlist";
 const TRACKING_ENDPOINT = "https://dashboardpp.vercel.app/api/webhooks/router";

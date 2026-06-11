@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Clock, Flame } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
+import { persistUtmsFromUrl, readUtmFromUrl, syncContactUtms } from '../lib/syncUtm';
+import { syncContactTimezone } from '../lib/syncTimezone';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
@@ -38,9 +40,13 @@ const LOGOS_IMG_URL    = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Lo
 export function ApplyNow() {
   const formRef = useRef<HTMLDivElement>(null);
 
-  // Identify visitor from URL params (forwarded from /nextstep)
+  // Identify visitor + persist UTMs from URL params (forwarded from
+  // /nextstep). Once we have an email, push attribution to HubSpot
+  // so the contact record reflects the application step even if
+  // the visitor never finishes the Typeform.
   useEffect(() => {
     document.title = 'Apply Now - Passion Product 1-on-1 Amazon Strategy Call';
+    persistUtmsFromUrl();
     const params = new URLSearchParams(window.location.search);
     const id = getCleanIdentity(params);
     if (id.email) {
@@ -49,6 +55,10 @@ export function ApplyNow() {
         last_name:  id.lastname  ?? undefined,
         phone:      id.phone     ?? undefined,
       });
+      // Server-side sync (HubSpot). Both functions write only when
+      // the property is currently empty so first-touch survives.
+      syncContactTimezone(id.email, 'applynow_view');
+      syncContactUtms(id.email, 'applynow_view');
     }
     trackEvent('applynow_page_viewed', { email_in_url: !!id.email });
   }, []);
@@ -70,18 +80,27 @@ export function ApplyNow() {
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // Pre-build Typeform hidden-field params from URL identity so the
-  // form arrives pre-filled. Typeform reads hidden fields via the
-  // ?email=&firstname=... query string on the form embed URL, but
-  // for the data-tf-live embed they come through as data-tf-hidden.
-  // We pass identity to BOTH the embed div (hidden fields) and to
-  // PostHog identify so the application call is attributed.
+  // Pre-build Typeform hidden-field params. For the data-tf-live
+  // embed, hidden fields come through as data-tf-hidden="key=val,...".
+  // Identity (email/firstname/lastname/phone) so the Typeform can
+  // prefill or skip those questions, plus utm_* so the application
+  // submission carries full attribution to whatever Typeform forwards
+  // to (CRM, Zap, webhook, etc).
+  //
+  // IMPORTANT: each of these keys (email, firstname, lastname, phone,
+  // utm_source, utm_medium, utm_campaign, utm_content, utm_term, utm_id)
+  // must exist as a Hidden Field in the Typeform itself - Typeform
+  // ignores hidden params that aren't pre-declared in the form builder.
   const hiddenFields = useMemo(() => {
     if (typeof window === 'undefined') return '';
     const incoming = new URLSearchParams(window.location.search);
     const parts: string[] = [];
     for (const k of ['email', 'firstname', 'lastname', 'phone']) {
       const v = incoming.get(k);
+      if (v) parts.push(`${k}=${encodeURIComponent(v)}`);
+    }
+    const utms = readUtmFromUrl();
+    for (const [k, v] of Object.entries(utms)) {
       if (v) parts.push(`${k}=${encodeURIComponent(v)}`);
     }
     return parts.join(',');

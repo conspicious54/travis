@@ -4,6 +4,8 @@ import { ChevronsRight, Flame } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
+import { persistUtmsFromUrl, readUtmFromUrl, syncContactUtms } from '../lib/syncUtm';
+import { syncContactTimezone } from '../lib/syncTimezone';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /newform - webinar opt-in form ────────────────────────────
@@ -24,7 +26,12 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 ────────────────────────────────────────────────────────────────── */
 
 /* ─── Config - tune as needed ──────────────────────────────────── */
-const REDIRECT_TO = '/training';
+// Funnel: /newform (optin) -> /router (geo gate + DQ question)
+// -> /nextstep (VSL) -> /applynow (Typeform) -> ...
+// The router decides allowed vs DQ country and forwards the
+// qualified traffic to /nextstep. Sending the lead straight to
+// /router means every newform submission gets geo-routed.
+const REDIRECT_TO = '/router';
 const COUNTDOWN_MS = 4 * 60 * 60 * 1000; // 4 hours
 const COUNTDOWN_STORAGE_KEY = 'pp_newform_countdown_started_at';
 const STAGE_TAG = 'newform_optin';
@@ -102,6 +109,9 @@ export function NewForm() {
 
   useEffect(() => {
     document.title = 'Passion Product Formula - Free Training';
+    // Capture utm_* into sessionStorage so they survive the form
+    // submit + redirect. syncContactUtms below picks them up.
+    persistUtmsFromUrl();
     trackEvent('newform_page_viewed', {
       email_prefilled: !!seed.email,
       phone_prefilled: !!seed.phone,
@@ -194,11 +204,28 @@ export function NewForm() {
       trackEvent('newform_register_warning', { reason: 'network_error' });
     }
 
+    // /newform is the EARLIEST point in the funnel where we have a
+    // confirmed email. Push timezone + first-touch UTMs to HubSpot
+    // here so attribution is locked in before any downstream step
+    // (the server only writes UTM properties that are currently
+    // empty, so first-touch survives later syncs from /book etc).
+    // sendBeacon survives the redirect.
+    syncContactTimezone(cleanEmail, 'newform_submit');
+    syncContactUtms(cleanEmail, 'newform_submit');
+
+    // Forward identity + ALL utm_* to /router so the funnel keeps
+    // attribution end-to-end. Router's buildRedirectUrl passes the
+    // full query string through to /nextstep, which passes through
+    // to /applynow, which puts them in the Typeform.
     const fwd = new URLSearchParams();
     fwd.set('email', cleanEmail);
     if (cleanFirst) fwd.set('firstname', cleanFirst);
     if (cleanLast)  fwd.set('lastname',  cleanLast);
     if (fullPhone)  fwd.set('phone',     fullPhone);
+    const utms = readUtmFromUrl();
+    for (const [k, v] of Object.entries(utms)) {
+      if (v) fwd.set(k, v);
+    }
     window.location.href = `${REDIRECT_TO}?${fwd.toString()}`;
   };
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowDown, CheckCircle2, Flame } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
+import { persistUtmsFromUrl, readUtmFromUrl } from '../lib/syncUtm';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
@@ -230,9 +231,12 @@ export function NextStep() {
   const [videoInteracted, setVideoInteracted] = useState(false);
   const [videoPlayedMs, setVideoPlayedMs] = useState(0);
 
-  // identify from URL params (from /newform or other opt-in step)
+  // identify from URL params (from /newform via /router or direct)
   useEffect(() => {
     document.title = 'How I Used The Passion Product Formula - Free Training';
+    // Persist incoming utm_* into sessionStorage so they survive any
+    // future page nav, and stay live for the green-CTA hop to /applynow.
+    persistUtmsFromUrl();
     const params = new URLSearchParams(window.location.search);
     const id = getCleanIdentity(params);
     if (id.email) {
@@ -350,14 +354,21 @@ export function NextStep() {
     }
   };
 
-  // Pre-build the CTA href, forwarding identity from the URL so the
-  // booking page can keep the visitor identified.
+  // Pre-build the CTA href, forwarding identity AND utm_* from the
+  // URL so /applynow keeps the visitor identified and the Typeform
+  // gets the live attribution as hidden fields.
   const ctaHref = useMemo(() => {
     if (typeof window === 'undefined') return PRIMARY_CTA_DESTINATION;
     const incoming = new URLSearchParams(window.location.search);
     const out = new URLSearchParams();
     for (const k of ['email', 'firstname', 'lastname', 'phone']) {
       const v = incoming.get(k);
+      if (v) out.set(k, v);
+    }
+    // Pull UTMs from URL (preferred) or sessionStorage fallback - if
+    // the visitor reloaded /nextstep, the URL may have lost them.
+    const utms = readUtmFromUrl();
+    for (const [k, v] of Object.entries(utms)) {
       if (v) out.set(k, v);
     }
     return out.toString() ? `${PRIMARY_CTA_DESTINATION}?${out.toString()}` : PRIMARY_CTA_DESTINATION;
