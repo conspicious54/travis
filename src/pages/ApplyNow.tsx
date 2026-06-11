@@ -23,16 +23,11 @@ import { ExitIntentPopup } from '../components/ExitIntentPopup';
 ─────────────────────────────────────────────────────────────────── */
 
 /* ─── Config - tune as needed ──────────────────────────────────── */
-// TODO: replace with the real Typeform live form id (the part after
-// /to/ in the form URL, e.g. "abCdEfGh"). Until set the embed slot
-// just shows the "waiting on form id" placeholder.
-const TYPEFORM_LIVE_ID = '';
+const TYPEFORM_LIVE_ID = '01KMGF6YH9HXWD39CSVYN96VB8';
 const TYPEFORM_HEIGHT_PX = 520;
 
-// Images. Replace with the real R2-hosted asset URLs when ready -
-// the layout has reserved slots in the right places already.
-const GROUP_PHOTO_URL  = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/team-group.jpg';
-const TRAVIS_STAGE_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/travis-stage.jpg';
+const GROUP_PHOTO_URL  = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisGroup.jpg';
+const TRAVIS_STAGE_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisStage.jpg';
 const LOGOS_IMG_URL    = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos%20black%20and%20white%203.jpg';
 /* ──────────────────────────────────────────────────────────────── */
 
