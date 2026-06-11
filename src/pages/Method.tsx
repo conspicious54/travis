@@ -15,6 +15,7 @@ import {
   Music,
 } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── design system ─────────────────────────────────────────────
    Warm, playful "passion playbook" theme:
@@ -44,6 +45,7 @@ export function Method() {
       <FAQ />
       <CTA />
       <Footer />
+      <LegalDisclaimer />
     </div>
   );
 }

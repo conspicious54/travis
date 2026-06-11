@@ -4,6 +4,7 @@ import { ArrowDown, CheckCircle2, Flame } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /nextstep - VSL training page ──────────────────────────────
    Rebuild of the CF "next step" VSL page in the site's design
@@ -521,20 +522,10 @@ export function NextStep() {
               <span className="text-slate-300">Earnings Disclaimer</span>
             </p>
           </div>
-          <p className="text-xs text-slate-400 leading-relaxed mb-4 text-center">
-            This website operates independently and is not affiliated with YouTube, Google, or Facebook. We are not
-            endorsed by or connected to YouTube, Google Inc., or Facebook Inc. in any capacity. FACEBOOK is a registered
-            trademark of Facebook, Inc. YOUTUBE is a registered trademark of Google Inc.
-          </p>
-          <p className="text-xs text-slate-400 leading-relaxed text-center">
-            <span className="font-bold">IMPORTANT NOTICE:</span> The revenue figures and outcomes referenced represent
-            our personal achievements and, in certain instances, the results obtained by current or former clients.
-            These outcomes are not standard or guaranteed. Most individuals who consume educational webinar content see
-            minimal to no results. Your success will differ and depends on numerous variables including your experience,
-            dedication, and effort level.
-          </p>
         </div>
       </footer>
+
+      <LegalDisclaimer />
 
       {/* Exit-intent popup - same component the light-mode landing
           pages use. Triggers on mouse leaving the viewport via the

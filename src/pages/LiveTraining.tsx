@@ -3,6 +3,7 @@ import { Calendar, Clock, CheckCircle, Star, ArrowRight, BookmarkPlus, ChevronDo
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /live-training - webinar opt-in ───────────────────────────
    Single page with two form variants:
@@ -363,6 +364,7 @@ export function LiveTraining() {
             </div>
           </section>
         </div>
+        <LegalDisclaimer />
       </div>
     );
   }
@@ -526,6 +528,7 @@ export function LiveTraining() {
           <span className="flex items-center gap-1.5"><Video className="w-4 h-4 text-red-500" /> Live - no replay</span>
         </div>
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle } from 'lucide-react';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ──────────────────────── mailchimp ──────────────────────────────── */
 
@@ -76,6 +77,7 @@ export function PPC() {
             We'll send you everything you need to know about the Amazon PPC Course - keep an eye on your inbox.
           </p>
         </div>
+        <LegalDisclaimer />
       </div>
     );
   }
@@ -119,6 +121,7 @@ export function PPC() {
           No spam. Unsubscribe anytime.
         </p>
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

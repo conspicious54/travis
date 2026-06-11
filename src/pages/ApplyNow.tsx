@@ -4,6 +4,7 @@ import { Clock, Flame } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /applynow - Typeform application page ─────────────────────
    The page green CTAs on /nextstep land on. Rebuild of the CF
@@ -281,6 +282,8 @@ export function ApplyNow() {
           </p>
         </div>
       </footer>
+
+      <LegalDisclaimer />
 
       <ExitIntentPopup theme="light" />
     </div>

@@ -10,6 +10,7 @@ import {
   AcceleratorSection,
 } from '../components/TrainingNewSections';
 import { CheckCircle, Star, Shield } from 'lucide-react';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* React renders after the browser's native anchor-scroll attempt
    fires, so #hash deep-links land at the top of the page instead
@@ -93,6 +94,7 @@ export function TrainingNew() {
       <ResourceSection />
       <FinalCTA />
       <SharedFooter />
+      <LegalDisclaimer />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { identifyUser, trackBookingPageViewed, trackBookingCompleted, trackEvent
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { getCleanIdentity, getCleanParam } from '../lib/urlParams';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /webinar/book - embedded OnceHub closer scheduler ─────────
    Webinar funnel equivalent of /book. Mirrors all the same identity,
@@ -438,6 +439,7 @@ export function WebinarBook() {
           </p>
         </div>
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

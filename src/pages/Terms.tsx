@@ -1,5 +1,6 @@
 import React from 'react';
 import { HeaderLight } from '../components/HeaderLight';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 export function Terms() {
   return (
@@ -136,6 +137,7 @@ export function Terms() {
           <p className="mt-12 text-gray-600 text-center">By using our SMS service, you acknowledge you have read and understood this Privacy Policy.</p>
         </div>
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { identifyUser, trackBookingPageViewed, trackBookingCompleted, trackEvent
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /bookacall - embedded OnceHub setter scheduler ─────────────
    Setter scheduler now runs on OnceHub (calendar BKC-P9JY2GLKJX)
@@ -338,6 +339,7 @@ export function BookCall() {
           </p>
         </div>
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

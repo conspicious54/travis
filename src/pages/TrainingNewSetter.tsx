@@ -33,6 +33,7 @@ import {
 import { markConfirmClicked } from '../lib/confirmFlow';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { syncContactUtms } from '../lib/syncUtm';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ─────────────────── region & platform detection ─────────────────── */
 
@@ -390,6 +391,7 @@ export function TrainingNewSetter() {
         <CreditCardQuiz p={p} />
         <SetterFinalCTA firstName={p?.firstName || ''} />
         <SharedFooter />
+        <LegalDisclaimer />
         <ConfirmationExitPopup
           location="setter"
           coachFirstName={popupCoach}

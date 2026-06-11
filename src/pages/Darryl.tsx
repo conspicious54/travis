@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { HeaderLight } from '../components/HeaderLight';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 function DarrylHeadline() {
   return (
@@ -133,6 +134,7 @@ export function Darryl() {
   return (
     <>
       <MainContent />
+      <LegalDisclaimer />
       <ExitIntentPopup theme="light" />
     </>
   );

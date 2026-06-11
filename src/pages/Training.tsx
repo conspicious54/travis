@@ -13,6 +13,7 @@ import { CheckCircle, Star, Shield } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import { identifyUser, setPersonProperties, trackConfirmationPageViewed } from '../lib/posthog';
 import { PrepChecklistProvider, usePrepChecklist } from '../context/PrepChecklistContext';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───────────────── generic confirmation banner ────────────────────── */
 
@@ -126,6 +127,7 @@ export function Training() {
         <CreditCardQuiz p={p} />
         <FinalCTA firstName={p?.firstName || ''} />
         <SharedFooter />
+        <LegalDisclaimer />
         <ConfirmationExitPopup />
       </div>
     </PrepChecklistProvider>

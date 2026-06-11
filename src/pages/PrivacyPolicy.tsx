@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { HeaderLight } from '../components/HeaderLight';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /privacypolicy ────────────────────────────────────────────
    Full Privacy Policy page. Separate from /terms (SMS-specific).
@@ -366,6 +367,7 @@ export function PrivacyPolicy() {
           &copy; {new Date().getFullYear()} Passion Product LLC. All Rights Reserved.
         </p>
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

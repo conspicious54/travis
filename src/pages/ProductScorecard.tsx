@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HeaderLight } from '../components/HeaderLight';
 import { userDataService } from '../services/userDataService';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 interface ScorecardCategory {
   id: string;
@@ -300,6 +301,7 @@ export function ProductScorecard() {
 
         <ScoreDisplay score={currentScore} />
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

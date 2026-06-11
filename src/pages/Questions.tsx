@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { ArrowLeft, HelpCircle } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /questions ────────────────────────────────────────────────
    Dedicated page with the 6 breakout objection videos. Linked from
@@ -158,6 +159,7 @@ export function Questions() {
           </p>
         </div>
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

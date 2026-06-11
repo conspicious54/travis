@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { HeaderLight } from '../components/HeaderLight';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /termsofservice ───────────────────────────────────────────
    Standalone full Terms of Service page. Separate from /terms,
@@ -780,6 +781,7 @@ export function TermsOfService() {
           &copy; {new Date().getFullYear()} Passion Product LLC. All Rights Reserved.
         </p>
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

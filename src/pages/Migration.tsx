@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Mail, GraduationCap, ArrowRight, Sparkles, Search, Clock, LogIn } from 'lucide-react';
 import { SharedFooter } from '../components/TrainingNewSections';
 import { trackEvent } from '../lib/posthog';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /migration ────────────────────────────────────────────────
    Three-option routing page for the passionproductformula.com →
@@ -217,6 +218,7 @@ export function Migration() {
       </main>
 
       <SharedFooter />
+      <LegalDisclaimer />
     </div>
   );
 }

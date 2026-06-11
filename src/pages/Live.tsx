@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, MapPin, Users, Mic, Award, TrendingUp, Zap, Target, ChevronDown, ChevronUp, CheckCircle, Star, Clock, ArrowRight } from 'lucide-react';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ─────────────────────────── data ────────────────────────────────── */
 
@@ -387,6 +388,7 @@ export function Live() {
       <Guarantee />
       <FinalCTA />
       <Footer />
+      <LegalDisclaimer />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { HeaderLight } from '../components/HeaderLight';
 import { Link } from 'react-router-dom';
 import { userDataService } from '../services/userDataService';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 export function OptIn() {
   const [phone, setPhone] = useState('');
@@ -46,6 +47,7 @@ export function OptIn() {
             </ul>
           </div>
         </div>
+        <LegalDisclaimer />
       </div>
     );
   }
@@ -145,6 +147,7 @@ export function OptIn() {
           </form>
         </div>
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

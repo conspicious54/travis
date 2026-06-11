@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, Lock, Calendar, ChevronDown } from 'lucide-react';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ─────────────────────────── refund page ─────────────────────────── */
 
@@ -51,6 +52,7 @@ export function Refund() {
             Your refund request has been submitted. Our team will process it and you'll receive a confirmation email within 5–7 business days.
           </p>
         </div>
+        <LegalDisclaimer />
       </div>
     );
   }
@@ -265,6 +267,7 @@ export function Refund() {
           &copy; {new Date().getFullYear()} Passion Product LLC. All Rights Reserved.
         </p>
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

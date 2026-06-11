@@ -5,6 +5,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── design system ─────────────────────────────────────────────
    Anti-smoking PSA aesthetic:
@@ -42,6 +43,7 @@ export function RealCost() {
       <TheBill />
       <FinalCTA />
       <Footer />
+      <LegalDisclaimer />
       <RealCostExitPopup />
     </div>
   );

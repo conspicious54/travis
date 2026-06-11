@@ -15,6 +15,7 @@ import { EmailCapturePopup } from '../components/EmailCapturePopup';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { Questionnaire } from '../components/Questionnaire';
 import { SuccessState } from '../components/SuccessState';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 function MainContent() {
   const { hasReachedThreeMinutes } = useVideoProgress();
@@ -85,6 +86,7 @@ export function DarkMode() {
   return (
     <>
       <MainContent />
+      <LegalDisclaimer />
       {!isUnlocked && !isSubmitted && <EmailCapturePopup />}
       {!isSubmitted && <ExitIntentPopup />}
     </>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HeaderLight } from '../components/HeaderLight';
 import { userDataService } from '../services/userDataService';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 function LoginSection({ onLogin }: { onLogin: (email: string) => void }) {
   const [email, setEmail] = useState('');
@@ -321,6 +322,7 @@ export function ProductEstimator() {
 
         <ResultsDisplay revenue={monthlyRevenue} profit={monthlyProfit} />
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

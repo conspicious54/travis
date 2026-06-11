@@ -4,6 +4,7 @@ import { identifyUser, trackBookingPageViewed, trackBookingCompleted, trackEvent
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /book - embedded OnceHub closer scheduler ─────────────────
    The closer scheduler now runs on OnceHub (calendar BKC-Q45L7MVX52)
@@ -402,6 +403,7 @@ export function Book() {
           </p>
         </div>
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }

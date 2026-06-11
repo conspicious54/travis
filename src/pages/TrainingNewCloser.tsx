@@ -40,6 +40,7 @@ import { syncContactUtms } from '../lib/syncUtm';
 import { getCoachByOwnerName } from '../lib/coaches';
 import { celebrateConfirm, celebrateArrival } from '../lib/celebrate';
 import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 // Module-level flag so we only fire the arrival celebration once
 // per page session (not every time the banner remounts when the
@@ -950,6 +951,7 @@ function CloserPageBody({
     return (
       <div className="min-h-screen bg-white text-gray-900">
         <MobileWalkthrough steps={steps} location="closer" />
+        <LegalDisclaimer />
         <ConfirmationExitPopup
           location="closer"
           coachFirstName={popupCoach}
@@ -974,6 +976,7 @@ function CloserPageBody({
       <CreditCardQuiz p={p} />
       <CloserFinalCTA meeting={meeting} firstName={firstName} />
       <SharedFooter />
+      <LegalDisclaimer />
       <ConfirmationExitPopup
         location="closer"
         coachFirstName={popupCoach}

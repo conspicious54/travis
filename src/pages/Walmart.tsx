@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle } from 'lucide-react';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ──────────────────────────── types ──────────────────────────────── */
 
@@ -113,6 +114,7 @@ export function Walmart() {
             </ul>
           </div>
         </div>
+        <LegalDisclaimer />
       </div>
     );
   }
@@ -217,6 +219,7 @@ export function Walmart() {
           No spam. Unsubscribe anytime.
         </p>
       </div>
+      <LegalDisclaimer />
     </div>
   );
 }
