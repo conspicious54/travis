@@ -24,7 +24,10 @@ import { ExitIntentPopup } from '../components/ExitIntentPopup';
 
 /* ─── Config - tune as needed ──────────────────────────────────── */
 const TYPEFORM_LIVE_ID = '01KMGF6YH9HXWD39CSVYN96VB8';
-const TYPEFORM_HEIGHT_PX = 520;
+// Typeform needs real vertical room - too short and the question
+// area, the OK/next button, and the bottom progress bar get
+// crowded or cut off entirely on multi-choice questions.
+const TYPEFORM_HEIGHT_PX = 720;
 
 const GROUP_PHOTO_URL  = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisGroup.jpg';
 const TRAVIS_STAGE_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisStage.jpg';
@@ -112,7 +115,7 @@ export function ApplyNow() {
         </p>
 
         {/* Typeform inline embed */}
-        <div ref={formRef} className="max-w-2xl mx-auto">
+        <div ref={formRef} className="max-w-3xl mx-auto">
           <div className="text-center mb-3">
             <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
               The Passion Product Strategy Session
