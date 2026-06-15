@@ -158,62 +158,93 @@ async function searchDealsEnteredStageDebug(
   cutoffIso: string
 ): Promise<{ deals: DealResult[]; status: number; total: number; errorBody?: string }> {
   const enteredProp = `hs_v2_date_entered_${stage.stageId}`;
-  const body = {
-    filterGroups: [
-      {
-        filters: [
-          { propertyName: enteredProp, operator: 'GTE', value: cutoffIso },
-          { propertyName: 'pipeline', operator: 'EQ', value: stage.pipelineId },
-        ],
-      },
-    ],
-    properties: [
-      'dealname',
-      'dealstage',
-      'pipeline',
-      'amount',
-      // first_call_meeting_date powers the Closer Scorecards
-      // "First Call Meeting Date is before today" filter when we
-      // reproduce the formulas in PostHog. Including on every
-      // event so insights can filter consistently.
-      'first_call_meeting_date',
-      'first_call_meeting_date_and_time',
-      'first_call_show_up',
-      'first_call_completed_count',
-      'completed_payment',
-      'createdate',
-      enteredProp,
-      'hs_lastmodifieddate',
-    ],
-    sorts: [{ propertyName: enteredProp, direction: 'DESCENDING' }],
-    limit: 100,
-  };
+  const properties = [
+    'dealname',
+    'dealstage',
+    'pipeline',
+    'amount',
+    // first_call_meeting_date powers the Closer Scorecards
+    // "First Call Meeting Date is before today" filter when we
+    // reproduce the formulas in PostHog. Including on every
+    // event so insights can filter consistently.
+    'first_call_meeting_date',
+    'first_call_meeting_date_and_time',
+    'first_call_show_up',
+    'first_call_completed_count',
+    'completed_payment',
+    'createdate',
+    enteredProp,
+    'hs_lastmodifieddate',
+  ];
+  const PAGE_LIMIT = 100;
+  const MAX_PAGES = 50; // safety: 5000 deals per stage per run is plenty
 
-  let res: Response;
-  try {
-    res = await fetch(`${HUBSPOT_BASE}/crm/v3/objects/deals/search`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    return { deals: [], status: 0, total: 0, errorBody: `fetch error: ${String(err)}` };
-  }
-  if (!res.ok) {
-    let errBody = '';
+  // Paginate through all matching deals so a long backfill window
+  // doesn't silently cap at 100 per stage. HubSpot returns
+  // paging.next.after as a string cursor.
+  const allDeals: DealResult[] = [];
+  let after: string | undefined;
+  let total = 0;
+  let lastStatus = 0;
+  let lastErrorBody: string | undefined;
+
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const body: Record<string, unknown> = {
+      filterGroups: [
+        {
+          filters: [
+            { propertyName: enteredProp, operator: 'GTE', value: cutoffIso },
+            { propertyName: 'pipeline', operator: 'EQ', value: stage.pipelineId },
+          ],
+        },
+      ],
+      properties,
+      sorts: [{ propertyName: enteredProp, direction: 'DESCENDING' }],
+      limit: PAGE_LIMIT,
+    };
+    if (after) body.after = after;
+
+    let res: Response;
     try {
-      errBody = await res.text();
-    } catch {
-      /* no-op */
+      res = await fetch(`${HUBSPOT_BASE}/crm/v3/objects/deals/search`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      return { deals: allDeals, status: 0, total, errorBody: `fetch error: ${String(err)}` };
     }
-    console.warn(`[hs→ph] deal search failed for stage ${stage.stageLabel}: ${res.status} ${errBody.slice(0, 200)}`);
-    return { deals: [], status: res.status, total: 0, errorBody: errBody };
+    lastStatus = res.status;
+
+    if (res.status === 429 || res.status >= 500) {
+      // Retryable - back off and retry the same page. Small per-page
+      // budget to stay well under HubSpot's 10/sec limit.
+      await new Promise((r) => setTimeout(r, 1000));
+      page--; // retry this page
+      continue;
+    }
+    if (!res.ok) {
+      try { lastErrorBody = await res.text(); } catch { /* no-op */ }
+      console.warn(`[hs→ph] deal search failed for stage ${stage.stageLabel}: ${res.status} ${(lastErrorBody || '').slice(0, 200)}`);
+      return { deals: allDeals, status: res.status, total, errorBody: lastErrorBody };
+    }
+    const data = (await res.json()) as {
+      results?: DealResult[];
+      total?: number;
+      paging?: { next?: { after?: string } };
+    };
+    allDeals.push(...(data.results || []));
+    total = data.total || 0;
+    after = data.paging?.next?.after;
+    if (!after) break;
+    // Light throttle between pages
+    await new Promise((r) => setTimeout(r, 150));
   }
-  const data = (await res.json()) as { results?: DealResult[]; total?: number };
-  return { deals: data.results || [], status: res.status, total: data.total || 0 };
+
+  return { deals: allDeals, status: lastStatus || 200, total, errorBody: lastErrorBody };
 }
 
 async function searchDealsEnteredStage(
@@ -408,10 +439,17 @@ export const handler = schedule('*/5 * * * *', async (event) => {
   let totalSkipped = 0;
   const debugLog: Array<Record<string, unknown>> = [];
 
-  // Stage searches in parallel - 8 cheap GETs, no reason to serialize
-  const searchResults = await Promise.all(
-    STAGES.map((s) => searchDealsEnteredStageDebug(token, s, cutoffIso))
-  );
+  // Stage searches run SERIALLY with a small inter-stage throttle.
+  // Firing 11 parallel HubSpot searches reliably hit the per-second
+  // rate limit (especially on long-window backfills where each
+  // search paginates). Sequential with ~150ms gap stays well under
+  // the 10/sec quota and the total wall-time is still fine (each
+  // search returns fast for empty windows).
+  const searchResults: Awaited<ReturnType<typeof searchDealsEnteredStageDebug>>[] = [];
+  for (const s of STAGES) {
+    searchResults.push(await searchDealsEnteredStageDebug(token, s, cutoffIso));
+    await new Promise((r) => setTimeout(r, 150));
+  }
 
   // Flatten into a single list of {stage, deal} tuples we can process
   // with bounded concurrency. Each tuple needs an associated-contact
