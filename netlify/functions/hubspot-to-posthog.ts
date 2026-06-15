@@ -29,9 +29,32 @@ const POSTHOG_HOST = 'https://us.i.posthog.com';
 const LOOKBACK_MINUTES = 10; // search window; must be > cron interval
 
 /* Stage ID → PostHog event name.
-   Source of truth: we pulled these via the HubSpot MCP on 2026-04-23.
-   If a stage is renamed or its ID rotates, update here - stage IDs
-   live in HubSpot under Settings → Objects → Deals → Pipelines. */
+   Source of truth: we pulled these via the HubSpot MCP. Stage IDs
+   live in HubSpot under Settings → Objects → Deals → Pipelines.
+
+   ─────────────────────────────────────────────────────────────────
+   The "Closer Scorecards" report in HubSpot computes:
+
+     Show %         = SUM(first_call_completed_count) / SUM(deal_count)
+     Live Closed %  = SUM([Enrolled/Closed])          / SUM(first_call_completed_count)
+     Booked Closed% = SUM([Enrolled/Closed])          / SUM(deal_count)
+
+   Filtered to:
+     - Pipeline = Inbound Scheduled Calls (1957399266)
+     - First Call Meeting Date <= today (so future-dated calls don't
+       artificially deflate the show rate)
+
+   PostHog mapping (per Person, but events also carry deal_id so a
+   strict deal-level COUNT(DISTINCT deal_id) breakdown works too):
+
+     "deal_count" (booked)       = unique deals with closer_call_booked
+     "first_call_completed_count"= unique deals with closer_call_showed
+     "[Enrolled/Closed]"         = unique deals with closer_enrolled
+                                    OR sale_closed (union)
+
+   To match the report's filter in PostHog, scope insights to
+   first_call_meeting_date <= now (it's on every closer event below).
+   ───────────────────────────────────────────────────────────────── */
 interface StageMap {
   pipelineId: string;
   pipelineLabel: string;
@@ -64,6 +87,15 @@ const STAGES: StageMap[] = [
     eventName: 'setter_call_lost',
   },
   // Inbound Scheduled Calls pipeline (closer flow)
+  // "Lead in" is the entry stage - this is the BOOKED denominator
+  // for Closer Scorecards. Every deal in this pipeline starts here.
+  {
+    pipelineId: '1957399266',
+    pipelineLabel: 'Inbound Scheduled Calls',
+    stageId: '3096023756',
+    stageLabel: 'Lead in',
+    eventName: 'closer_call_booked',
+  },
   {
     pipelineId: '1957399266',
     pipelineLabel: 'Inbound Scheduled Calls',
@@ -77,6 +109,20 @@ const STAGES: StageMap[] = [
     stageId: '3096023758',
     stageLabel: 'Demo Completed',
     eventName: 'closer_demo_completed',
+  },
+  {
+    pipelineId: '1957399266',
+    pipelineLabel: 'Inbound Scheduled Calls',
+    stageId: '3096023759',
+    stageLabel: 'Follow up',
+    eventName: 'closer_follow_up',
+  },
+  {
+    pipelineId: '1957399266',
+    pipelineLabel: 'Inbound Scheduled Calls',
+    stageId: '3096023760',
+    stageLabel: 'Funding',
+    eventName: 'closer_funding',
   },
   {
     pipelineId: '1957399266',
@@ -126,6 +172,16 @@ async function searchDealsEnteredStageDebug(
       'dealstage',
       'pipeline',
       'amount',
+      // first_call_meeting_date powers the Closer Scorecards
+      // "First Call Meeting Date is before today" filter when we
+      // reproduce the formulas in PostHog. Including on every
+      // event so insights can filter consistently.
+      'first_call_meeting_date',
+      'first_call_meeting_date_and_time',
+      'first_call_show_up',
+      'first_call_completed_count',
+      'completed_payment',
+      'createdate',
       enteredProp,
       'hs_lastmodifieddate',
     ],
@@ -404,14 +460,31 @@ export const handler = schedule('*/5 * * * *', async (event) => {
         const amountStr = deal.properties.amount;
         const amount =
           amountStr != null && amountStr !== '' ? Number(amountStr) : undefined;
+        const p = deal.properties;
+        const firstCallCompletedCountStr = p.first_call_completed_count;
+        const firstCallCompletedCount =
+          firstCallCompletedCountStr != null && firstCallCompletedCountStr !== ''
+            ? Number(firstCallCompletedCountStr)
+            : undefined;
         await sendToPostHog(projectKey, email, stage.eventName, enteredAt, uuid, {
           deal_id: deal.id,
-          deal_name: deal.properties.dealname || null,
+          deal_name: p.dealname || null,
           pipeline_id: stage.pipelineId,
           pipeline_label: stage.pipelineLabel,
           stage_id: stage.stageId,
           stage_label: stage.stageLabel,
           amount,
+          // Properties below let PostHog reproduce the HubSpot
+          // "Closer Scorecards" filter scope (first_call_meeting_date
+          // before today) and surface raw HubSpot signals so any
+          // future formula tweak is computable without code changes.
+          first_call_meeting_date: p.first_call_meeting_date || null,
+          first_call_meeting_date_and_time:
+            p.first_call_meeting_date_and_time || null,
+          first_call_show_up: p.first_call_show_up || null,
+          first_call_completed_count: firstCallCompletedCount,
+          completed_payment: p.completed_payment || null,
+          createdate: p.createdate || null,
           hs_entered_at: enteredAt,
         });
         totalFired++;
