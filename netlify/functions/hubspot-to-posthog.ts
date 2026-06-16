@@ -256,22 +256,34 @@ async function searchDealsEnteredStage(
   return r.deals;
 }
 
+/* Contact-level fields we pull alongside the email so we can stamp
+   them onto PostHog Person records via `$set` on each event. Adding
+   new fields here is a one-line change at the call site below. */
+interface ContactInfo {
+  email: string;
+  typeform_score?: string;
+}
+
+const CONTACT_PROPS_TO_FETCH = ['email', 'typeform_score'] as const;
+
 async function getAssociatedContactEmail(
   token: string,
   dealId: string
 ): Promise<string | null> {
   // Kept for back-compat; the batch path is preferred for backfills.
-  const m = await batchResolveEmails([dealId], token);
-  return m.get(dealId) || null;
+  const m = await batchResolveContacts([dealId], token);
+  return m.get(dealId)?.email || null;
 }
 
-/** Resolve deal IDs → contact email in two batch calls, with 429 retry.
- *  Returns a Map keyed by deal id; missing entries = no contact email. */
-async function batchResolveEmails(
+/** Resolve deal IDs → ContactInfo (email + extra HubSpot props we
+ *  want as PostHog Person properties), in two batch calls with 429
+ *  retry. Returns a Map keyed by deal id; missing entries = no
+ *  associated contact, or contact had no email. */
+async function batchResolveContacts(
   dealIds: string[],
   token: string
-): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
+): Promise<Map<string, ContactInfo>> {
+  const out = new Map<string, ContactInfo>();
   if (dealIds.length === 0) return out;
 
   // 1) Batch-read deal→contact associations (HubSpot caps at 100/req)
@@ -301,13 +313,16 @@ async function batchResolveEmails(
     }
   }
 
-  // 2) Batch-read contact emails (cap 100/req)
-  const contactIdToEmail = new Map<string, string>();
+  // 2) Batch-read contact properties (cap 100/req). We pull email
+  //    plus typeform_score (and any other props in
+  //    CONTACT_PROPS_TO_FETCH) so we can $set them on the PostHog
+  //    Person record at event time.
+  const contactIdToInfo = new Map<string, ContactInfo>();
   const contactIds = [...allContactIds];
   for (let i = 0; i < contactIds.length; i += 100) {
     const chunk = contactIds.slice(i, i + 100);
     const data = await hubspotFetchJson<{
-      results?: Array<{ id: string; properties?: { email?: string } }>;
+      results?: Array<{ id: string; properties?: Record<string, string | null | undefined> }>;
     }>(`${HUBSPOT_BASE}/crm/v3/objects/contacts/batch/read`, {
       method: 'POST',
       headers: {
@@ -315,23 +330,27 @@ async function batchResolveEmails(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        properties: ['email'],
+        properties: CONTACT_PROPS_TO_FETCH,
         inputs: chunk.map((id) => ({ id })),
       }),
     });
     for (const r of data?.results || []) {
       const email = r.properties?.email?.toLowerCase().trim();
-      if (email) contactIdToEmail.set(r.id, email);
+      if (!email) continue;
+      const score = r.properties?.typeform_score?.toString().trim();
+      contactIdToInfo.set(r.id, {
+        email,
+        typeform_score: score ? score : undefined,
+      });
     }
   }
 
   // 3) Combine
   for (const dealId of dealIds) {
     const cid = dealToContactId.get(dealId);
-    if (cid) {
-      const email = contactIdToEmail.get(cid);
-      if (email) out.set(dealId, email);
-    }
+    if (!cid) continue;
+    const info = contactIdToInfo.get(cid);
+    if (info) out.set(dealId, info);
   }
   return out;
 }
@@ -476,10 +495,12 @@ export const handler = schedule('*/5 * * * *', async (event) => {
     }
   });
 
-  // Resolve all emails in two batch calls instead of 2N individual
+  // Resolve all contacts in two batch calls instead of 2N individual
   // fetches. HubSpot's batch endpoints cap at 100 IDs per request.
+  // We pull email + typeform_score + any other CONTACT_PROPS_TO_FETCH
+  // so we can $set them on the PostHog Person record on each event.
   const uniqueDealIds = [...new Set(work.map((w) => w.deal.id))];
-  const dealToEmail = await batchResolveEmails(uniqueDealIds, token);
+  const dealToContact = await batchResolveContacts(uniqueDealIds, token);
 
   // Now fire PostHog captures with bounded concurrency. PostHog
   // ingest is fast and tolerates higher concurrency than HubSpot.
@@ -488,8 +509,8 @@ export const handler = schedule('*/5 * * * *', async (event) => {
     const batch = work.slice(i, i + POSTHOG_CONCURRENCY);
     await Promise.all(
       batch.map(async ({ stage, deal, enteredAt }) => {
-        const email = dealToEmail.get(deal.id);
-        if (!email) {
+        const contact = dealToContact.get(deal.id);
+        if (!contact) {
           totalSkipped++;
           console.log(`[hs→ph] skip ${deal.id} (${stage.stageLabel}) - no email`);
           return;
@@ -504,7 +525,25 @@ export const handler = schedule('*/5 * * * *', async (event) => {
           firstCallCompletedCountStr != null && firstCallCompletedCountStr !== ''
             ? Number(firstCallCompletedCountStr)
             : undefined;
-        await sendToPostHog(projectKey, email, stage.eventName, enteredAt, uuid, {
+
+        // PostHog $set: any keys here update the Person record on
+        // every event ingest. typeform_score is the per-application
+        // lead-quality signal from the /applynow form. Adding more
+        // contact-level person properties means: append to
+        // CONTACT_PROPS_TO_FETCH above, then add the key here.
+        const personSet: Record<string, unknown> = {};
+        if (contact.typeform_score) {
+          personSet.typeform_score = contact.typeform_score;
+          // Also store as a parsed number when possible so PostHog
+          // can do >=/< filters and avg() math even though HubSpot
+          // stores it as a string. NaN means non-numeric → skip.
+          const asNum = Number(contact.typeform_score);
+          if (!Number.isNaN(asNum)) {
+            personSet.typeform_score_num = asNum;
+          }
+        }
+
+        await sendToPostHog(projectKey, contact.email, stage.eventName, enteredAt, uuid, {
           deal_id: deal.id,
           deal_name: p.dealname || null,
           pipeline_id: stage.pipelineId,
@@ -524,6 +563,8 @@ export const handler = schedule('*/5 * * * *', async (event) => {
           completed_payment: p.completed_payment || null,
           createdate: p.createdate || null,
           hs_entered_at: enteredAt,
+          // Person properties (PostHog $set keys update the Person)
+          ...(Object.keys(personSet).length > 0 ? { $set: personSet } : {}),
         });
         totalFired++;
       })
