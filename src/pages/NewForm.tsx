@@ -32,7 +32,14 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 // qualified traffic to /nextstep. Sending the lead straight to
 // /router means every newform submission gets geo-routed.
 const REDIRECT_TO = '/router';
-const COUNTDOWN_MS = 4 * 60 * 60 * 1000; // 4 hours
+// 4-minute urgency window. Long enough to feel real (a real
+// resource-allocation window, not a "fake forever" timer), short
+// enough that a re-visit later in the day legitimately shows
+// "expired" rather than the same "23h 59m" trick that screams
+// fake urgency. The 4-hour version we had here previously was
+// too obviously a marketing tactic for the buyer profile we're
+// targeting.
+const COUNTDOWN_MS = 4 * 60 * 1000; // 4 minutes
 const COUNTDOWN_STORAGE_KEY = 'pp_newform_countdown_started_at';
 const STAGE_TAG = 'newform_optin';
 /* ──────────────────────────────────────────────────────────────── */
@@ -375,12 +382,12 @@ export function NewForm() {
           </div>
         </div>
 
-        {/* Countdown - matches the original "Bonus training expires in:" block */}
+        {/* Countdown - 4-minute window, so only MM:SS shown (HOURS
+            tile would always read "00" and look weird). */}
         <div className="text-center mt-10">
           <p className="text-base md:text-lg font-bold text-orange-600 mb-4">Bonus training expires in:</p>
           <div className="flex items-center justify-center gap-3 md:gap-5">
             {[
-              { v: ttl.h, label: 'HOURS' },
               { v: ttl.m, label: 'MINUTES' },
               { v: ttl.s, label: 'SECONDS' },
             ].map((unit) => (

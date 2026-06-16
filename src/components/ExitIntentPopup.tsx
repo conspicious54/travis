@@ -16,6 +16,7 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
   const isBookingPage = location.pathname === '/bookacall';
   const isTrainingPage = location.pathname === '/training';
   const isNextStepPage = location.pathname === '/nextstep';
+  const isApplyNowPage = location.pathname === '/applynow';
   const isGetStartedPage = location.pathname === '/getstarted';
 
   useEffect(() => {
@@ -179,6 +180,73 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // /applynow exit popup - "you're so close" framing. Different
+  // emotional beat from the meme/snap version on /bookacall and
+  // /nextstep: the visitor is mid-application, the conversion is
+  // literally minutes away, so the message reinforces proximity
+  // and removes the "I'll come back later" mental escape. Forces
+  // a single dominant action ("Finish My Application") + closes
+  // the popup so the Typeform is right there.
+  if (isApplyNowPage) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div
+          className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+          onClick={() => setShowExitPopup(false)}
+        />
+
+        <div className="relative bg-white border border-gray-200 rounded-2xl p-7 md:p-9 max-w-lg w-full shadow-[0_0_60px_rgba(249,115,22,0.25)] animate-popup">
+          <button
+            onClick={() => setShowExitPopup(false)}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close"
+          >
+            <X size={22} />
+          </button>
+
+          {/* Almost-there progress visual - a fake 90%-full progress
+              bar that anchors the "so close" message visually. */}
+          <div className="mb-5">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600">
+                Your Application
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600">
+                90% Complete
+              </span>
+            </div>
+            <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full w-[90%] bg-gradient-to-r from-orange-500 to-amber-500 rounded-full" />
+            </div>
+          </div>
+
+          <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-3 tracking-tight">
+            Hold up - you're <span className="text-orange-600">90 seconds away</span>.
+          </h2>
+
+          <p className="text-gray-600 text-base md:text-lg leading-snug mb-7">
+            You made it further than 80% of people. Don't quit at the finish line - finish your application
+            and Travis's team will personally review it within 24 hours.
+          </p>
+
+          <button
+            onClick={() => setShowExitPopup(false)}
+            className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-lg font-black tracking-tight py-4 px-6 rounded-xl shadow-lg shadow-orange-500/30 transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+          >
+            Finish My Application →
+          </button>
+
+          <button
+            onClick={() => setShowExitPopup(false)}
+            className="w-full mt-3 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            No thanks, I'll start over later
+          </button>
         </div>
       </div>
     );

@@ -31,11 +31,17 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 const PRIMARY_CTA_DESTINATION = '/applynow';
 const UNLOCK_DURATION_MS = 2 * 60 * 1000; // 2 mins, per the screenshot
 const UNLOCK_STORAGE_KEY = 'pp_nextstep_unlock_started_at';
-// Green CTAs behave conditionally: if the visitor has watched less
-// than VIDEO_DEPTH_THRESHOLD_MS of the VSL, the click scrolls them
-// back UP to the video instead of navigating away. Once they're
-// past the threshold they're committed - send them to /book.
-const VIDEO_DEPTH_THRESHOLD_MS = 5 * 60 * 1000; // 5 min
+// Green CTAs behave conditionally: BEFORE the unlock timer
+// (UNLOCK_DURATION_MS = 2 min) expires, clicking a green CTA
+// scrolls the visitor back up to the video instead of navigating
+// away - they haven't earned the unlock yet. AFTER the timer
+// expires, all green CTAs navigate freely to /applynow. The timer
+// is the single source of truth - matching its visual cue ("Your
+// Amazon Resources Are Unlocked") with the actual behavior.
+//
+// (The old VIDEO_DEPTH_THRESHOLD_MS of 5 min was inconsistent with
+// the 2-min timer - it meant the visible "unlocked" state didn't
+// match the actual CTA behavior. Removed.)
 
 /* Video watch-time milestones (in seconds) - emitted as PostHog
    `nextstep_video_milestone` events when accumulated play-time
@@ -357,7 +363,6 @@ export function NextStep() {
   // (now tick lives in state so this recomputes once per second)
   const live = formatMS(deadline);
   const unlocked = live.remaining <= 0;
-  const videoDeepEnough = videoPlayedMs >= VIDEO_DEPTH_THRESHOLD_MS;
 
   const scrollToTestimonials = () => {
     trackEvent('nextstep_orange_cta_clicked');
@@ -376,35 +381,35 @@ export function NextStep() {
   };
 
   /* Green CTA click handler used by the POST-TESTIMONIAL CTAs.
-     Two paths:
-     - If the visitor has watched < VIDEO_DEPTH_THRESHOLD_MS of the
-       VSL, intercept the navigation and scroll them back up to the
-       video. They aren't ready yet.
-     - If they've watched enough, let the <Link> navigation through.
+     Gates on the unlock TIMER (same timer that drives the visible
+     "Your Amazon Resources Are Unlocked" state on the page):
+     - Before unlock (timer still running): intercept the click,
+       scroll back to the video. They haven't earned the unlock.
+     - After unlock: let the <Link> navigation through to /applynow.
 
-     NOTE: the TIMER-UNLOCKED CTA uses a different handler
-     (onUnlockCtaClick below) that ALWAYS lets the click navigate -
-     hitting the timer-unlock moment is the visitor explicitly
-     saying "I'm ready" so we don't gate them on video depth. */
+     The TIMER-UNLOCKED CTA itself uses onUnlockCtaClick which
+     always navigates (no gating possible since it only renders
+     after unlock - here for tracking-only). */
   const onCtaClick = (position: string, e: React.MouseEvent) => {
     trackEvent('nextstep_green_cta_clicked', {
       position,
       video_played_ms: videoPlayedMs,
-      sent_to_book: videoDeepEnough,
+      unlocked,
+      sent_to_book: unlocked,
     });
-    if (!videoDeepEnough) {
+    if (!unlocked) {
       e.preventDefault();
       scrollToVideo();
     }
   };
 
-  /* The timer-unlocked CTA always navigates - no video-depth
-     gating. The whole point of the unlock moment is "your stuff
-     is ready, go." Forcing a scroll-back here was a UX bug. */
+  /* The timer-unlocked CTA always navigates - this handler is
+     purely for the PostHog tracking event. */
   const onUnlockCtaClick = () => {
     trackEvent('nextstep_green_cta_clicked', {
       position: 'unlock_timer',
       video_played_ms: videoPlayedMs,
+      unlocked: true,
       sent_to_book: true,
     });
   };
@@ -573,6 +578,43 @@ export function NextStep() {
           ))}
         </div>
       </main>
+
+      {/* Sticky mobile CTA bar - only renders on mobile (md:hidden).
+          Always visible at the bottom of the viewport regardless of
+          scroll position so the conversion action is one tap away.
+          Mirrors the timer/unlock state from the inline countdown
+          card - shows the countdown until 0, then becomes the
+          green "YES! I'm Ready" CTA. Padding-bottom is added to the
+          main wrapper via Tailwind safe-area utilities so the last
+          testimonial isn't hidden behind the bar. */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-gray-200 px-3 py-2.5 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        {unlocked ? (
+          <Link
+            to={ctaHref}
+            onClick={onUnlockCtaClick}
+            className="block w-full text-center bg-green-500 hover:bg-green-600 text-white font-black tracking-tight px-4 py-3 rounded-lg shadow-md shadow-green-500/30 active:scale-95 transition-transform text-base"
+          >
+            YES! I'm Ready To Learn More
+          </Link>
+        ) : (
+          <div className="flex items-center justify-between gap-3 px-2 py-1.5">
+            <div className="text-[11px] font-bold text-gray-600 uppercase tracking-wider leading-tight">
+              Unlocks in
+            </div>
+            <div className="flex items-center gap-1.5 tabular-nums text-slate-900 font-black text-lg">
+              <span>{live.m}</span>
+              <span className="text-gray-400">:</span>
+              <span>{live.s}</span>
+            </div>
+            <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider leading-tight">
+              MIN / SEC
+            </div>
+          </div>
+        )}
+      </div>
+      {/* Spacer so the page bottom isn't hidden behind the sticky
+          bar on mobile (the bar is ~60px tall). Desktop: no-op. */}
+      <div className="md:hidden h-16" aria-hidden="true" />
 
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-300">
