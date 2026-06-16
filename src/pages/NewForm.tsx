@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronsRight, Flame } from 'lucide-react';
-import { identifyUser, trackEvent } from '../lib/posthog';
+import { identifyUser, trackEvent, trackConversionLead } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
-import { persistUtmsFromUrl, readUtmFromUrl, syncContactUtms } from '../lib/syncUtm';
+import { persistUtmsFromUrl, readAttributionFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
@@ -182,6 +182,19 @@ export function NewForm() {
       country_name: countryInfo?.name || 'unknown',
       dial_country: dialCountry,
     });
+    // Top-of-funnel conversion - GTM tags can fan this out to
+    // Google Ads "Form Submission" conversion, Meta Pixel "Lead",
+    // etc. identifyUser already pushed lead_identified above
+    // (which carries gclid/fbclid), so this is the conversion
+    // event that maps to the lead-capture moment.
+    trackConversionLead({
+      email: cleanEmail,
+      first_name: cleanFirst,
+      last_name: cleanLast,
+      phone: fullPhone,
+      audience,
+      country_code: countryInfo?.code,
+    });
 
     try {
       const res = await fetch('/.netlify/functions/register-webinar', {
@@ -213,17 +226,19 @@ export function NewForm() {
     syncContactTimezone(cleanEmail, 'newform_submit');
     syncContactUtms(cleanEmail, 'newform_submit');
 
-    // Forward identity + ALL utm_* to /router so the funnel keeps
-    // attribution end-to-end. Router's buildRedirectUrl passes the
-    // full query string through to /nextstep, which passes through
-    // to /applynow, which puts them in the Typeform.
+    // Forward identity + ALL attribution (utm_* + ad-platform
+    // click IDs like gclid, fbclid, gbraid, wbraid, li_fat_id,
+    // ttclid) to /router so the funnel keeps attribution end-to-
+    // end. Router's buildRedirectUrl passes the full query string
+    // through to /nextstep, which passes through to /applynow,
+    // which puts them in the Typeform as hidden fields.
     const fwd = new URLSearchParams();
     fwd.set('email', cleanEmail);
     if (cleanFirst) fwd.set('firstname', cleanFirst);
     if (cleanLast)  fwd.set('lastname',  cleanLast);
     if (fullPhone)  fwd.set('phone',     fullPhone);
-    const utms = readUtmFromUrl();
-    for (const [k, v] of Object.entries(utms)) {
+    const attribution = readAttributionFromUrl();
+    for (const [k, v] of Object.entries(attribution)) {
       if (v) fwd.set(k, v);
     }
     window.location.href = `${REDIRECT_TO}?${fwd.toString()}`;

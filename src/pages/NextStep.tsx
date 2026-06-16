@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowDown, CheckCircle2, Flame } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
-import { persistUtmsFromUrl, readUtmFromUrl } from '../lib/syncUtm';
+import { persistUtmsFromUrl, readAttributionFromUrl } from '../lib/syncUtm';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
@@ -403,10 +403,10 @@ export function NextStep() {
       const v = incoming.get(k);
       if (v) out.set(k, v);
     }
-    // Pull UTMs from URL (preferred) or sessionStorage fallback - if
-    // the visitor reloaded /nextstep, the URL may have lost them.
-    const utms = readUtmFromUrl();
-    for (const [k, v] of Object.entries(utms)) {
+    // Pull full attribution (UTMs + ad-platform click IDs) from
+    // URL so /applynow's Typeform gets everything as hidden fields.
+    const attribution = readAttributionFromUrl();
+    for (const [k, v] of Object.entries(attribution)) {
       if (v) out.set(k, v);
     }
     return out.toString() ? `${PRIMARY_CTA_DESTINATION}?${out.toString()}` : PRIMARY_CTA_DESTINATION;

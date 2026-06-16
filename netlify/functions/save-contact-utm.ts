@@ -40,9 +40,30 @@ const UTM_FIELDS = [
 ] as const;
 type UtmField = (typeof UTM_FIELDS)[number];
 
+/* Browser click-ID param name → HubSpot contact property name.
+   gbraid and wbraid both fold into hs_google_click_id because
+   HubSpot exposes a single Google slot - and they're both Google's
+   identifiers anyway (iOS app campaigns / web-from-iOS-app). The
+   gclid takes precedence if both are present on the same hit. */
+const CLICK_ID_MAP: Record<string, string> = {
+  gclid: 'hs_google_click_id',
+  gbraid: 'hs_google_click_id',
+  wbraid: 'hs_google_click_id',
+  fbclid: 'hs_facebook_click_id',
+  li_fat_id: 'hs_linkedin_click_id',
+  ttclid: 'hs_tiktok_click_id',
+};
+const CLICK_ID_FIELDS = Object.keys(CLICK_ID_MAP) as Array<keyof typeof CLICK_ID_MAP>;
+
 interface SavePayload extends Partial<Record<UtmField, string>> {
   email?: string;
   source?: string;
+  gclid?: string;
+  gbraid?: string;
+  wbraid?: string;
+  fbclid?: string;
+  li_fat_id?: string;
+  ttclid?: string;
 }
 
 export const handler: Handler = async (event: HandlerEvent) => {
@@ -71,6 +92,20 @@ export const handler: Handler = async (event: HandlerEvent) => {
     const v = (body[f] || '').trim();
     if (v) incoming[f] = v;
   }
+
+  // Map browser click-ID names → HubSpot property names. gclid wins
+  // over gbraid/wbraid since real gclid is the most actionable ID
+  // (works with the broadest set of Google Ads offline-conv tools).
+  for (const f of CLICK_ID_FIELDS) {
+    const v = ((body as Record<string, string | undefined>)[f] || '').trim();
+    if (!v) continue;
+    const hsProp = CLICK_ID_MAP[f];
+    // Don't overwrite a gclid we already set this request with a
+    // gbraid/wbraid value - first write wins, and we iterate gclid first.
+    if (incoming[hsProp]) continue;
+    incoming[hsProp] = v;
+  }
+
   if (Object.keys(incoming).length === 0) {
     return json(200, { ok: false, reason: 'no_utm_fields' });
   }

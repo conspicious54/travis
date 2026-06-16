@@ -17,7 +17,11 @@ let lastSyncedKey = '';
 
 export function syncContactTimezone(
   email: string | null | undefined,
-  source: 'book_redirect' | 'closer_confirmation' | 'setter_confirmation'
+  // Free-form label so funnel-level sources (newform_submit,
+  // applynow_view, applynow_submit, bookacall_redirect, etc) can
+  // all be passed without a TS error. Used only as a diagnostic
+  // tag - the server stores hs_timezone the same way regardless.
+  source: string
 ) {
   if (!email || !email.includes('@')) return;
   let timezone = '';

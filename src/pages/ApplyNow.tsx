@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Flame } from 'lucide-react';
-import { identifyUser, trackEvent } from '../lib/posthog';
+import { identifyUser, trackEvent, trackConversionApplication } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
-import { persistUtmsFromUrl, readUtmFromUrl, syncContactUtms } from '../lib/syncUtm';
+import { persistUtmsFromUrl, readAttributionFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
@@ -161,6 +161,17 @@ export function ApplyNow() {
           email_in_url: !!id.email,
           firstname_in_url: !!id.firstname,
         });
+        // Conversion event - fans out to Google Ads / Meta Pixel
+        // / GA4 via GTM. The application step is the strongest
+        // pre-call intent signal so it's the natural ad-platform
+        // optimization target.
+        trackConversionApplication({
+          form_id: TYPEFORM_LIVE_ID,
+          email: id.email,
+          first_name: id.firstname,
+          last_name: id.lastname,
+          phone: id.phone,
+        });
         // Sync to HubSpot under a distinct stage tag so the contact
         // shows the application step as completed (not just viewed).
         if (id.email) {
@@ -187,9 +198,12 @@ export function ApplyNow() {
   // to (CRM, Zap, webhook, etc).
   //
   // IMPORTANT: each of these keys (email, firstname, lastname, phone,
-  // utm_source, utm_medium, utm_campaign, utm_content, utm_term, utm_id)
-  // must exist as a Hidden Field in the Typeform itself - Typeform
-  // ignores hidden params that aren't pre-declared in the form builder.
+  // utm_source, utm_medium, utm_campaign, utm_content, utm_term, utm_id,
+  // gclid, gbraid, wbraid, fbclid, li_fat_id, ttclid) must exist as a
+  // Hidden Field in the Typeform itself - Typeform ignores hidden
+  // params that aren't pre-declared in the form builder. Adding click
+  // IDs so the Typeform submission webhook carries the ad-platform
+  // attribution end-to-end.
   const hiddenFields = useMemo(() => {
     if (typeof window === 'undefined') return '';
     const incoming = new URLSearchParams(window.location.search);
@@ -198,8 +212,8 @@ export function ApplyNow() {
       const v = incoming.get(k);
       if (v) parts.push(`${k}=${encodeURIComponent(v)}`);
     }
-    const utms = readUtmFromUrl();
-    for (const [k, v] of Object.entries(utms)) {
+    const attribution = readAttributionFromUrl();
+    for (const [k, v] of Object.entries(attribution)) {
       if (v) parts.push(`${k}=${encodeURIComponent(v)}`);
     }
     return parts.join(',');

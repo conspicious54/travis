@@ -1,11 +1,26 @@
-/* ───── browser-side UTM capture + sync to HubSpot ────────────────
-   On the booking pages (/book, /bookacall), we grab any utm_*
-   params from the URL, persist them in sessionStorage (so they
-   survive a HubSpot iframe interaction), and POST them to the
-   save-contact-utm function after the meetingBookSucceeded event.
+/* ───── Browser-side attribution capture + sync to HubSpot ─────────
+   Captures TWO families of URL-based attribution params and sends
+   them server-side to land on the matching HubSpot contact
+   properties so Google Ads / Meta Ads / LinkedIn Ads can do their
+   offline-conversion tracking off the CRM contact:
 
-   The server only writes UTM properties that are currently empty,
-   so first-touch attribution is preserved.
+   1. Standard UTMs (utm_source / utm_medium / utm_campaign / etc)
+   2. Ad-platform click IDs:
+        gclid  → hs_google_click_id   (Google Ads — required for
+                                       GCLID-based offline conv)
+        gbraid → also folded into hs_google_click_id (Google's iOS
+                 in-app click id; HubSpot only has one Google slot)
+        wbraid → ditto (Google's iOS web-from-app click id)
+        fbclid → hs_facebook_click_id (Meta — ready for when the
+                                       Meta Pixel + offline conv
+                                       integration goes live)
+        li_fat_id → hs_linkedin_click_id
+        ttclid    → hs_tiktok_click_id
+
+   Both families share the same sessionStorage envelope so a single
+   persist + sync round-trip carries everything. The save-contact-
+   utm function knows how to map browser-side names to the right
+   HubSpot property names.
 ──────────────────────────────────────────────────────────────────── */
 
 import { trackEvent } from './posthog';
@@ -20,18 +35,32 @@ const UTM_FIELDS = [
   'utm_id',
 ] as const;
 
+/* Browser-side click-ID param names. Each ad platform uses a
+   different query-string key. We read all of them from the URL and
+   send to the server, which maps to the matching HubSpot
+   hs_*_click_id property. gbraid and wbraid both end up under
+   hs_google_click_id since HubSpot only exposes one Google slot. */
+const CLICK_ID_FIELDS = [
+  'gclid',
+  'gbraid',
+  'wbraid',
+  'fbclid',
+  'li_fat_id',
+  'ttclid',
+] as const;
+
 const STORAGE_KEY = 'pp_utm_data';
 
 export type UtmData = Partial<Record<(typeof UTM_FIELDS)[number], string>>;
+export type ClickIdData = Partial<Record<(typeof CLICK_ID_FIELDS)[number], string>>;
+export type AttributionData = UtmData & ClickIdData;
 
-/** Read utm_* params from the current URL (case-insensitive).
-    Skips placeholder values (e.g. "_____") so a broken merge tag
-    doesn't pollute HubSpot UTM properties. */
-export function readUtmFromUrl(): UtmData {
+/* Internal: case-insensitive URL param read with placeholder strip */
+function readParamsFromUrl<T extends string>(fields: readonly T[]): Partial<Record<T, string>> {
   if (typeof window === 'undefined') return {};
   const params = new URLSearchParams(window.location.search);
-  const result: UtmData = {};
-  for (const field of UTM_FIELDS) {
+  const result: Partial<Record<T, string>> = {};
+  for (const field of fields) {
     const direct = params.get(field);
     if (direct && !isPlaceholder(direct)) {
       result[field] = direct;
@@ -47,15 +76,36 @@ export function readUtmFromUrl(): UtmData {
   return result;
 }
 
-/** Persist UTMs in sessionStorage so they survive form submission. */
-export function persistUtmsFromUrl(): UtmData {
+/** Read utm_* params from the current URL (case-insensitive).
+    Skips placeholder values (e.g. "_____") so a broken merge tag
+    doesn't pollute HubSpot UTM properties. */
+export function readUtmFromUrl(): UtmData {
+  return readParamsFromUrl(UTM_FIELDS);
+}
+
+/** Read ad-platform click IDs (gclid / fbclid / etc) from URL. */
+export function readClickIdsFromUrl(): ClickIdData {
+  return readParamsFromUrl(CLICK_ID_FIELDS);
+}
+
+/** Read both UTMs + click IDs from URL in one shot. Convenience
+    for places that want to forward the full attribution envelope. */
+export function readAttributionFromUrl(): AttributionData {
+  return { ...readUtmFromUrl(), ...readClickIdsFromUrl() };
+}
+
+/** Persist UTMs (and any click IDs found in the URL) in
+    sessionStorage so they survive form submission. Despite the
+    name, this also writes click IDs - kept as persistUtmsFromUrl
+    so the existing call sites don't churn. */
+export function persistUtmsFromUrl(): AttributionData {
   if (typeof window === 'undefined') return {};
-  const fromUrl = readUtmFromUrl();
+  const fromUrl = readAttributionFromUrl();
   if (Object.keys(fromUrl).length === 0) {
     return readPersistedUtms();
   }
   try {
-    const merged = { ...readPersistedUtms(), ...fromUrl };
+    const merged: AttributionData = { ...readPersistedUtms(), ...fromUrl };
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
     return merged;
   } catch {
@@ -63,33 +113,44 @@ export function persistUtmsFromUrl(): UtmData {
   }
 }
 
-export function readPersistedUtms(): UtmData {
+/** Read the persisted attribution envelope (UTMs + click IDs).
+    Type name is historical - the storage now holds both. */
+export function readPersistedUtms(): AttributionData {
   if (typeof window === 'undefined') return {};
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return {};
-    return parsed as UtmData;
+    return parsed as AttributionData;
   } catch {
     return {};
   }
+}
+
+/** Read just the click-ID portion of persisted attribution. */
+export function readPersistedClickIds(): ClickIdData {
+  const all = readPersistedUtms();
+  const out: ClickIdData = {};
+  for (const f of CLICK_ID_FIELDS) {
+    if (all[f]) out[f] = all[f];
+  }
+  return out;
 }
 
 let lastSyncedKey = '';
 
 /**
  * Fire-and-forget POST to /.netlify/functions/save-contact-utm.
- * Never blocks the booking flow. Server respects "don't override
- * existing values" - only fills in UTM properties that are empty.
+ * Now sends BOTH UTMs and ad-platform click IDs (gclid, fbclid,
+ * etc) - server maps click IDs to hs_*_click_id properties.
+ * Never blocks the booking flow.
  */
 export function syncContactUtms(
   email: string | null | undefined,
-  source:
-    | 'book_redirect'
-    | 'bookacall_redirect'
-    | 'setter_confirmation'
-    | 'closer_confirmation'
+  // Free-form source label (e.g. 'newform_submit', 'applynow_view',
+  // 'book_redirect') - used only as a diagnostic tag in PostHog.
+  source: string
 ) {
   // Observability: fire one attempt event so we can see invocation rate
   // independent of whether the sync succeeded. Diagnostics for the
@@ -103,20 +164,20 @@ export function syncContactUtms(
     trackEvent('contact_utm_sync_skipped', { source, reason: 'no_email' });
     return;
   }
-  const utms = readPersistedUtms();
-  if (Object.keys(utms).length === 0) {
+  const attribution = readPersistedUtms();
+  if (Object.keys(attribution).length === 0) {
     trackEvent('contact_utm_sync_skipped', { source, reason: 'no_utms_in_storage' });
     return;
   }
 
-  const key = `${email.trim().toLowerCase()}|${JSON.stringify(utms)}`;
+  const key = `${email.trim().toLowerCase()}|${JSON.stringify(attribution)}`;
   if (key === lastSyncedKey) {
     trackEvent('contact_utm_sync_skipped', { source, reason: 'duplicate_in_session' });
     return;
   }
   lastSyncedKey = key;
 
-  const payload = JSON.stringify({ email, source, ...utms });
+  const payload = JSON.stringify({ email, source, ...attribution });
   const url = '/.netlify/functions/save-contact-utm';
 
   // sendBeacon survives the post-booking redirect

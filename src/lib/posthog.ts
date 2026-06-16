@@ -88,19 +88,101 @@ function readFirstTouchProps(): Record<string, any> {
 
 import { isPlaceholder, isValidEmail } from './urlParams';
 
+/* HubSpot tracking + GTM dataLayer types. The HS embed snippet in
+   index.html stubs window._hsq as soon as it executes; the GTM
+   snippet stubs window.dataLayer the same way. Declaring them on
+   the Window so TypeScript sees them, and so identify / dataLayer
+   pushes are type-safe across the codebase. */
+declare global {
+  interface Window {
+    _hsq?: Array<[string, ...unknown[]]>;
+    dataLayer?: Array<Record<string, unknown>>;
+  }
+}
+
+/** Push a HubSpot identify so HubSpot's tracking ties the recent +
+    future pageviews on this session to a contact record. Standard
+    HubSpot fields (email, firstname, lastname, phone) are
+    automatically applied to the contact record; custom fields are
+    too, as long as the contact property exists. Safe no-op if HS
+    script hasn't loaded yet (the _hsq queue is processed once it has).
+
+    Also fires a trackPageView so the current pageview is attributed
+    immediately - per HubSpot's documented pattern. */
+export function identifyHubSpot(
+  email: string,
+  properties?: Record<string, unknown>
+): void {
+  if (typeof window === 'undefined') return;
+  if (!isValidEmail(email)) return;
+  try {
+    window._hsq = window._hsq || [];
+    const payload: Record<string, unknown> = { email: email.trim().toLowerCase() };
+    if (properties) {
+      for (const [k, v] of Object.entries(properties)) {
+        if (isPlaceholder(v)) continue;
+        if (v === undefined || v === null || v === '') continue;
+        payload[k] = v;
+      }
+    }
+    window._hsq.push(['identify', payload]);
+    window._hsq.push(['trackPageView']);
+  } catch { /* no-op */ }
+}
+
+/** Push an event to the GTM dataLayer. GTM tags can listen for
+    the `event` key and route to Google Ads conversion tracking
+    (with the gclid we capture in syncUtm), Google Analytics 4,
+    Meta Pixel (when the user adds it), etc.
+
+    For Google Ads Enhanced Conversions: the email below is passed
+    raw - configure GTM to SHA-256 hash it before forwarding to
+    Google Ads, OR rely on Google Ads' own auto-hashing in the
+    Enhanced Conversions tag config. Either way, raw is the right
+    thing to send from the page since GTM's transform layer
+    expects it. */
+export function pushDataLayer(
+  event: string,
+  properties?: Record<string, unknown>
+): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dataLayer = window.dataLayer || [];
+    const cleaned: Record<string, unknown> = { event };
+    if (properties) {
+      for (const [k, v] of Object.entries(properties)) {
+        if (isPlaceholder(v)) continue;
+        if (v === undefined || v === null) continue;
+        cleaned[k] = v;
+      }
+    }
+    window.dataLayer.push(cleaned);
+  } catch { /* no-op */ }
+}
+
 /** Identify a user by email + set person properties. Rejects empty,
     malformed, and placeholder-style values (e.g. "_____") so a broken
     upstream merge tag never collapses real visitors into a fake
     Person. See src/lib/urlParams.ts for the placeholder definitions.
 
-    Also captures first-touch attribution (lead_source / first_utm_* /
+    Now also identifies the visitor on HubSpot's first-party
+    tracking (so HubSpot pageviews tie to the contact) and pushes
+    a `lead_identified` event to GTM's dataLayer with the email +
+    captured click IDs / UTMs - GTM tags can use these to feed
+    Google Ads Enhanced Conversions / Meta Pixel match keys.
+
+    Captures first-touch attribution (lead_source / first_utm_* /
     first_landing_url) via $set_once - written only on the FIRST
     identify of this Person, so a return visit via "direct" doesn't
-    overwrite the original "instagram" / "youtube" / "email" source.
-    Use Insights or Cohorts on `lead_source` to segment your funnel
-    by acquisition channel. */
+    overwrite the original source.
+
+    Captured click IDs (gclid, fbclid, etc) are stamped on the
+    Person via $set so any PostHog insight can break down funnels
+    by acquisition channel - useful for "what's the conversion rate
+    of Google Ads gclid visitors vs Meta fbclid visitors" analysis. */
 export function identifyUser(email: string, properties?: Record<string, any>) {
   if (!isValidEmail(email)) return;
+  const cleanEmail = email.trim().toLowerCase();
   const cleaned: Record<string, any> = {};
   if (properties) {
     for (const [k, v] of Object.entries(properties)) {
@@ -108,8 +190,60 @@ export function identifyUser(email: string, properties?: Record<string, any>) {
       cleaned[k] = v;
     }
   }
+  // Pull persisted click IDs + UTMs (set when persistUtmsFromUrl
+  // was called earlier in this session) and attach as Person
+  // properties via $set, so PostHog insights can break down funnels
+  // by acquisition channel without us threading the params through
+  // every track call.
+  const clickIds = readPersistedClickIdsForIdentify();
+  for (const [k, v] of Object.entries(clickIds)) {
+    if (v) cleaned[k] = v;
+  }
   const setOnce = readFirstTouchProps();
-  ph()?.identify(email.trim().toLowerCase(), cleaned, setOnce);
+  ph()?.identify(cleanEmail, cleaned, setOnce);
+
+  // HubSpot tracking identify - ties pageviews to the contact
+  identifyHubSpot(cleanEmail, {
+    email: cleanEmail,
+    firstname: cleaned.first_name,
+    lastname: cleaned.last_name,
+    phone: cleaned.phone,
+  });
+
+  // GTM dataLayer event - GTM tags can route this to Google Ads
+  // Enhanced Conversions / Meta Pixel / GA4 with the right
+  // transformations. Including click IDs so the conversion-side tag
+  // doesn't have to re-read them from the URL (might be missing
+  // post-redirect).
+  pushDataLayer('lead_identified', {
+    email: cleanEmail,
+    first_name: cleaned.first_name,
+    last_name: cleaned.last_name,
+    phone: cleaned.phone,
+    ...clickIds,
+  });
+}
+
+/* Internal: dynamically read persisted click IDs without a static
+   import of syncUtm.ts (which imports trackEvent from this file -
+   would create a cycle). Module-level access is safe because both
+   modules are pure ESM and resolved at runtime. */
+function readPersistedClickIdsForIdentify(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = sessionStorage.getItem('pp_utm_data');
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    const out: Record<string, string> = {};
+    for (const f of ['gclid', 'gbraid', 'wbraid', 'fbclid', 'li_fat_id', 'ttclid']) {
+      const v = parsed[f];
+      if (typeof v === 'string' && v.trim()) out[f] = v.trim();
+    }
+    return out;
+  } catch {
+    return {};
+  }
 }
 
 /** Set person properties without re-identifying. Strips placeholder
@@ -139,6 +273,12 @@ export function trackBookingPageViewed(type: BookingType) {
 
 export function trackBookingCompleted(type: BookingType, payload?: Record<string, any>) {
   trackEvent('booking_completed', { booking_type: type, ...payload });
+  // Strong-intent conversion - fan out to GTM so Google Ads /
+  // Meta / GA4 can record it as a conversion. All four booking
+  // pages (Book / BookCall / WebinarBook / WebinarBookCall)
+  // already call trackBookingCompleted, so this picks them up
+  // automatically.
+  pushDataLayer('booking_completed', { booking_type: type, ...payload });
 }
 
 export function trackConfirmationPageViewed(type: 'closer' | 'setter' | 'generic', personalization?: Record<string, any>) {
@@ -180,6 +320,53 @@ export function trackContactSaved(region: string, platform: string) {
 export function trackScrollIndicatorVisible() {
   trackEvent('scroll_indicator_seen');
 }
+
+/* ───── Conversion events (for Google Ads / Meta Ads) ────────────
+   These push to GTM's dataLayer so GTM tags can route to:
+     - Google Ads conversion tracking (uses gclid auto-attached to
+       the same browser visit; configure the Google Ads conversion
+       tag in GTM to fire on these `event` names)
+     - GA4 conversion events
+     - Meta Pixel events (when the user adds the pixel)
+     - LinkedIn Insight Tag conversions
+
+   Each conversion ALSO fires a parallel PostHog event so we get
+   the same data without depending on GTM being correctly
+   configured. PostHog gives us behavioral funnels;
+   Google/Meta/LinkedIn get the conversion signal for ad
+   optimization.
+
+   Event names are deliberately platform-neutral - GTM tags
+   transform them to the right per-platform name (e.g.
+   `lead_submitted` → Google Ads "Form Submission" conversion,
+   Meta "Lead" event, etc).
+─────────────────────────────────────────────────────────────────── */
+
+/** Fired on /newform submit. Top-of-funnel lead capture. */
+export function trackConversionLead(properties?: Record<string, unknown>): void {
+  pushDataLayer('lead_submitted', properties);
+  trackEvent('conversion_lead_submitted', properties);
+}
+
+/** Fired on /applynow Typeform completion. Mid-funnel "application
+    completed" milestone - many ad platforms use this as their
+    optimization target above raw lead. */
+export function trackConversionApplication(properties?: Record<string, unknown>): void {
+  pushDataLayer('application_completed', properties);
+  trackEvent('conversion_application_completed', properties);
+}
+
+/* Booking-completed conversion is fired inside trackBookingCompleted
+   above (all four booking pages already call that), so no separate
+   trackConversionBooking helper is needed - it would just duplicate.
+
+   Sale-closed conversion fires SERVER-SIDE from
+   netlify/functions/hubspot-to-posthog.ts when a deal hits Closed
+   Won. That path doesn't touch the dataLayer (no browser context),
+   so for Google Ads offline-conversion uploads use the
+   hs_google_click_id / hs_facebook_click_id properties saved on
+   the contact via syncContactUtms - those are designed for
+   exactly this. */
 
 /* ───── Feature flags / Experiments ────────────────────────────────
    PostHog Experiments work via feature flags. When you create an
