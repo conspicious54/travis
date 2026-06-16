@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { DarkMode } from './pages/DarkMode';
 import { LightMode } from './pages/LightMode';
 import { HomeRedirect } from './pages/HomeRedirect';
@@ -46,6 +46,41 @@ import { EmailCaptureProvider } from './context/EmailCaptureContext';
 import { ExitIntentProvider } from './context/ExitIntentContext';
 import { QuestionnaireProvider } from './context/QuestionnaireContext';
 
+/* Whop pixel route tracker.
+   The pixel snippet in index.html fires whop.track("page") once on
+   initial load. In an SPA, React Router transitions between routes
+   without a full page reload, so that initial call doesn't re-fire
+   for /newform -> /router -> /nextstep -> /applynow etc. This
+   component listens to React Router location changes and fires
+   whop.track("page") on every navigation so each funnel step
+   counts as a Whop pageview.
+
+   Sits inside <BrowserRouter> below so useLocation() works.
+   Skips the FIRST mount because the inline pixel already fired
+   for the initial location. */
+declare global {
+  interface Window {
+    whop?: {
+      track: (event: string, ...args: unknown[]) => void;
+      setScope: (...scopes: string[]) => void;
+    };
+  }
+}
+function WhopPageTracker() {
+  const location = useLocation();
+  const initialRef = React.useRef(true);
+  useEffect(() => {
+    if (initialRef.current) {
+      initialRef.current = false;
+      return;
+    }
+    try {
+      window.whop?.track('page');
+    } catch { /* no-op */ }
+  }, [location.pathname, location.search]);
+  return null;
+}
+
 function AppWrapper() {
   return (
     <EmailCaptureProvider>
@@ -53,6 +88,7 @@ function AppWrapper() {
         <ExitIntentProvider>
           <QuestionnaireProvider>
             <BrowserRouter>
+              <WhopPageTracker />
               <Routes>
                 <Route path="/" element={<HomeRedirect />} />
                 <Route path="/old-home" element={<DarkMode />} />
