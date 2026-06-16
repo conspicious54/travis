@@ -375,11 +375,17 @@ export function NextStep() {
     if (!videoInteracted) setVideoInteracted(true);
   };
 
-  /* Green CTA click handler. Two paths:
+  /* Green CTA click handler used by the POST-TESTIMONIAL CTAs.
+     Two paths:
      - If the visitor has watched < VIDEO_DEPTH_THRESHOLD_MS of the
        VSL, intercept the navigation and scroll them back up to the
        video. They aren't ready yet.
-     - If they've watched enough, let the <Link> navigation through. */
+     - If they've watched enough, let the <Link> navigation through.
+
+     NOTE: the TIMER-UNLOCKED CTA uses a different handler
+     (onUnlockCtaClick below) that ALWAYS lets the click navigate -
+     hitting the timer-unlock moment is the visitor explicitly
+     saying "I'm ready" so we don't gate them on video depth. */
   const onCtaClick = (position: string, e: React.MouseEvent) => {
     trackEvent('nextstep_green_cta_clicked', {
       position,
@@ -390,6 +396,17 @@ export function NextStep() {
       e.preventDefault();
       scrollToVideo();
     }
+  };
+
+  /* The timer-unlocked CTA always navigates - no video-depth
+     gating. The whole point of the unlock moment is "your stuff
+     is ready, go." Forcing a scroll-back here was a UX bug. */
+  const onUnlockCtaClick = () => {
+    trackEvent('nextstep_green_cta_clicked', {
+      position: 'unlock_timer',
+      video_played_ms: videoPlayedMs,
+      sent_to_book: true,
+    });
   };
 
   // Pre-build the CTA href, forwarding identity AND utm_* from the
@@ -479,7 +496,7 @@ export function NextStep() {
           {unlocked ? (
             <Link
               to={ctaHref}
-              onClick={(e) => onCtaClick('unlock_timer', e)}
+              onClick={onUnlockCtaClick}
               className="block w-full text-center bg-green-500 hover:bg-green-600 text-white font-black tracking-tight px-6 py-4 md:py-5 rounded-xl shadow-lg shadow-green-500/30 transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 [animation:nextstep-unlock_500ms_ease-out]"
             >
               <div className="flex items-center justify-center gap-2 text-[10px] md:text-[11px] uppercase tracking-widest text-green-50/90 mb-1">
