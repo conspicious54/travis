@@ -28,6 +28,14 @@
       !function(w,d,s,u,n,a,b){if(w[n])return;a=w[n]={q:[],t:+new Date,s:[],o:u,track:function(){a.q.push([+new Date].concat([].slice.call(arguments)))},setScope:function(){a.s=[].slice.call(arguments).filter(function(x){return typeof x==="string"});a.q.push([+new Date,"setScope"].concat(a.s))},scope:function(){var c=[].slice.call(arguments);return{track:function(){a.q.push([+new Date].concat([].slice.call(arguments)).concat([{__scope:c}]))}}}};b=d.createElement(s);b.async=1;b.src=u+"/s.js";d.getElementsByTagName(s)[0].parentNode.insertBefore(b,d.getElementsByTagName(s)[0])}(window,document,"script","https://t.whop.tw","whop");whop.setScope("biz_Y1y6ihD8NR7J4F");whop.track("page");
     </script>
     <!-- End Whop pixel -->
+    <!-- HubSpot tracking (portal 245024973). Loads HubSpot's
+         tracking code which exposes the _hsq queue used for SPA
+         pageviews + identify(). Initial pageview fires
+         automatically; route changes are pushed from
+         src/App.tsx <RouteTracker /> via _hsq.push(['setPath',
+         path]) + _hsq.push(['trackPageView']). -->
+    <script type="text/javascript" id="hs-script-loader" async defer src="//js-na2.hs-scripts.com/245024973.js"></script>
+    <!-- End of HubSpot Embed Code -->
   </head>
   <body>
     <!-- Google Tag Manager (noscript) -->

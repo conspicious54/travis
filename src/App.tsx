@@ -46,27 +46,28 @@ import { EmailCaptureProvider } from './context/EmailCaptureContext';
 import { ExitIntentProvider } from './context/ExitIntentContext';
 import { QuestionnaireProvider } from './context/QuestionnaireContext';
 
-/* Whop pixel route tracker.
-   The pixel snippet in index.html fires whop.track("page") once on
-   initial load. In an SPA, React Router transitions between routes
-   without a full page reload, so that initial call doesn't re-fire
-   for /newform -> /router -> /nextstep -> /applynow etc. This
-   component listens to React Router location changes and fires
-   whop.track("page") on every navigation so each funnel step
-   counts as a Whop pageview.
+/* SPA route tracker.
+   Both Whop and HubSpot have their snippet in index.html which
+   fires an initial pageview on first page load. In an SPA, React
+   Router navigates between routes without a full page reload, so
+   those initial calls don't re-fire for /newform -> /router ->
+   /nextstep -> /applynow etc. This component listens to React
+   Router location changes and pushes a pageview to each tracker
+   so every funnel step counts.
 
    Sits inside <BrowserRouter> below so useLocation() works.
-   Skips the FIRST mount because the inline pixel already fired
-   for the initial location. */
+   Skips the FIRST mount because the inline pixels already fired
+   for the initial location, avoiding a double-count. */
 declare global {
   interface Window {
     whop?: {
       track: (event: string, ...args: unknown[]) => void;
       setScope: (...scopes: string[]) => void;
     };
+    _hsq?: Array<[string, ...unknown[]]>;
   }
 }
-function WhopPageTracker() {
+function RouteTracker() {
   const location = useLocation();
   const initialRef = React.useRef(true);
   useEffect(() => {
@@ -74,8 +75,17 @@ function WhopPageTracker() {
       initialRef.current = false;
       return;
     }
+    // Whop: anonymous pageview
     try {
       window.whop?.track('page');
+    } catch { /* no-op */ }
+    // HubSpot: SPA pageview pattern from HS docs - setPath then
+    // trackPageView. Include the query string so UTM-based
+    // segmentation in HubSpot can attribute by source.
+    try {
+      window._hsq = window._hsq || [];
+      window._hsq.push(['setPath', location.pathname + location.search]);
+      window._hsq.push(['trackPageView']);
     } catch { /* no-op */ }
   }, [location.pathname, location.search]);
   return null;
@@ -88,7 +98,7 @@ function AppWrapper() {
         <ExitIntentProvider>
           <QuestionnaireProvider>
             <BrowserRouter>
-              <WhopPageTracker />
+              <RouteTracker />
               <Routes>
                 <Route path="/" element={<HomeRedirect />} />
                 <Route path="/old-home" element={<DarkMode />} />
