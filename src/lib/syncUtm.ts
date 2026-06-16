@@ -49,11 +49,21 @@ const CLICK_ID_FIELDS = [
   'ttclid',
 ] as const;
 
+/* Meta first-party cookies. Set by the Meta pixel when it loads
+   on the page; we read them from document.cookie and stash them
+   alongside click IDs so they're available for Meta Conversions
+   API (server-side conversion uploads, more reliable than the
+   browser pixel against adblockers / ITP). Until the Meta pixel
+   is installed these will always be empty - capture is silent
+   and starts working the moment the pixel goes in. */
+const FB_COOKIE_FIELDS = ['_fbp', '_fbc'] as const;
+
 const STORAGE_KEY = 'pp_utm_data';
 
 export type UtmData = Partial<Record<(typeof UTM_FIELDS)[number], string>>;
 export type ClickIdData = Partial<Record<(typeof CLICK_ID_FIELDS)[number], string>>;
-export type AttributionData = UtmData & ClickIdData;
+export type FbCookieData = Partial<Record<(typeof FB_COOKIE_FIELDS)[number], string>>;
+export type AttributionData = UtmData & ClickIdData & FbCookieData;
 
 /* Internal: case-insensitive URL param read with placeholder strip */
 function readParamsFromUrl<T extends string>(fields: readonly T[]): Partial<Record<T, string>> {
@@ -88,10 +98,25 @@ export function readClickIdsFromUrl(): ClickIdData {
   return readParamsFromUrl(CLICK_ID_FIELDS);
 }
 
-/** Read both UTMs + click IDs from URL in one shot. Convenience
-    for places that want to forward the full attribution envelope. */
+/** Read Meta first-party cookies (_fbp / _fbc) from document.cookie.
+    These are set by the Meta pixel when it loads - empty until the
+    pixel is installed. Captured here so the Conversions API path
+    (server-side) has the cookies whenever Meta integration goes in. */
+export function readFbCookies(): FbCookieData {
+  if (typeof document === 'undefined') return {};
+  const result: FbCookieData = {};
+  const cookies = document.cookie || '';
+  for (const name of FB_COOKIE_FIELDS) {
+    const match = cookies.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
+    if (match && match[1]) result[name] = decodeURIComponent(match[1]);
+  }
+  return result;
+}
+
+/** Read full attribution envelope from URL + Meta cookies in one
+    shot. Convenience for places that want to forward everything. */
 export function readAttributionFromUrl(): AttributionData {
-  return { ...readUtmFromUrl(), ...readClickIdsFromUrl() };
+  return { ...readUtmFromUrl(), ...readClickIdsFromUrl(), ...readFbCookies() };
 }
 
 /** Persist UTMs (and any click IDs found in the URL) in

@@ -224,10 +224,12 @@ export function identifyUser(email: string, properties?: Record<string, any>) {
   });
 }
 
-/* Internal: dynamically read persisted click IDs without a static
-   import of syncUtm.ts (which imports trackEvent from this file -
-   would create a cycle). Module-level access is safe because both
-   modules are pure ESM and resolved at runtime. */
+/* Internal: dynamically read persisted ad-platform attribution
+   (click IDs + Meta first-party cookies) without a static import
+   of syncUtm.ts - that would create an import cycle since
+   syncUtm.ts imports trackEvent from this file. Module-level
+   access via sessionStorage is safe because both modules are
+   pure ESM and resolved at runtime. */
 function readPersistedClickIdsForIdentify(): Record<string, string> {
   if (typeof window === 'undefined') return {};
   try {
@@ -236,7 +238,7 @@ function readPersistedClickIdsForIdentify(): Record<string, string> {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return {};
     const out: Record<string, string> = {};
-    for (const f of ['gclid', 'gbraid', 'wbraid', 'fbclid', 'li_fat_id', 'ttclid']) {
+    for (const f of ['gclid', 'gbraid', 'wbraid', 'fbclid', 'li_fat_id', 'ttclid', '_fbp', '_fbc']) {
       const v = parsed[f];
       if (typeof v === 'string' && v.trim()) out[f] = v.trim();
     }
