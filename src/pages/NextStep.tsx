@@ -428,13 +428,15 @@ export function NextStep() {
      visitor sees the same copy everywhere.
        - control: "YES! I'm Ready To Learn More"
        - reserve: "Reserve My Free Spot"
-       - access:  "Get Instant Access"
+       - access:  "Get My Free Strategy Call"  (variant key kept
+                  as 'access' so the PostHog data already gathered
+                  isn't lost; only the displayed copy changed.)
      Goal event: applynow_page_viewed (did the click actually
      advance them to the next step). */
   const ctaCopyVariant = useFeatureFlag('nextstep-cta-copy-test');
   const ctaText =
     ctaCopyVariant === 'reserve' ? 'Reserve My Free Spot'
-    : ctaCopyVariant === 'access' ? 'Get Instant Access'
+    : ctaCopyVariant === 'access' ? 'Get My Free Strategy Call'
     : "YES! I'm Ready To Learn More";
 
   /* Personalization name. URL-first read with localStorage fallback
