@@ -319,16 +319,11 @@ export function ApplyNow() {
 
           {/* Trust signal strip - sets the time expectation so the
               "how long is this going to take" mental hesitation
-              doesn't cause never-starts. Three small chips that
-              read as evidence, not marketing copy. */}
+              doesn't cause never-starts. */}
           <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mt-4">
             <div className="inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 px-2.5 py-1 rounded-full text-[11px] md:text-xs font-semibold">
               <CheckCircle2 className="w-3 h-3" />
               Avg completion: 1m 42s
-            </div>
-            <div className="inline-flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-700 px-2.5 py-1 rounded-full text-[11px] md:text-xs font-semibold">
-              <Flame className="w-3 h-3" />
-              Reviewed within 24h
             </div>
             <div className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 px-2.5 py-1 rounded-full text-[11px] md:text-xs font-semibold">
               <ShieldCheck className="w-3 h-3" />
@@ -336,11 +331,6 @@ export function ApplyNow() {
             </div>
           </div>
         </div>
-
-        <p className="text-center text-xs italic text-gray-500 mt-8">
-          *By submitting this application you agree to our{' '}
-          <Link to="/termsofservice" className="underline hover:text-gray-700">terms of service</Link>
-        </p>
 
         {/* As seen on */}
         <div className="text-center mt-12 mb-8">
