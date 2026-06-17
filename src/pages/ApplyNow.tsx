@@ -208,6 +208,18 @@ export function ApplyNow() {
   // params that aren't pre-declared in the form builder. Adding click
   // IDs so the Typeform submission webhook carries the ad-platform
   // attribution end-to-end.
+  /* Personalization name from URL params (visitors who came via
+     /newform have it set). Empty when unknown - callers fall back
+     to generic copy. Capitalizes first letter so "connor" reads
+     as "Connor" in the personalized strings. */
+  const firstname = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    const params = new URLSearchParams(window.location.search);
+    const raw = (getCleanIdentity(params).firstname || '').trim();
+    if (!raw) return '';
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }, []);
+
   const hiddenFields = useMemo(() => {
     if (typeof window === 'undefined') return '';
     const incoming = new URLSearchParams(window.location.search);
@@ -248,7 +260,9 @@ export function ApplyNow() {
 
       <main className="max-w-4xl mx-auto px-5 pt-4 pb-14">
         <p className="text-center text-base md:text-lg italic text-gray-700 mb-7">
-          Complete This Quick Application to See How We Can Support Your Goals
+          {firstname
+            ? `${firstname}, complete this quick application to see how we can support your goals`
+            : 'Complete This Quick Application to See How We Can Support Your Goals'}
         </p>
 
         {/* Typeform inline embed */}

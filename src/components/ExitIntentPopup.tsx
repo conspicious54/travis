@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useExitIntent } from '../context/ExitIntentContext';
 import { useQuestionnaire } from '../context/QuestionnaireContext';
 import { useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
+import { getCleanIdentity } from '../lib/urlParams';
 
 interface ExitIntentPopupProps {
   theme?: 'light' | 'dark';
@@ -18,6 +19,17 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
   const isNextStepPage = location.pathname === '/nextstep';
   const isApplyNowPage = location.pathname === '/applynow';
   const isGetStartedPage = location.pathname === '/getstarted';
+
+  /* Personalization name from URL params - reused by the /applynow
+     variant headline. Empty when unknown; the variant falls back
+     to generic copy. */
+  const firstname = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    const params = new URLSearchParams(window.location.search);
+    const raw = (getCleanIdentity(params).firstname || '').trim();
+    if (!raw) return '';
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }, [location.search]);
 
   useEffect(() => {
     let timeout: NodeJS.Timeout;
@@ -226,7 +238,8 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
           </div>
 
           <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-3 tracking-tight">
-            Hold up - you're <span className="text-orange-600">90 seconds away</span>.
+            {firstname ? <>Hold up, {firstname} - you're </> : <>Hold up - you're </>}
+            <span className="text-orange-600">90 seconds away</span>.
           </h2>
 
           <p className="text-gray-600 text-base md:text-lg leading-snug mb-7">

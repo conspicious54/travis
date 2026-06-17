@@ -421,6 +421,19 @@ export function NextStep() {
   // Pre-build the CTA href, forwarding identity AND utm_* from the
   // URL so /applynow keeps the visitor identified and the Typeform
   // gets the live attribution as hidden fields.
+  /* Personalization name. Pulled from URL params (visitors who came
+     through /newform have it set). Empty string when unknown -
+     callers fall back to generic copy. Capitalizes first letter
+     so "connor" -> "Connor" without overwriting compound names.
+     Stripped of placeholder values by getCleanIdentity. */
+  const firstname = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    const params = new URLSearchParams(window.location.search);
+    const raw = (getCleanIdentity(params).firstname || '').trim();
+    if (!raw) return '';
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }, []);
+
   const ctaHref = useMemo(() => {
     if (typeof window === 'undefined') return PRIMARY_CTA_DESTINATION;
     const incoming = new URLSearchParams(window.location.search);
@@ -517,7 +530,9 @@ export function NextStep() {
           ) : (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 md:p-4">
               <p className="text-center text-xs md:text-sm font-semibold text-gray-700 mb-2">
-                Your Amazon Resources Will Unlock In:
+                {firstname
+                  ? `${firstname}, Your Amazon Resources Unlock In:`
+                  : 'Your Amazon Resources Will Unlock In:'}
               </p>
               <div className="flex items-center justify-center gap-2.5">
                 <div className="flex flex-col items-center">
