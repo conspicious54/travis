@@ -4,7 +4,7 @@ import { CheckCircle2, Clock, Flame, ShieldCheck } from 'lucide-react';
 import { identifyUser, trackEvent, trackConversionApplication } from '../lib/posthog';
 import { useTabUrgency } from '../lib/useTabUrgency';
 import { getCleanIdentity, getMergedIdentity } from '../lib/urlParams';
-import { persistUtmsFromUrl, readAttributionFromUrl, syncContactUtms } from '../lib/syncUtm';
+import { persistUtmsFromUrl, readAttribution, syncContactUtms } from '../lib/syncUtm';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
@@ -237,7 +237,11 @@ export function ApplyNow() {
       const v = incoming.get(k);
       if (v) parts.push(`${k}=${encodeURIComponent(v)}`);
     }
-    const attribution = readAttributionFromUrl();
+    // readAttribution merges URL + sessionStorage so Typeform's
+    // hidden fields get the attribution even if the URL chain
+    // dropped them somewhere upstream (the booking pages already
+    // populate sessionStorage via persistUtmsFromUrl).
+    const attribution = readAttribution();
     for (const [k, v] of Object.entries(attribution)) {
       if (v) parts.push(`${k}=${encodeURIComponent(v)}`);
     }

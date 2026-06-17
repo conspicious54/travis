@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowDown, CheckCircle2, Flame } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity, getMergedIdentity } from '../lib/urlParams';
-import { persistUtmsFromUrl, readAttributionFromUrl } from '../lib/syncUtm';
+import { persistUtmsFromUrl, readAttribution } from '../lib/syncUtm';
 import { useTabUrgency } from '../lib/useTabUrgency';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
@@ -443,9 +443,11 @@ export function NextStep() {
       const v = incoming.get(k);
       if (v) out.set(k, v);
     }
-    // Pull full attribution (UTMs + ad-platform click IDs) from
-    // URL so /applynow's Typeform gets everything as hidden fields.
-    const attribution = readAttributionFromUrl();
+    // Pull full attribution (UTMs + ad-platform click IDs + Meta
+    // cookies) from URL OR sessionStorage so /applynow's Typeform
+    // gets everything as hidden fields - even if the URL got
+    // stripped somewhere up the chain.
+    const attribution = readAttribution();
     for (const [k, v] of Object.entries(attribution)) {
       if (v) out.set(k, v);
     }

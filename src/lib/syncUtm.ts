@@ -114,9 +114,29 @@ export function readFbCookies(): FbCookieData {
 }
 
 /** Read full attribution envelope from URL + Meta cookies in one
-    shot. Convenience for places that want to forward everything. */
+    shot. URL-only - use readAttribution() instead when forwarding
+    across a navigation, since that one merges sessionStorage too. */
 export function readAttributionFromUrl(): AttributionData {
   return { ...readUtmFromUrl(), ...readClickIdsFromUrl(), ...readFbCookies() };
+}
+
+/** Defense-in-depth attribution read for forwarding. Reads the URL
+    first (so a URL-level override on a specific page still wins,
+    useful for previewing or re-attributing) and falls back to the
+    sessionStorage envelope (filled by persistUtmsFromUrl on every
+    page mount) for any field the URL didn't carry. This is what
+    every "build the next page's URL" or "build Typeform hidden
+    fields" call site should use - the URL chain can get stripped
+    by browser extensions / third-party redirects / weird back-
+    forward state, sessionStorage carries the attribution through
+    those edge cases. */
+export function readAttribution(): AttributionData {
+  const fromStorage = readPersistedUtms();
+  const fromUrl = readAttributionFromUrl();
+  // Spread order: URL fields overwrite storage fields when both
+  // are present. So a URL-level fresh utm_source wins over a
+  // stored one, but missing URL fields are backfilled from storage.
+  return { ...fromStorage, ...fromUrl };
 }
 
 /** Persist UTMs (and any click IDs found in the URL) in

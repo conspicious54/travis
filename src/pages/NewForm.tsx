@@ -4,7 +4,7 @@ import { ChevronsRight, Flame } from 'lucide-react';
 import { identifyUser, trackEvent, trackConversionLead } from '../lib/posthog';
 import { getCleanIdentity, persistIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
-import { persistUtmsFromUrl, readAttributionFromUrl, syncContactUtms } from '../lib/syncUtm';
+import { persistUtmsFromUrl, readAttribution, syncContactUtms } from '../lib/syncUtm';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { retryFetch } from '../lib/retryFetch';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
@@ -271,16 +271,21 @@ export function NewForm() {
 
     // Forward identity + ALL attribution (utm_* + ad-platform
     // click IDs like gclid, fbclid, gbraid, wbraid, li_fat_id,
-    // ttclid) to /router so the funnel keeps attribution end-to-
-    // end. Router's buildRedirectUrl passes the full query string
-    // through to /nextstep, which passes through to /applynow,
-    // which puts them in the Typeform as hidden fields.
+    // ttclid, _fbp, _fbc) to /router so the funnel keeps
+    // attribution end-to-end. Router's buildRedirectUrl passes
+    // the full query string through to /nextstep, which passes
+    // through to /applynow, which puts them in the Typeform as
+    // hidden fields.
+    //
+    // readAttribution() merges URL + sessionStorage so if any
+    // page in the chain stripped the URL, we still carry the
+    // attribution forward from storage.
     const fwd = new URLSearchParams();
     fwd.set('email', cleanEmail);
     if (cleanFirst) fwd.set('firstname', cleanFirst);
     if (cleanLast)  fwd.set('lastname',  cleanLast);
     if (fullPhone)  fwd.set('phone',     fullPhone);
-    const attribution = readAttributionFromUrl();
+    const attribution = readAttribution();
     for (const [k, v] of Object.entries(attribution)) {
       if (v) fwd.set(k, v);
     }
