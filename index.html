@@ -5,6 +5,28 @@
     <link rel="icon" type="image/png" href="https://passionproduct.com/wp-content/uploads/2024/10/PPF-Icon-Original-Size.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Travis Marziani's Amazon Training</title>
+    <!-- Preconnect to critical third-parties so the browser warms
+         DNS+TLS in parallel with the page render. Saves
+         500-1500ms on mobile first-load against each of these
+         services across the funnel. Only the loaders need to
+         preconnect - the iframes/scripts they pull then reuse the
+         warmed connection. crossorigin attribute required for
+         fonts + asset CDNs that send CORS headers. -->
+    <link rel="preconnect" href="https://us.i.posthog.com" crossorigin />
+    <link rel="preconnect" href="https://us-assets.i.posthog.com" crossorigin />
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="preconnect" href="https://js-na2.hs-scripts.com" crossorigin />
+    <link rel="preconnect" href="https://api.hubapi.com" crossorigin />
+    <link rel="preconnect" href="https://t.whop.tw" crossorigin />
+    <link rel="preconnect" href="https://fast.vidalytics.com" crossorigin />
+    <link rel="preconnect" href="https://fast.wistia.com" crossorigin />
+    <link rel="preconnect" href="https://fast.wistia.net" crossorigin />
+    <link rel="preconnect" href="https://cdn.oncehub.com" crossorigin />
+    <link rel="preconnect" href="https://embed.typeform.com" crossorigin />
+    <!-- DNS-only prefetch for less-critical / per-page services
+         (cheaper than preconnect; saves DNS only, ~30-100ms). -->
+    <link rel="dns-prefetch" href="https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev" />
+    <link rel="dns-prefetch" href="https://ipapi.co" />
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],

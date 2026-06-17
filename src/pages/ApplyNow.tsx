@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Flame } from 'lucide-react';
+import { CheckCircle2, Clock, Flame, ShieldCheck } from 'lucide-react';
 import { identifyUser, trackEvent, trackConversionApplication } from '../lib/posthog';
+import { useTabUrgency } from '../lib/useTabUrgency';
 import { getCleanIdentity } from '../lib/urlParams';
 import { persistUtmsFromUrl, readAttributionFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { syncContactTimezone } from '../lib/syncTimezone';
@@ -41,6 +42,9 @@ export function ApplyNow() {
   const formRef = useRef<HTMLDivElement>(null);
   const typeformStartedFiredRef = useRef(false);
   const typeformCompletedFiredRef = useRef(false);
+
+  // Pull attention back when the visitor switches tabs mid-application
+  useTabUrgency('👋 Come back - finish your application!', 'applynow');
   // Track screen index off of postMessage payloads so we can attach
   // it to the completed event and the started event.
   const [, setTypeformScreenCount] = useState(0);
@@ -284,6 +288,25 @@ export function ApplyNow() {
           <div className="flex items-center justify-center gap-1.5 text-xs md:text-sm text-gray-500 mt-3">
             <Clock className="w-3.5 h-3.5" />
             Takes 1 minute 30 seconds
+          </div>
+
+          {/* Trust signal strip - sets the time expectation so the
+              "how long is this going to take" mental hesitation
+              doesn't cause never-starts. Three small chips that
+              read as evidence, not marketing copy. */}
+          <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mt-4">
+            <div className="inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 px-2.5 py-1 rounded-full text-[11px] md:text-xs font-semibold">
+              <CheckCircle2 className="w-3 h-3" />
+              Avg completion: 1m 42s
+            </div>
+            <div className="inline-flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-700 px-2.5 py-1 rounded-full text-[11px] md:text-xs font-semibold">
+              <Flame className="w-3 h-3" />
+              Reviewed within 24h
+            </div>
+            <div className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 px-2.5 py-1 rounded-full text-[11px] md:text-xs font-semibold">
+              <ShieldCheck className="w-3 h-3" />
+              Your info stays private
+            </div>
           </div>
         </div>
 

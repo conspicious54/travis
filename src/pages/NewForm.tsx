@@ -6,6 +6,7 @@ import { getCleanIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
 import { persistUtmsFromUrl, readAttributionFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { syncContactTimezone } from '../lib/syncTimezone';
+import { retryFetch } from '../lib/retryFetch';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /newform - webinar opt-in form ────────────────────────────
@@ -108,6 +109,9 @@ export function NewForm() {
   const [email, setEmail]         = useState(seed.email);
   const [phone, setPhone]         = useState(seed.phone);
   const [dialCountry, setDialCountry] = useState<string>('US');
+  // Honeypot - hidden field humans never touch but bots fill. If
+  // anything lands in here, we silently drop the submission.
+  const [honeypot, setHoneypot] = useState('');
   const [error, setError]         = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [country, setCountry]     = useState<CountryInfo | null>(null);
@@ -148,6 +152,18 @@ export function NewForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Honeypot trip - silently drop the submission. Show a success-
+    // looking message so the bot's success-detection scrapers don't
+    // immediately flag this form. We never set submitting=true so
+    // the user doesn't see anything spin if a human happened to
+    // accidentally tab into the hidden field.
+    if (honeypot.trim()) {
+      trackEvent('newform_honeypot_tripped', {
+        honeypot_value_length: honeypot.length,
+      });
+      return;
+    }
 
     const cleanFirst = firstname.trim();
     const cleanLast  = lastname.trim();
@@ -204,7 +220,10 @@ export function NewForm() {
     });
 
     try {
-      const res = await fetch('/.netlify/functions/register-webinar', {
+      // retryFetch absorbs transient network errors + 429/5xx so a
+      // flaky mobile connection doesn't burn the lead. Max 3 attempts
+      // with 0/500/1500ms backoff (~2s worst case).
+      const res = await retryFetch('/.netlify/functions/register-webinar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -215,13 +234,19 @@ export function NewForm() {
           country_name: countryInfo?.name || '',
           audience,
         }),
+        tag: 'newform_register',
       });
       const data = await res.json().catch(() => ({}));
       if (!data?.ok) {
         trackEvent('newform_register_warning', { reason: data?.reason || 'unknown' });
       }
     } catch {
-      trackEvent('newform_register_warning', { reason: 'network_error' });
+      // After retryFetch exhausts attempts, swallow the error so the
+      // user still moves forward in the funnel. Lead is already
+      // captured client-side via identifyUser; the Zapier sync just
+      // didn't make it. PostHog will show the warning event for
+      // investigation.
+      trackEvent('newform_register_warning', { reason: 'network_error_after_retries' });
     }
 
     // /newform is the EARLIEST point in the funnel where we have a
@@ -271,6 +296,33 @@ export function NewForm() {
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
             <form onSubmit={handleSubmit} className="p-5 md:p-7 space-y-4">
+              {/* Honeypot - invisible to humans, irresistible to
+                  bots. Named generically (`website`) because spam
+                  scripts tend to fill any URL-like field. Real
+                  visitors never see / tab into this. */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  left: '-9999px',
+                  width: '1px',
+                  height: '1px',
+                  opacity: 0,
+                  pointerEvents: 'none',
+                }}
+              >
+                <label htmlFor="newform_website">Website</label>
+                <input
+                  id="newform_website"
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+
               {/* First + last name */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
@@ -281,6 +333,10 @@ export function NewForm() {
                     id="firstname"
                     type="text"
                     autoComplete="given-name"
+                    inputMode="text"
+                    enterKeyHint="next"
+                    autoCapitalize="words"
+                    spellCheck={false}
                     required
                     placeholder="Your first name"
                     value={firstname}
@@ -296,6 +352,10 @@ export function NewForm() {
                     id="lastname"
                     type="text"
                     autoComplete="family-name"
+                    inputMode="text"
+                    enterKeyHint="next"
+                    autoCapitalize="words"
+                    spellCheck={false}
                     required
                     placeholder="Your last name"
                     value={lastname}
@@ -305,7 +365,7 @@ export function NewForm() {
                 </div>
               </div>
 
-              {/* Email */}
+              {/* Email - inputMode=email surfaces @ key on mobile */}
               <div>
                 <label htmlFor="email" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Email
@@ -314,6 +374,10 @@ export function NewForm() {
                   id="email"
                   type="email"
                   autoComplete="email"
+                  inputMode="email"
+                  enterKeyHint="next"
+                  autoCapitalize="off"
+                  spellCheck={false}
                   required
                   placeholder="you@example.com"
                   value={email}
@@ -322,7 +386,8 @@ export function NewForm() {
                 />
               </div>
 
-              {/* Phone with country dial selector */}
+              {/* Phone - inputMode=tel pops the numeric keypad,
+                  enterKeyHint=done changes the return key label */}
               <div>
                 <label htmlFor="phone" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Phone
@@ -344,6 +409,8 @@ export function NewForm() {
                     id="phone"
                     type="tel"
                     autoComplete="tel"
+                    inputMode="tel"
+                    enterKeyHint="done"
                     required
                     placeholder="Mobile number"
                     value={phone}

@@ -4,6 +4,7 @@ import { ArrowDown, CheckCircle2, Flame } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
 import { persistUtmsFromUrl, readAttributionFromUrl } from '../lib/syncUtm';
+import { useTabUrgency } from '../lib/useTabUrgency';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
@@ -252,6 +253,9 @@ export function NextStep() {
   const [, setNow] = useState<number>(() => Date.now());
   const [videoInteracted, setVideoInteracted] = useState(false);
   const [videoPlayedMs, setVideoPlayedMs] = useState(0);
+
+  // Pull attention back when the visitor switches tabs mid-VSL
+  useTabUrgency('⏰ Don\'t lose your spot!', 'nextstep');
 
   // identify from URL params (from /newform via /router or direct)
   useEffect(() => {
