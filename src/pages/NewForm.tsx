@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronsRight, Flame } from 'lucide-react';
-import { identifyUser, trackEvent, trackConversionLead } from '../lib/posthog';
+import { identifyUser, trackEvent, trackConversionLead, useFeatureFlag } from '../lib/posthog';
 import { getCleanIdentity, persistIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
 import { persistUtmsFromUrl, readAttribution, syncContactUtms } from '../lib/syncUtm';
@@ -149,6 +149,18 @@ export function NewForm() {
   const ttl = formatCountdown(deadline);
   const dialEntry = COUNTRY_DIAL.find(c => c.code === dialCountry) || COUNTRY_DIAL[0];
 
+  /* Headline A/B/C test (PostHog flag: newform-headline-test).
+     Three variants:
+       - control: current "$100K" / "$140 Billion" framing
+       - quit_95: identity-based "How To Quit Your 9-5 By Building
+                  A 7-Figure Amazon Business" + beginners eyebrow
+       - 250k:    same shape as control, swap $100K to $250K
+     Goal event: newform_submitted. PostHog auto-records the
+     $feature_flag_called exposure when the hook reads the variant. */
+  const headlineVariant = useFeatureFlag('newform-headline-test');
+  const isQuit95 = headlineVariant === 'quit_95';
+  const is250k   = headlineVariant === '250k';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -295,16 +307,31 @@ export function NewForm() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white text-gray-900">
       <main className="max-w-4xl mx-auto px-5 pt-12 md:pt-20 pb-16">
-        {/* Hero - copy verbatim from the original CF page */}
+        {/* Hero - variant-controlled via newform-headline-test flag. */}
         <div className="text-center mb-10 md:mb-12">
-          <p className="text-lg md:text-2xl text-gray-700 leading-snug max-w-3xl mx-auto mb-4 md:mb-5">
-            Last Year, First Time Amazon Sellers Made Over <span className="font-bold text-gray-900">$140 Billion</span> In Sales
-          </p>
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02]">
-            <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
-              Learn the Exact Process I Use to Help Sellers Reach $100K on Amazon in 2026
-            </span>
-          </h1>
+          {isQuit95 ? (
+            <>
+              <p className="text-lg md:text-2xl text-gray-700 leading-snug max-w-3xl mx-auto mb-4 md:mb-5">
+                The Proven Formula For Absolute Beginners
+              </p>
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02]">
+                <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
+                  How To Quit Your 9-5 By Building A 7-Figure Amazon Business
+                </span>
+              </h1>
+            </>
+          ) : (
+            <>
+              <p className="text-lg md:text-2xl text-gray-700 leading-snug max-w-3xl mx-auto mb-4 md:mb-5">
+                Last Year, First Time Amazon Sellers Made Over <span className="font-bold text-gray-900">$140 Billion</span> In Sales
+              </p>
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02]">
+                <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
+                  Learn the Exact Process I Use to Help Sellers Reach ${is250k ? '250K' : '100K'} on Amazon in 2026
+                </span>
+              </h1>
+            </>
+          )}
         </div>
 
         {/* Form card */}

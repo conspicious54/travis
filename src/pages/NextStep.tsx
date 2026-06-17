@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, CheckCircle2, Flame } from 'lucide-react';
-import { identifyUser, trackEvent } from '../lib/posthog';
+import { identifyUser, trackEvent, useFeatureFlag } from '../lib/posthog';
 import { getCleanIdentity, getMergedIdentity } from '../lib/urlParams';
 import { persistUtmsFromUrl, readAttribution } from '../lib/syncUtm';
 import { useTabUrgency } from '../lib/useTabUrgency';
@@ -421,6 +421,22 @@ export function NextStep() {
   // Pre-build the CTA href, forwarding identity AND utm_* from the
   // URL so /applynow keeps the visitor identified and the Typeform
   // gets the live attribution as hidden fields.
+  /* Green CTA copy A/B/C test (PostHog flag: nextstep-cta-copy-test).
+     Three variants tested across all green CTA instances on the
+     page (unlock timer transformation, post-testimonial CTAs,
+     sticky mobile bar). Single string drives all of them so the
+     visitor sees the same copy everywhere.
+       - control: "YES! I'm Ready To Learn More"
+       - reserve: "Reserve My Free Spot"
+       - access:  "Get Instant Access"
+     Goal event: applynow_page_viewed (did the click actually
+     advance them to the next step). */
+  const ctaCopyVariant = useFeatureFlag('nextstep-cta-copy-test');
+  const ctaText =
+    ctaCopyVariant === 'reserve' ? 'Reserve My Free Spot'
+    : ctaCopyVariant === 'access' ? 'Get Instant Access'
+    : "YES! I'm Ready To Learn More";
+
   /* Personalization name. URL-first read with localStorage fallback
      - so a visitor who comes through /newform sees their name even
      if the URL params got lost (refresh, cross-tab nav, etc).
@@ -528,7 +544,7 @@ export function NextStep() {
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Your Amazon Resources Are Unlocked
               </div>
-              <div className="text-base md:text-xl">YES! I'm Ready To Learn More</div>
+              <div className="text-base md:text-xl">{ctaText}</div>
             </Link>
           ) : (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 md:p-4">
@@ -592,7 +608,7 @@ export function NextStep() {
                     onClick={(e) => onCtaClick(`after_testimonial_${idx + 1}`, e)}
                     className="inline-block bg-green-500 hover:bg-green-600 text-white text-base md:text-lg font-black tracking-tight px-8 md:px-12 py-4 md:py-5 rounded-lg shadow-md shadow-green-500/25 transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                   >
-                    YES! I'm Ready To Learn More
+                    {ctaText}
                   </Link>
                 </div>
               )}
@@ -616,7 +632,7 @@ export function NextStep() {
             onClick={onUnlockCtaClick}
             className="block w-full text-center bg-green-500 hover:bg-green-600 text-white font-black tracking-tight px-4 py-3 rounded-lg shadow-md shadow-green-500/30 active:scale-95 transition-transform text-base"
           >
-            YES! I'm Ready To Learn More
+            {ctaText}
           </Link>
         ) : (
           <div className="flex items-center justify-between gap-3 px-2 py-1.5">
