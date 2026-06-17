@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronsRight, Flame } from 'lucide-react';
 import { identifyUser, trackEvent, trackConversionLead } from '../lib/posthog';
-import { getCleanIdentity } from '../lib/urlParams';
+import { getCleanIdentity, persistIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
 import { persistUtmsFromUrl, readAttributionFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { syncContactTimezone } from '../lib/syncTimezone';
@@ -217,6 +217,17 @@ export function NewForm() {
       phone: fullPhone,
       audience,
       country_code: countryInfo?.code,
+    });
+
+    // Persist identity to localStorage so downstream pages
+    // (/nextstep, /applynow, exit popups) can personalize even when
+    // URL params get lost (browser refresh, cross-tab landing,
+    // sticky-state shenanigans, etc).
+    persistIdentity({
+      firstname: cleanFirst,
+      lastname: cleanLast,
+      email: cleanEmail,
+      phone: fullPhone,
     });
 
     try {

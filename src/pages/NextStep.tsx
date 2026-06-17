@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, CheckCircle2, Flame } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
-import { getCleanIdentity } from '../lib/urlParams';
+import { getCleanIdentity, getMergedIdentity } from '../lib/urlParams';
 import { persistUtmsFromUrl, readAttributionFromUrl } from '../lib/syncUtm';
 import { useTabUrgency } from '../lib/useTabUrgency';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
@@ -421,15 +421,16 @@ export function NextStep() {
   // Pre-build the CTA href, forwarding identity AND utm_* from the
   // URL so /applynow keeps the visitor identified and the Typeform
   // gets the live attribution as hidden fields.
-  /* Personalization name. Pulled from URL params (visitors who came
-     through /newform have it set). Empty string when unknown -
-     callers fall back to generic copy. Capitalizes first letter
-     so "connor" -> "Connor" without overwriting compound names.
-     Stripped of placeholder values by getCleanIdentity. */
+  /* Personalization name. URL-first read with localStorage fallback
+     - so a visitor who comes through /newform sees their name even
+     if the URL params got lost (refresh, cross-tab nav, etc).
+     Capitalizes first letter so "connor" -> "Connor" without
+     overwriting compound names. Placeholder values stripped by
+     getMergedIdentity. */
   const firstname = useMemo(() => {
     if (typeof window === 'undefined') return '';
     const params = new URLSearchParams(window.location.search);
-    const raw = (getCleanIdentity(params).firstname || '').trim();
+    const raw = (getMergedIdentity(params).firstname || '').trim();
     if (!raw) return '';
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   }, []);

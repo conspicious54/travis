@@ -196,6 +196,83 @@ export function getCleanIdentity(params: URLSearchParams): CleanIdentity {
   };
 }
 
+/* The localStorage key used across the booking flow + (now) the
+   /newform submit handler to persist canonical identity fields so
+   they're recoverable on pages that get hit without the URL params
+   forwarded (cross-tab arrival, refresh, direct deep-link, etc). */
+const IDENTITY_STORAGE_KEY = 'pp_booking_data';
+
+interface StoredIdentity {
+  firstname?: string;
+  lastname?: string;
+  email?: string;
+  phone?: string;
+  [k: string]: string | undefined;
+}
+
+/** Read the persisted identity blob from localStorage. Skips
+    placeholder values that may have snuck in from older intake
+    sanitization runs. Empty fields are omitted. */
+export function readStoredIdentity(): StoredIdentity {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(IDENTITY_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    const out: StoredIdentity = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof v !== 'string') continue;
+      const t = v.trim();
+      if (!t || isPlaceholder(t)) continue;
+      out[k] = t;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** Persist a partial identity onto the localStorage envelope (merge
+    with whatever is already there). Used by /newform on submit so
+    downstream pages have a fallback when the URL params get lost
+    (browser refresh, third-party redirect dropping query strings,
+    etc.). Adds _captured_at for diagnostic visibility. */
+export function persistIdentity(identity: Partial<StoredIdentity>): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+  try {
+    const existing = readStoredIdentity();
+    const merged: StoredIdentity = {
+      ...existing,
+      ...identity,
+      _captured_at: new Date().toISOString(),
+    };
+    // Drop empty / placeholder values so they don't overwrite real
+    // values on a future read.
+    for (const k of Object.keys(merged)) {
+      const v = merged[k];
+      if (!v || (typeof v === 'string' && isPlaceholder(v))) delete merged[k];
+    }
+    localStorage.setItem(IDENTITY_STORAGE_KEY, JSON.stringify(merged));
+  } catch { /* no-op */ }
+}
+
+/** URL-first identity read with localStorage fallback. The URL
+    params take precedence (so previewing personalization by
+    appending ?firstname=x still works), but if any field is missing
+    from the URL we drop to the persisted blob set by /newform
+    submit or the booking flow's persistTypeformAnswers. */
+export function getMergedIdentity(params: URLSearchParams): CleanIdentity {
+  const urlId = getCleanIdentity(params);
+  const stored = readStoredIdentity();
+  return {
+    email:     urlId.email     || stored.email     || null,
+    firstname: urlId.firstname || stored.firstname || null,
+    lastname:  urlId.lastname  || stored.lastname  || null,
+    phone:     urlId.phone     || stored.phone     || null,
+  };
+}
+
 /** Builds a URLSearchParams with the CANONICAL identity field names
     populated from any matching alias. So URL ?email=_____&utm_email=
     real@x.com produces { email: "real@x.com" } in the output - the

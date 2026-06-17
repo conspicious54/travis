@@ -3,7 +3,7 @@ import { useExitIntent } from '../context/ExitIntentContext';
 import { useQuestionnaire } from '../context/QuestionnaireContext';
 import { useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
-import { getCleanIdentity } from '../lib/urlParams';
+import { getMergedIdentity } from '../lib/urlParams';
 
 interface ExitIntentPopupProps {
   theme?: 'light' | 'dark';
@@ -20,13 +20,14 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
   const isApplyNowPage = location.pathname === '/applynow';
   const isGetStartedPage = location.pathname === '/getstarted';
 
-  /* Personalization name from URL params - reused by the /applynow
-     variant headline. Empty when unknown; the variant falls back
-     to generic copy. */
+  /* Personalization name - URL-first with localStorage fallback
+     so the popup uses the visitor's name even when URL params got
+     lost between pages. Empty when unknown; the variant falls
+     back to generic copy. */
   const firstname = useMemo(() => {
     if (typeof window === 'undefined') return '';
     const params = new URLSearchParams(window.location.search);
-    const raw = (getCleanIdentity(params).firstname || '').trim();
+    const raw = (getMergedIdentity(params).firstname || '').trim();
     if (!raw) return '';
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   }, [location.search]);

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { CheckCircle2, Clock, Flame, ShieldCheck } from 'lucide-react';
 import { identifyUser, trackEvent, trackConversionApplication } from '../lib/posthog';
 import { useTabUrgency } from '../lib/useTabUrgency';
-import { getCleanIdentity } from '../lib/urlParams';
+import { getCleanIdentity, getMergedIdentity } from '../lib/urlParams';
 import { persistUtmsFromUrl, readAttributionFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
@@ -55,6 +55,14 @@ export function ApplyNow() {
   // the visitor never finishes the Typeform.
   useEffect(() => {
     document.title = 'Apply Now - Passion Product 1-on-1 Amazon Strategy Call';
+    // Visitors arrive here via mid-page or bottom-page CTAs on
+    // /nextstep. Browsers preserve the previous page's scroll
+    // position on SPA navigations, so without this they'd land at
+    // the bottom of /applynow with the Typeform off-screen. Scroll
+    // to the top so the application step is the first thing seen.
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
     persistUtmsFromUrl();
     const params = new URLSearchParams(window.location.search);
     const id = getCleanIdentity(params);
@@ -208,14 +216,15 @@ export function ApplyNow() {
   // params that aren't pre-declared in the form builder. Adding click
   // IDs so the Typeform submission webhook carries the ad-platform
   // attribution end-to-end.
-  /* Personalization name from URL params (visitors who came via
-     /newform have it set). Empty when unknown - callers fall back
-     to generic copy. Capitalizes first letter so "connor" reads
-     as "Connor" in the personalized strings. */
+  /* Personalization name. URL-first read with localStorage fallback
+     - so a visitor who came through /newform sees their name even
+     when the URL params didn't survive (refresh, third-party
+     redirect that stripped query strings, etc). Capitalizes first
+     letter so "connor" reads as "Connor". */
   const firstname = useMemo(() => {
     if (typeof window === 'undefined') return '';
     const params = new URLSearchParams(window.location.search);
-    const raw = (getCleanIdentity(params).firstname || '').trim();
+    const raw = (getMergedIdentity(params).firstname || '').trim();
     if (!raw) return '';
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   }, []);
