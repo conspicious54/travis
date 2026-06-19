@@ -13,7 +13,8 @@ import {
   PassionProductMethodSection,
   AcceleratorSection,
 } from '../components/TrainingNewSections';
-import { CheckCircle, Phone, Star, Shield, MessageSquare, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Phone, Star, Shield, MessageSquare, AlertTriangle, ArrowDown, Check } from 'lucide-react';
+import { MobileWalkthrough, useIsMobileViewport, type WalkthroughStep } from '../components/MobileWalkthrough';
 import { getPersonalization, type Personalization } from '../lib/personalization';
 import {
   identifyUser,
@@ -22,6 +23,7 @@ import {
   trackContactSaved,
   trackEvent,
 } from '../lib/posthog';
+import { celebrateArrival } from '../lib/celebrate';
 import { PrepChecklistProvider, usePrepChecklist } from '../context/PrepChecklistContext';
 import {
   useScrollDepth,
@@ -120,12 +122,19 @@ function StepProgressBar() {
   );
 }
 
+// Module-scoped guard so the "you've arrived" confetti fires once
+// per session even when the banner re-mounts (e.g. visitor steps
+// back to step 0 in the walkthrough). Matches the closer pattern.
+let setterArrivalCelebrated = false;
+
 function SetterConfirmationBanner({
   firstName,
   onSaved,
+  compact = false,
 }: {
   firstName: string;
   onSaved: () => void;
+  compact?: boolean;
 }) {
   const [region, setRegion] = useState<Region>('us');
   const [platform, setPlatform] = useState<Platform>('desktop');
@@ -136,6 +145,18 @@ function SetterConfirmationBanner({
     setRegion(detectRegion());
     setPlatform(detectPlatform());
   }, []);
+
+  // First-load celebration in walkthrough mode: a small confetti
+  // sprinkle after the check badge has animated in, so the visitor
+  // gets a "boom, you're in" arrival moment when the walkthrough
+  // first opens. Mirrors the closer page exactly.
+  useEffect(() => {
+    if (!compact) return;
+    if (setterArrivalCelebrated) return;
+    setterArrivalCelebrated = true;
+    const t = setTimeout(() => celebrateArrival(), 320);
+    return () => clearTimeout(t);
+  }, [compact]);
 
   const phone = PHONE_NUMBERS[region];
   const isMobile = platform === 'ios' || platform === 'android';
@@ -178,31 +199,69 @@ function SetterConfirmationBanner({
 
   const smsBody = encodeURIComponent(`Hi Coach ${coachFirstName}, YES, confirming my call${firstName ? ` - ${firstName}` : ''}`);
 
+  // Walkthrough success morph swaps in after the user has tapped a
+  // confirm button - replaces the buttons + 12-hour warning + region
+  // selector with a clear "now tap Next" CTA. Mirrors closer behavior.
+  const showSuccessMorph = compact && completed.microAsk;
+
   return (
     <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
-      <div className="max-w-3xl mx-auto px-4 pt-10 pb-10 md:pt-14 md:pb-14 text-center">
+      <div className={`max-w-3xl mx-auto px-4 text-center ${compact ? 'pt-6 pb-6' : 'pt-10 pb-10 md:pt-14 md:pb-14'}`}>
+        {/* Compact "CONFIRMED" stamp pill - sets the tone at top.
+            Setter banner is post-form-fill but pre-call-scheduled,
+            so the wording is "Application Received" not "Booked". */}
+        {compact && (
+          <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-800 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full mb-3 border border-green-300 animate-booked-stamp-in shadow-sm">
+            <Check className="w-3 h-3" strokeWidth={3} />
+            Application Received
+          </div>
+        )}
+
         {/* Checkmark badge - pops in on mount with a single ring ripple */}
-        <div className="relative inline-flex items-center justify-center mb-6">
+        <div className={`relative inline-flex items-center justify-center ${compact ? 'mb-4' : 'mb-6'}`}>
           <span className="absolute inset-0 rounded-full animate-confirm-check-ring" aria-hidden="true" />
-          <div className="relative inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-green-100 border-2 border-green-300 animate-confirm-check-in">
-            <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-green-600" strokeWidth={2.5} />
+          <div className={`relative inline-flex items-center justify-center rounded-full bg-green-100 border-2 border-green-300 animate-confirm-check-in ${compact ? 'w-14 h-14' : 'w-16 h-16 md:w-20 md:h-20'}`}>
+            <CheckCircle className={`text-green-600 ${compact ? 'w-7 h-7' : 'w-8 h-8 md:w-10 md:h-10'}`} strokeWidth={2.5} />
           </div>
         </div>
 
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-gray-900 tracking-tight leading-[1] mb-4">
+        <h1 className={`font-black text-gray-900 tracking-tight leading-[1] ${compact ? 'text-3xl mb-3 animate-banner-rise-1' : 'text-4xl md:text-6xl lg:text-7xl mb-4'}`}>
           {firstName ? `You're In, ${firstName}.` : "You're In."}
         </h1>
 
-        <p className="text-lg md:text-2xl text-gray-700 max-w-2xl mx-auto mb-3 leading-snug">
+        <p className={`text-gray-700 max-w-2xl mx-auto mb-3 leading-snug ${compact ? 'text-base animate-banner-rise-2' : 'text-lg md:text-2xl'}`}>
           We'll be calling you from{' '}
           <span className="font-bold text-gray-900">{phone.display}</span>.
         </p>
-        <p className="text-sm md:text-base text-gray-500 mb-10">
-          Save it as <span className="font-bold text-gray-700">"Santiago Espinoza"</span> so you know it's us when we call.
-        </p>
+        {/* "Save Santiago" line is desktop-only in compact mode -
+            redundant on mobile where save-to-contacts button is right below */}
+        {!compact && (
+          <p className="text-sm md:text-base text-gray-500 mb-10">
+            Save it as <span className="font-bold text-gray-700">"Santiago Espinoza"</span> so you know it's us when we call.
+          </p>
+        )}
 
-        {/* Micro-ask: confirm via text */}
-        <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
+        {showSuccessMorph ? (
+          /* Success morph - shown after the user has tapped Confirm */
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-6 shadow-sm animate-confirm-check-in">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-500 mb-3 shadow-md shadow-green-500/30">
+              <Check className="w-8 h-8 text-white" strokeWidth={3} />
+            </div>
+            <p className="text-2xl font-black text-green-900 mb-2 leading-tight">
+              You're Confirmed!
+            </p>
+            <p className="text-sm text-green-800 leading-relaxed mb-5 max-w-xs mx-auto">
+              We got it. Now tap <span className="font-black text-orange-600">Next</span> below to start your prep walkthrough.
+            </p>
+            <div className="flex justify-center">
+              <div className="inline-flex flex-col items-center gap-0.5 text-orange-500">
+                <ArrowDown className="w-6 h-6 animate-point-down" strokeWidth={3} />
+              </div>
+            </div>
+          </div>
+        ) : (
+        /* Micro-ask: confirm via text */
+        <div className={`bg-white border-2 border-gray-200 rounded-2xl shadow-sm ${compact ? 'p-5 animate-banner-rise-3' : 'p-6 md:p-7'}`}>
           <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
             To confirm you'll be available for the call, tap the button below and hit send:
           </p>
@@ -211,7 +270,7 @@ function SetterConfirmationBanner({
             <a
               href={`sms:${phone.raw}?&body=${smsBody}`}
               onClick={handleConfirmText}
-              className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer ${completed.microAsk ? '' : 'animate-confirm-pulse-blue'}`}
+              className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer active:scale-[0.98] ${completed.microAsk ? '' : 'animate-confirm-pulse-blue'}`}
             >
               <MessageSquare className="w-4 h-4" />
               Confirm via Text
@@ -243,11 +302,15 @@ function SetterConfirmationBanner({
             </span>
           </p>
         </div>
+        )}
 
-        {/* Transition */}
-        <p className="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-[0.15em] mt-10 mb-5">
-          Then do these two things before your call ↓
-        </p>
+        {/* Transition text - hidden in walkthrough mode because the
+            walkthrough itself is the "next thing to do". */}
+        {!compact && (
+          <p className="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-[0.15em] mt-10 mb-5">
+            Then do these two things before your call ↓
+          </p>
+        )}
 
         {/* Secondary micro-ask: save contact (mobile only) */}
         {isMobile && (
@@ -379,18 +442,67 @@ export function TrainingNewSetter() {
 
   return (
     <PrepChecklistProvider>
+      <SetterPageBody
+        p={p}
+        popupRegion={popupRegion}
+        popupCoach={popupCoach}
+        popupSmsBody={popupSmsBody}
+      />
+    </PrepChecklistProvider>
+  );
+}
+
+/* ─── inner body lives inside PrepChecklistProvider so the walkthrough
+       gate can read completed.microAsk to decide whether to prompt ─── */
+
+interface SetterPageBodyProps {
+  p: Personalization | null;
+  popupRegion: Region;
+  popupCoach: string;
+  popupSmsBody: string;
+}
+
+function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPageBodyProps) {
+  const isMobile = useIsMobileViewport();
+  const { completed } = usePrepChecklist();
+
+  const firstName = p?.firstName || '';
+  const isLowCapital = p?.capital === 'none' || p?.capital === 'save';
+  const showCreditCard = isLowCapital && p?.region === 'usa';
+
+  /* Build the walkthrough step list. Same content components as
+     desktop, just sliced into individually-paged steps. No coach
+     step (setter doesn't know which closer the call will be with
+     yet - that happens on the next page after the booking call).
+     No NextStepsList step (the walkthrough IS the next steps). */
+  const allSteps: (WalkthroughStep | null)[] = [
+    {
+      key: 'banner',
+      label: 'Your Call',
+      content: <SetterConfirmationBanner firstName={firstName} onSaved={() => {}} compact />,
+      gate: {
+        canAdvance: () => completed.microAsk,
+        title: 'Have you confirmed your call yet?',
+        body: 'We cancel slots that don\'t reply YES within 12 hours. Tap "Confirm via Text" above so we know you\'re coming.',
+        stayLabel: 'Go back and confirm',
+        advanceLabel: 'I\'ll do it later',
+      },
+    },
+    { key: 'research', label: 'Research', content: <ResearchVideo /> },
+    { key: 'passion-product-method', label: 'The Method', content: <PassionProductMethodSection /> },
+    { key: 'accelerator-overview', label: 'Accelerator', content: <AcceleratorSection /> },
+    { key: 'faq', label: 'FAQ', content: <ConfirmationFAQ p={p} location="setter" /> },
+    { key: 'typical-student-results', label: 'Students', content: <TestimonialHighlights p={p} /> },
+    isLowCapital   ? { key: 'low-capital', label: 'Low Capital',  content: <LowCapitalStrategies p={p} /> } : null,
+    showCreditCard ? { key: 'credit',      label: 'Credit Cards', content: <CreditCardQuiz p={p} /> }      : null,
+    { key: 'final', label: "You're Ready", content: <SetterFinalCTA firstName={firstName} /> },
+  ];
+  const steps = allSteps.filter((s): s is WalkthroughStep => s !== null);
+
+  if (isMobile) {
+    return (
       <div className="min-h-screen bg-white text-gray-900">
-        <SetterConfirmationBanner firstName={p?.firstName || ''} onSaved={() => {}} />
-        <ResearchVideo />
-        <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
-        <PassionProductMethodSection />
-        <AcceleratorSection />
-        <ConfirmationFAQ p={p} location="setter" />
-        <TestimonialHighlights p={p} />
-        <LowCapitalStrategies p={p} />
-        <CreditCardQuiz p={p} />
-        <SetterFinalCTA firstName={p?.firstName || ''} />
-        <SharedFooter />
+        <MobileWalkthrough steps={steps} location="setter" />
         <LegalDisclaimer />
         <ConfirmationExitPopup
           location="setter"
@@ -398,14 +510,40 @@ export function TrainingNewSetter() {
           phoneRaw={PHONE_NUMBERS[popupRegion].raw}
           smsBody={popupSmsBody}
         />
-        <MobileConfirmStickyBar
-          location="setter"
-          coachFirstName={popupCoach}
-          phoneRaw={PHONE_NUMBERS[popupRegion].raw}
-          smsBody={popupSmsBody}
-        />
-        <ScrollToNextButton location="setter" />
       </div>
-    </PrepChecklistProvider>
+    );
+  }
+
+  /* Desktop: keep the existing scroll-based layout with all the
+     companion components (NextStepsList, MobileConfirmStickyBar,
+     ScrollToNextButton) that complement a long scroll page. */
+  return (
+    <div className="min-h-screen bg-white text-gray-900">
+      <SetterConfirmationBanner firstName={firstName} onSaved={() => {}} />
+      <ResearchVideo />
+      <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
+      <PassionProductMethodSection />
+      <AcceleratorSection />
+      <ConfirmationFAQ p={p} location="setter" />
+      <TestimonialHighlights p={p} />
+      <LowCapitalStrategies p={p} />
+      <CreditCardQuiz p={p} />
+      <SetterFinalCTA firstName={firstName} />
+      <SharedFooter />
+      <LegalDisclaimer />
+      <ConfirmationExitPopup
+        location="setter"
+        coachFirstName={popupCoach}
+        phoneRaw={PHONE_NUMBERS[popupRegion].raw}
+        smsBody={popupSmsBody}
+      />
+      <MobileConfirmStickyBar
+        location="setter"
+        coachFirstName={popupCoach}
+        phoneRaw={PHONE_NUMBERS[popupRegion].raw}
+        smsBody={popupSmsBody}
+      />
+      <ScrollToNextButton location="setter" />
+    </div>
   );
 }
