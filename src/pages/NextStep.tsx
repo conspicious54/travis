@@ -282,19 +282,36 @@ export function NextStep() {
     return () => clearInterval(t);
   }, []);
 
-  /* Video play tracking. Vidalytics injects an HTMLMediaElement
-     somewhere inside the container after its loader runs - watch
-     for it with a MutationObserver and attach play/pause/ended
-     listeners. While the media is playing, tick the accumulated
-     time every second. If Vidalytics ever changes their internals
-     and the media element never gets attached, the click handler
-     on the video container is a fallback signal that at least
-     stops the bouncing "Hit Play" prompt. */
+  /* Video play tracking + diagnostic instrumentation.
+
+     Background: nextstep_video_started events fire reliably (~98%
+     of pageviews) but nextstep_video_milestone events fire 0% of
+     the time over a 30-day window. Something is preventing the
+     1-second tick from accumulating play time, even though the
+     initial 'play' event clearly arrives.
+
+     Hypothesis space: (a) Vidalytics fires pause immediately after
+     autoplay so playingRef toggles false and stays there, (b)
+     Vidalytics swaps the <video> element to an iframe player on
+     cross-origin vidalytics.com and we lose visibility, (c) some
+     other internal state change keeps playback going without
+     re-firing the HTML5 'play' event on our attached element.
+
+     This diagnostic block captures:
+       - every pause/ended on the attached element (so we see if
+         playback is toggling rapidly)
+       - every MutationObserver re-attach (so we see if Vidalytics
+         swaps the element)
+       - every postMessage from vidalytics.com (so we see what API
+         they actually expose - postMessage might be the right
+         channel for play/time tracking)
+     Once we have data we can replace this with the precise fix. */
   useEffect(() => {
     const container = videoRef.current;
     if (!container) return;
 
     let attachedEl: HTMLMediaElement | null = null;
+    let attachCount = 0;
     const onPlay = () => {
       playingRef.current = true;
       setVideoInteracted(true);
@@ -306,9 +323,38 @@ export function NextStep() {
         videoStartedFiredRef.current = true;
         trackEvent('nextstep_video_started');
       }
+      // Diag: log every play event with current_time so we can see
+      // if Vidalytics fires pause/play in rapid succession.
+      trackEvent('nextstep_video_diag', {
+        kind: 'play',
+        current_time: attachedEl?.currentTime,
+        duration: attachedEl?.duration,
+        paused: attachedEl?.paused,
+      });
     };
-    const onPause = () => { playingRef.current = false; };
-    const onEnded = () => { playingRef.current = false; };
+    const onPause = () => {
+      playingRef.current = false;
+      trackEvent('nextstep_video_diag', {
+        kind: 'pause',
+        current_time: attachedEl?.currentTime,
+        duration: attachedEl?.duration,
+      });
+    };
+    const onEnded = () => {
+      playingRef.current = false;
+      trackEvent('nextstep_video_diag', { kind: 'ended' });
+    };
+    const onTimeUpdate = () => {
+      // Sample 1-in-10 timeupdates - the event fires ~4x/sec while
+      // playing, no need to log them all. Helps confirm whether
+      // the element IS actually advancing.
+      if (Math.random() < 0.1) {
+        trackEvent('nextstep_video_diag', {
+          kind: 'timeupdate_sample',
+          current_time: attachedEl?.currentTime,
+        });
+      }
+    };
 
     const tryAttach = () => {
       if (attachedEl && document.contains(attachedEl)) return;
@@ -319,11 +365,23 @@ export function NextStep() {
         attachedEl.removeEventListener('play', onPlay);
         attachedEl.removeEventListener('pause', onPause);
         attachedEl.removeEventListener('ended', onEnded);
+        attachedEl.removeEventListener('timeupdate', onTimeUpdate);
       }
       attachedEl = found;
+      attachCount++;
       found.addEventListener('play', onPlay);
       found.addEventListener('pause', onPause);
       found.addEventListener('ended', onEnded);
+      found.addEventListener('timeupdate', onTimeUpdate);
+      trackEvent('nextstep_video_diag', {
+        kind: 'attach',
+        attach_count: attachCount,
+        tag_name: found.tagName,
+        src: (found.currentSrc || found.src || '').slice(0, 200),
+        paused: found.paused,
+        muted: found.muted,
+        ready_state: found.readyState,
+      });
       // if Vidalytics autoplays, capture immediately
       if (!found.paused) onPlay();
     };
@@ -331,6 +389,26 @@ export function NextStep() {
     tryAttach();
     const observer = new MutationObserver(tryAttach);
     observer.observe(container, { childList: true, subtree: true });
+
+    // ALL postMessages from vidalytics.com - so we can see what
+    // events their player API actually emits and use those as the
+    // authoritative source instead of HTML5 events.
+    const handleVidalyticsMsg = (event: MessageEvent) => {
+      const origin = event.origin || '';
+      if (!origin.includes('vidalytics')) return;
+      let preview = '';
+      try {
+        preview = typeof event.data === 'string'
+          ? event.data.slice(0, 300)
+          : JSON.stringify(event.data).slice(0, 300);
+      } catch { /* no-op */ }
+      trackEvent('nextstep_video_diag', {
+        kind: 'postmessage',
+        origin,
+        preview,
+      });
+    };
+    window.addEventListener('message', handleVidalyticsMsg);
 
     const tick = setInterval(() => {
       if (!playingRef.current) return;
@@ -354,11 +432,13 @@ export function NextStep() {
 
     return () => {
       observer.disconnect();
+      window.removeEventListener('message', handleVidalyticsMsg);
       clearInterval(tick);
       if (attachedEl) {
         attachedEl.removeEventListener('play', onPlay);
         attachedEl.removeEventListener('pause', onPause);
         attachedEl.removeEventListener('ended', onEnded);
+        attachedEl.removeEventListener('timeupdate', onTimeUpdate);
       }
     };
   }, []);
