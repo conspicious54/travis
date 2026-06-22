@@ -488,7 +488,7 @@ function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPage
         advanceLabel: 'I\'ll do it later',
       },
     },
-    { key: 'research', label: 'Research', content: <ResearchVideo /> },
+    { key: 'research', label: 'Research', content: <ResearchVideo travisHistory={p?.travisHistory} /> },
     { key: 'passion-product-method', label: 'The Method', content: <PassionProductMethodSection /> },
     { key: 'accelerator-overview', label: 'Accelerator', content: <AcceleratorSection /> },
     { key: 'faq', label: 'FAQ', content: <ConfirmationFAQ p={p} location="setter" /> },
@@ -520,7 +520,7 @@ function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPage
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <SetterConfirmationBanner firstName={firstName} onSaved={() => {}} />
-      <ResearchVideo />
+      <ResearchVideo travisHistory={p?.travisHistory} />
       <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
       <PassionProductMethodSection />
       <AcceleratorSection />

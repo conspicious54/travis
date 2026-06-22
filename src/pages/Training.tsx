@@ -117,7 +117,7 @@ export function Training() {
       <AutoMarkMicroAsk />
       <div className="min-h-screen bg-white text-gray-900">
         <ConfirmationBanner firstName={p?.firstName || ''} />
-        <ResearchVideo />
+        <ResearchVideo travisHistory={p?.travisHistory} />
         <NextStepsList
           microAskLabel="Check your email for the calendar invite"
         />

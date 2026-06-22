@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users, CheckCircle, Check, Mail, MessageSquare } from 'lucide-react';
 import type { Personalization, Reason, Situation, ValuedFeature, Capital, TravisHistory, Region } from '../lib/personalization';
+import { getPersonalization } from '../lib/personalization';
 import { trackTestimonialsExpanded, trackCreditQuizStarted, trackCreditQuizCompleted, trackCreditCardApplyClicked, trackEvent, setPersonProperties } from '../lib/posthog';
 import { usePrepChecklist } from '../context/PrepChecklistContext';
 import { getCoachByOwnerName, TRAVIS } from '../lib/coaches';
@@ -261,11 +262,95 @@ export function WhatToExpect({ p }: { p: Personalization | null }) {
   );
 }
 
-const MAIN_VIDEO_ID = 'EdiPp5vF68Q';
+/* ───── ResearchVideo - variant-selected by travisHistory ─────────
+   The "Watch this short video" step at the top of every training /
+   confirmation page used to be a single hardcoded video. We now
+   pick from two pools depending on how familiar the visitor is
+   with Travis (from the Typeform's "how long have you followed
+   Travis" question, persisted as travisHistory on Personalization):
 
-export function ResearchVideo() {
+   - 'never' / 'recent' (don't know Travis well or at all)
+     → static NEW_AUDIENCE intro video (introduces him + the method)
+
+   - 'months' / 'over_year' / 'unknown' / undefined
+     → current-month rotating video from MONTHLY_VIDEO_IDS. We
+       default unknown to the monthly path on the theory that
+       returning/familiar visitors don't need the intro, and the
+       month-rotation gives the page a "fresh content" feel for
+       repeat visitors. Each calendar month, the video at the top
+       auto-swaps to that month's entry. */
+
+const NEW_AUDIENCE_VIDEO_ID = '3r8rmP0Eh6Q';
+
+// Index 0 = January, 11 = December. Replace any entry without
+// touching component code - just swap the 11-char YouTube ID.
+const MONTHLY_VIDEO_IDS: readonly string[] = [
+  'ETSzJYrUjks', // Jan
+  'Rj7syrgONKQ', // Feb
+  'FhalvGoU5Go', // Mar
+  'PB6SOu_Bllg', // Apr
+  'O2KTIZp3R48', // May
+  '-iC01q6MBoI', // Jun
+  'HeezAHrWy2A', // Jul
+  'Aycx0nGFe5I', // Aug
+  'n3a2r4co7dQ', // Sep
+  '1PlHpxdP-GU', // Oct
+  'K82HsFYpH7E', // Nov
+  'CEdXru_-h1E', // Dec
+];
+
+type VideoVariant = 'new_audience' | 'monthly';
+
+function pickResearchVideo(
+  travisHistory: TravisHistory | undefined
+): { id: string; variant: VideoVariant; monthIdx: number | null } {
+  if (travisHistory === 'never' || travisHistory === 'recent') {
+    return { id: NEW_AUDIENCE_VIDEO_ID, variant: 'new_audience', monthIdx: null };
+  }
+  // months / over_year / unknown / undefined → monthly rotation
+  const monthIdx = new Date().getMonth();
+  const monthly = MONTHLY_VIDEO_IDS[monthIdx];
+  if (monthly) return { id: monthly, variant: 'monthly', monthIdx };
+  // safety net: if MONTHLY_VIDEO_IDS is ever short, fall back to
+  // the new-audience video so we always show SOMETHING.
+  return { id: NEW_AUDIENCE_VIDEO_ID, variant: 'new_audience', monthIdx: null };
+}
+
+export function ResearchVideo({ travisHistory }: { travisHistory?: TravisHistory } = {}) {
   const { markDone } = usePrepChecklist();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Prop wins; if absent, read from localStorage personalization so
+  // standalone usages (Training / TrainingNew pages) get the
+  // variant logic without each page having to pass the prop.
+  const effectiveHistory: TravisHistory = travisHistory ?? (() => {
+    try {
+      return getPersonalization().travisHistory;
+    } catch {
+      return 'unknown';
+    }
+  })();
+
+  // Memoize so we don't recompute the video pick on every render.
+  // Effectively stable per page-mount (the date doesn't change
+  // mid-session, and travisHistory comes from a static read).
+  const { id: videoId, variant, monthIdx } = React.useMemo(
+    () => pickResearchVideo(effectiveHistory),
+    [effectiveHistory]
+  );
+
+  useEffect(() => {
+    // Record which variant the visitor saw - lets us compare
+    // engagement / conversion on the new-audience video vs the
+    // monthly-rotating one in PostHog, broken down by
+    // travisHistory.
+    trackEvent('main_video_variant_shown', {
+      variant,
+      video_id: videoId,
+      travis_history: effectiveHistory,
+      month_index: monthIdx,
+    });
+  }, [variant, videoId, effectiveHistory, monthIdx]);
 
   useEffect(() => {
     // Subscribe to YouTube iframe state change events, so we can mark
@@ -274,7 +359,7 @@ export function ResearchVideo() {
       const w = iframeRef.current?.contentWindow;
       if (!w) return;
       // Tell the player we're listening for state changes
-      w.postMessage(JSON.stringify({ event: 'listening', id: MAIN_VIDEO_ID }), '*');
+      w.postMessage(JSON.stringify({ event: 'listening', id: videoId }), '*');
       w.postMessage(
         JSON.stringify({
           event: 'command',
@@ -300,7 +385,7 @@ export function ResearchVideo() {
         }
         // state 1 = PLAYING - record that the video was started
         if (data?.event === 'onStateChange' && data?.info === 1) {
-          trackEvent('main_video_started');
+          trackEvent('main_video_started', { variant, video_id: videoId });
         }
       } catch {
         /* ignore */
@@ -312,7 +397,7 @@ export function ResearchVideo() {
       if (iframe) iframe.removeEventListener('load', subscribe);
       window.removeEventListener('message', handleMessage);
     };
-  }, [markDone]);
+  }, [markDone, videoId, variant]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-6 pb-8 md:pt-8 md:pb-10">
@@ -331,8 +416,12 @@ export function ResearchVideo() {
         <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
         <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video ring-1 ring-gray-200">
           <iframe
+            // Forcing remount when videoId changes so the iframe
+            // doesn't try to swap src silently and confuse YouTube's
+            // postMessage handshake.
+            key={videoId}
             ref={iframeRef}
-            src={`https://www.youtube.com/embed/${MAIN_VIDEO_ID}?enablejsapi=1&rel=0&modestbranding=1`}
+            src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&rel=0&modestbranding=1`}
             className="w-full h-full"
             frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

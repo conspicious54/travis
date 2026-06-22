@@ -935,7 +935,7 @@ function CloserPageBody({
         advanceLabel: 'I\'ll do it later',
       },
     },
-    { key: 'research', label: 'Research', content: <ResearchVideo /> },
+    { key: 'research', label: 'Research', content: <ResearchVideo travisHistory={p?.travisHistory} /> },
     { key: 'passion-product-method', label: 'The Method', content: <PassionProductMethodSection /> },
     { key: 'accelerator-overview', label: 'Accelerator', content: <AcceleratorSection /> },
     { key: 'faq', label: 'FAQ', content: <ConfirmationFAQ p={p} location="closer" /> },
@@ -965,7 +965,7 @@ function CloserPageBody({
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <CloserConfirmationBanner meeting={meeting} firstName={firstName} />
-      <ResearchVideo />
+      <ResearchVideo travisHistory={p?.travisHistory} />
       <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
       <PassionProductMethodSection />
       <AcceleratorSection />
