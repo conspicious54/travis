@@ -71,12 +71,19 @@ function detectPlatform(): Platform {
   return 'desktop';
 }
 
+/* vCard 3.0:
+   - FN: is the display name (what iOS/Android Contacts shows)
+   - N:  is the structured name used for sorting (last;first;...)
+   We put "(Travis' coach)" in the surname slot so iOS's
+   sort-by-last-name groups Santiago near Travis-related contacts,
+   while the FN drives the actual displayed contact card label.
+   Curly apostrophe (U+2019) used to match the brand styling.  */
 function generateVCard(phone: string): string {
   return [
     'BEGIN:VCARD',
     'VERSION:3.0',
-    'N:Espinoza;Santiago;;;',
-    'FN:Santiago Espinoza',
+    "N:(Travis’ coach);Santiago;;;",
+    "FN:Santiago (Travis’ coach)",
     `TEL;TYPE=CELL:${phone}`,
     'NOTE:Save this contact so you recognize the number when we call.',
     'END:VCARD',
@@ -89,7 +96,7 @@ function downloadVCard(phone: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Santiago-Espinoza.vcf';
+  a.download = 'Santiago-Travis-Coach.vcf';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -237,7 +244,7 @@ function SetterConfirmationBanner({
             redundant on mobile where save-to-contacts button is right below */}
         {!compact && (
           <p className="text-sm md:text-base text-gray-500 mb-10">
-            Save it as <span className="font-bold text-gray-700">"Santiago Espinoza"</span> so you know it's us when we call.
+            Save it as <span className="font-bold text-gray-700">"Santiago (Travis’ coach)"</span> so you know it's us when we call.
           </p>
         )}
 
@@ -337,7 +344,7 @@ function SetterConfirmationBanner({
             <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
               <li>Open Contacts</li>
               <li>Add <span className="font-mono font-bold">{phone.display}</span></li>
-              <li>Save as <span className="font-bold">"Santiago Espinoza"</span></li>
+              <li>Save as <span className="font-bold">"Santiago (Travis’ coach)"</span></li>
             </ol>
           </div>
         )}
