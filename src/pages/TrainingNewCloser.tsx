@@ -459,7 +459,54 @@ function buildYahooUrl(m: MeetingInfo): string {
   return `https://calendar.yahoo.com/?${params.toString()}`;
 }
 
-/* ───── CalendarButton dropdown component ──────────────────────── */
+/* ───── CalendarButton: smart-default by OS + email domain ──────
+
+   Cascade for picking which calendar to push to:
+
+   1. OS (highest priority — overrides email)
+        Android  → single "Add to Google Calendar" button
+        iOS      → single "Add to Apple Calendar" button
+
+   2. Email domain (only if OS was Desktop / unknown)
+        @gmail.com / @googlemail.com   → Google Calendar
+        @icloud.com / @me.com / @mac.com → Apple Calendar
+        @hotmail.com / @outlook.com /
+        @live.com / @msn.com /
+        any *.outlook.com               → Outlook Calendar
+
+   3. None of the above → existing 6-option dropdown
+─────────────────────────────────────────────────────────────────── */
+
+type CalendarPreference = 'google' | 'apple' | 'outlook' | 'dropdown';
+
+/* Brand logo URLs (provided by user for Google + Apple). Outlook
+   uses a Microsoft-hosted PNG. All three are stable CDN sources. */
+const CAL_LOGO_GOOGLE  = 'https://fonts.gstatic.com/s/i/productlogos/calendar_2020q4/v13/192px.svg';
+const CAL_LOGO_APPLE   = 'https://help.apple.com/assets/67DB4AD617009A1F970697F4/67DB4AD747D53316F70BB655/en_US/9c6fd1cb730164c989d1b3afab213fad.png';
+const CAL_LOGO_OUTLOOK = 'https://img.icons8.com/color/96/microsoft-outlook-2019.png';
+
+function detectCalendarPreference(email: string): CalendarPreference {
+  // 1. OS overrides everything
+  if (typeof navigator !== 'undefined') {
+    const ua = navigator.userAgent || '';
+    if (/Android/i.test(ua)) return 'google';
+    if (/iPhone|iPad|iPod/i.test(ua)) return 'apple';
+  }
+
+  // 2. Email domain
+  const domain = (email || '').toLowerCase().trim().split('@')[1] || '';
+  if (!domain) return 'dropdown';
+  if (domain === 'gmail.com' || domain === 'googlemail.com') return 'google';
+  if (domain === 'icloud.com' || domain === 'me.com' || domain === 'mac.com') return 'apple';
+  if (
+    domain === 'hotmail.com' || domain === 'outlook.com' ||
+    domain === 'live.com'    || domain === 'msn.com'     ||
+    domain.endsWith('.outlook.com') || domain.endsWith('.onmicrosoft.com')
+  ) return 'outlook';
+
+  // 3. No clear preference - fall back to dropdown
+  return 'dropdown';
+}
 
 function CalendarButton({ meeting, variant = 'primary' }: { meeting: MeetingInfo; variant?: 'primary' | 'cta' }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -475,6 +522,55 @@ function CalendarButton({ meeting, variant = 'primary' }: { meeting: MeetingInfo
     ? 'inline-flex items-center gap-2 px-8 py-3.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-orange-500/30 cursor-pointer text-sm'
     : 'inline-flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors shadow-md text-sm cursor-pointer';
 
+  // Smart-default native button (variant for single calendar match).
+  // White background + brand logo + brand text reads as "native"
+  // instead of generic — exactly the click pattern visitors expect.
+  const nativeButtonClasses =
+    'inline-flex items-center gap-2.5 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 font-bold rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all text-sm cursor-pointer';
+
+  const preference = detectCalendarPreference(meeting.email);
+
+  const handleSingle = (provider: 'google' | 'apple' | 'outlook') => {
+    if (provider === 'google') {
+      window.open(buildGoogleUrl(meeting), '_blank', 'noopener,noreferrer');
+    } else if (provider === 'outlook') {
+      window.open(buildOutlookWebUrl(meeting), '_blank', 'noopener,noreferrer');
+    } else {
+      // apple → .ics download (iOS Safari opens it in Calendar.app,
+      // macOS opens in Calendar.app, both flows are 1-tap)
+      downloadICS(meeting);
+    }
+    trackCalendarAdded(`smart_default:${provider}`);
+  };
+
+  // Render a single smart-default button when we can confidently
+  // pick one. Skips the dropdown entirely.
+  if (preference === 'google') {
+    return (
+      <button onClick={() => handleSingle('google')} className={nativeButtonClasses}>
+        <img src={CAL_LOGO_GOOGLE} alt="" className="w-5 h-5" loading="lazy" />
+        Add to Google Calendar
+      </button>
+    );
+  }
+  if (preference === 'apple') {
+    return (
+      <button onClick={() => handleSingle('apple')} className={nativeButtonClasses}>
+        <img src={CAL_LOGO_APPLE} alt="" className="w-5 h-5" loading="lazy" />
+        Add to Apple Calendar
+      </button>
+    );
+  }
+  if (preference === 'outlook') {
+    return (
+      <button onClick={() => handleSingle('outlook')} className={nativeButtonClasses}>
+        <img src={CAL_LOGO_OUTLOOK} alt="" className="w-5 h-5" loading="lazy" />
+        Add to Outlook Calendar
+      </button>
+    );
+  }
+
+  // Fallback: original 6-option dropdown
   const options = [
     { label: 'Google Calendar', action: () => window.open(buildGoogleUrl(meeting), '_blank', 'noopener,noreferrer') },
     { label: 'Apple Calendar', action: () => downloadICS(meeting) },
