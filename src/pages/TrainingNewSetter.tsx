@@ -85,6 +85,7 @@ function generateVCard(phone: string): string {
     "N:(Travis’ coach);Santiago;;;",
     "FN:Santiago (Travis’ coach)",
     `TEL;TYPE=CELL:${phone}`,
+    'EMAIL:travis@travismarziani.com',
     'NOTE:Save this contact so you recognize the number when we call.',
     'END:VCARD',
   ].join('\n');
