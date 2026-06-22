@@ -62,12 +62,13 @@ function detectRegion(): Region {
   return 'us';
 }
 
-type Platform = 'ios' | 'android' | 'desktop';
+type Platform = 'ios' | 'android' | 'windows' | 'desktop';
 
 function detectPlatform(): Platform {
   const ua = navigator.userAgent;
   if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
   if (/Android/.test(ua)) return 'android';
+  if (/Windows NT/i.test(ua)) return 'windows';
   return 'desktop';
 }
 
@@ -271,19 +272,33 @@ function SetterConfirmationBanner({
         /* Micro-ask: confirm via text */
         <div className={`bg-white border-2 border-gray-200 rounded-2xl shadow-sm ${compact ? 'p-5 animate-banner-rise-3' : 'p-6 md:p-7'}`}>
           <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
-            To confirm you'll be available for the call, tap the button below and hit send:
+            {platform === 'windows'
+              ? "To confirm you'll be available for the call:"
+              : "To confirm you'll be available for the call, tap the button below and hit send:"}
           </p>
 
-          <div className="flex items-stretch justify-center max-w-lg mx-auto">
-            <a
-              href={`sms:${phone.raw}?&body=${smsBody}`}
-              onClick={handleConfirmText}
-              className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer active:scale-[0.98] ${completed.microAsk ? '' : 'animate-confirm-pulse-blue'}`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              Confirm via Text
-            </a>
-          </div>
+          {platform === 'windows' ? (
+            <div className="flex items-start gap-3 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl text-left max-w-lg mx-auto">
+              <MessageSquare className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+              <p className="text-sm md:text-base text-gray-800 leading-snug">
+                Check your phone for a text from{' '}
+                <span className="font-bold text-gray-900">{phone.display}</span>{' '}
+                and reply{' '}
+                <span className="font-bold text-blue-700">"YES I will attend"</span>.
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-stretch justify-center max-w-lg mx-auto">
+              <a
+                href={`sms:${phone.raw}?&body=${smsBody}`}
+                onClick={handleConfirmText}
+                className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer active:scale-[0.98] ${completed.microAsk ? '' : 'animate-confirm-pulse-blue'}`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                Confirm via Text
+              </a>
+            </div>
+          )}
 
           <div className="mt-5 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2.5 text-left max-w-lg mx-auto">
             <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" strokeWidth={2.25} />
