@@ -30,19 +30,15 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ─── Config - tune as needed ──────────────────────────────────── */
 const PRIMARY_CTA_DESTINATION = '/applynow';
-const UNLOCK_DURATION_MS = 2 * 60 * 1000; // 2 mins, per the screenshot
+const UNLOCK_DURATION_MS = 45 * 1000; // 45 seconds
 const UNLOCK_STORAGE_KEY = 'pp_nextstep_unlock_started_at';
-// Green CTAs behave conditionally: BEFORE the unlock timer
-// (UNLOCK_DURATION_MS = 2 min) expires, clicking a green CTA
-// scrolls the visitor back up to the video instead of navigating
-// away - they haven't earned the unlock yet. AFTER the timer
-// expires, all green CTAs navigate freely to /applynow. The timer
-// is the single source of truth - matching its visual cue ("Your
-// Amazon Resources Are Unlocked") with the actual behavior.
-//
-// (The old VIDEO_DEPTH_THRESHOLD_MS of 5 min was inconsistent with
-// the 2-min timer - it meant the visible "unlocked" state didn't
-// match the actual CTA behavior. Removed.)
+// Green CTAs behave conditionally: BEFORE the unlock timer expires,
+// clicking a green CTA scrolls the visitor back up to the video
+// instead of navigating away - they haven't earned the unlock yet.
+// AFTER the timer expires, all green CTAs navigate freely to
+// /applynow. The timer is the single source of truth - matching
+// its visual cue ("Your Amazon Resources Are Unlocked") with the
+// actual behavior.
 
 /* Video watch-time milestones (in seconds) - emitted as PostHog
    `nextstep_video_milestone` events when accumulated play-time
