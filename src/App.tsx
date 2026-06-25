@@ -27,6 +27,7 @@ import { Questions } from './pages/Questions';
 import { Terms } from './pages/Terms';
 import { OptIn } from './pages/OptIn';
 import { FreeCourse } from './pages/FreeCourse';
+import { FastTrack } from './pages/FastTrack';
 import { AJ } from './pages/AJ';
 import { Darryl } from './pages/Darryl';
 import { ProductResearchBonus } from './pages/ProductResearchBonus';
@@ -118,6 +119,7 @@ function AppWrapper() {
                 <Route path="/newform" element={<NewForm />} />
                 <Route path="/moveforward" element={<MoveForward />} />
                 <Route path="/nextstep" element={<NextStep />} />
+                <Route path="/fasttrack" element={<FastTrack />} />
                 <Route path="/applynow" element={<ApplyNow />} />
                 <Route path="/webinar/book" element={<WebinarBook />} />
                 <Route path="/webinar/bookacall" element={<WebinarBookCall />} />
