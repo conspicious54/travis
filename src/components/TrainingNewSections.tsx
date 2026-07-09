@@ -2045,6 +2045,25 @@ interface ConfirmationExitPopupProps {
   coachFirstName: string;
   phoneRaw: string;
   smsBody: string;
+  travisHistory?: TravisHistory;
+}
+
+// Copy the exit popup uses to reference the visitor's answer to
+// "how long have you followed Travis" - creates urgency by pointing
+// at their own time investment. Only over_year / months / recent get
+// a segmented message; never / unknown / missing fall through to the
+// generic incomplete-variant body.
+function getTimeHook(travisHistory?: TravisHistory): string | null {
+  switch (travisHistory) {
+    case 'over_year':
+      return "You've been watching Travis for over a year";
+    case 'months':
+      return "You've been watching Travis for months";
+    case 'recent':
+      return "You just found Travis";
+    default:
+      return null;
+  }
 }
 
 export function ConfirmationExitPopup({
@@ -2052,6 +2071,7 @@ export function ConfirmationExitPopup({
   coachFirstName,
   phoneRaw,
   smsBody,
+  travisHistory,
 }: ConfirmationExitPopupProps) {
   const [show, setShow] = useState(false);
   const firedRef = useRef(false);
@@ -2091,6 +2111,8 @@ export function ConfirmationExitPopup({
         all_complete: isAllComplete(),
         seconds_on_page: Math.floor(elapsed / 1000),
         max_scroll_pct: Math.round(maxScrollPct),
+        travis_history: travisHistory ?? null,
+        time_hook_variant: getTimeHook(travisHistory) ? travisHistory : 'generic',
       });
     };
 
@@ -2135,7 +2157,7 @@ export function ConfirmationExitPopup({
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [completed, isAllComplete, location]);
+  }, [completed, isAllComplete, location, travisHistory]);
 
   if (!show || !snapshot) return null;
 
@@ -2274,6 +2296,15 @@ export function ConfirmationExitPopup({
           alt="Wait, come back!"
           className="w-40 h-auto mx-auto mb-4 rounded-xl"
         />
+
+        {/* Segmented eyebrow referencing their travisHistory answer.
+            Only appears for over_year / months / recent - if we don't
+            know how long they've watched, we skip it. */}
+        {getTimeHook(travisHistory) && (
+          <p className="text-orange-600 text-xs md:text-sm font-bold uppercase tracking-[0.15em] mb-3 leading-snug">
+            {getTimeHook(travisHistory)} — don't put this off any longer.
+          </p>
+        )}
 
         <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-3 leading-tight">
           {headline}

@@ -532,6 +532,7 @@ function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPage
           coachFirstName={popupCoach}
           phoneRaw={PHONE_NUMBERS[popupRegion].raw}
           smsBody={popupSmsBody}
+          travisHistory={p?.travisHistory}
         />
       </div>
     );
@@ -559,6 +560,7 @@ function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPage
         coachFirstName={popupCoach}
         phoneRaw={PHONE_NUMBERS[popupRegion].raw}
         smsBody={popupSmsBody}
+        travisHistory={p?.travisHistory}
       />
       <MobileConfirmStickyBar
         location="setter"
