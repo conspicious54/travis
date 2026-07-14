@@ -6,6 +6,7 @@ import {
   LowCapitalStrategies,
   CreditCardQuiz,
   ConfirmationExitPopup,
+  WindowsConfirmBlock,
   MeetYourCoach,
   NextStepsList,
   ConfirmationFAQ,
@@ -796,15 +797,13 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false }: { mee
             </p>
 
             {platform === 'windows' ? (
-              <div className="flex items-start gap-3 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl text-left max-w-lg mx-auto">
-                <MessageSquare className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                <p className="text-sm md:text-base text-gray-800 leading-snug">
-                  Check your phone for a text from{' '}
-                  <span className="font-bold text-gray-900">{phone.display}</span>{' '}
-                  and reply{' '}
-                  <span className="font-bold text-blue-700">"YES I will attend"</span>.
-                </p>
-              </div>
+              <WindowsConfirmBlock
+                phoneDisplay={phone.display}
+                phoneRaw={phone.raw}
+                smsBody={smsBody}
+                region={region}
+                location="closer"
+              />
             ) : (
               <div className="flex items-stretch justify-center max-w-lg mx-auto">
                 <a

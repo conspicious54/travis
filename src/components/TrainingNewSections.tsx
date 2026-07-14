@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Play, Video, ChevronDown, ChevronUp, ExternalLink, BookOpen, Wrench, TrendingUp, ArrowRight, DollarSign, Briefcase, Target, Clock, Shield, Lightbulb, AlertTriangle, Quote, Zap, Sparkles, Heart, Compass, Award, Users, CheckCircle, Check, Mail, MessageSquare } from 'lucide-react';
 import type { Personalization, Reason, Situation, ValuedFeature, Capital, TravisHistory, Region } from '../lib/personalization';
 import { getPersonalization } from '../lib/personalization';
@@ -2039,6 +2040,88 @@ export function MobileConfirmStickyBar({
      after 20+ seconds on page - "I've seen enough, going back"
    Only fires once per session.
 ──────────────────────────────────────────────────────────────────── */
+
+/* ───── Windows confirm block ────────────────────────────────────
+   Shown on both setter and closer confirmation pages when the
+   visitor is on Windows. The sms: link is unreliable on Windows
+   (no default handler unless Phone Link is set up with an Android
+   phone), so instead we offer two paths:
+     1. Read the number, open the CRM text on your phone, reply
+     2. Scan a QR that encodes the same sms: URI + body - opens
+        the visitor's phone Messages app with the reply typed
+
+   iOS Camera app and Android Camera / Google Lens both recognize
+   sms: URIs in QR codes and hand them to the default messaging
+   app with number + body pre-filled. Works cross-platform without
+   any app install.
+
+   The QR encodes the region-appropriate number (US/CA, EU, AU/NZ)
+   because phoneRaw comes from the parent's regionalized
+   PHONE_NUMBERS[region] lookup - swap region, QR regenerates.
+──────────────────────────────────────────────────────────────────── */
+
+interface WindowsConfirmBlockProps {
+  phoneDisplay: string;
+  phoneRaw: string;
+  smsBody: string; // already URL-encoded
+  region: string;
+  location: 'setter' | 'closer';
+}
+
+export function WindowsConfirmBlock({
+  phoneDisplay,
+  phoneRaw,
+  smsBody,
+  region,
+  location,
+}: WindowsConfirmBlockProps) {
+  // RFC-standard sms: format. Both iOS Camera and Android QR
+  // scanners parse `sms:NUMBER?body=TEXT` and route to the default
+  // messaging app with the body prefilled.
+  const smsUri = `sms:${phoneRaw}?body=${smsBody}`;
+
+  useEffect(() => {
+    trackEvent('windows_confirm_block_shown', { region, location });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="max-w-lg mx-auto space-y-3">
+      {/* Text instruction card */}
+      <div className="flex items-start gap-3 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl text-left">
+        <MessageSquare className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+        <p className="text-sm md:text-base text-gray-800 leading-snug">
+          Check your phone for a text from{' '}
+          <span className="font-bold text-gray-900">{phoneDisplay}</span>{' '}
+          and reply{' '}
+          <span className="font-bold text-blue-700">"YES I will attend"</span>.
+        </p>
+      </div>
+
+      {/* OR divider */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Or Faster</span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+
+      {/* QR code card */}
+      <div className="flex items-center gap-4 p-4 bg-white border-2 border-gray-200 rounded-xl text-left">
+        <div className="shrink-0 rounded-lg bg-white p-1.5 ring-1 ring-gray-100">
+          <QRCodeSVG value={smsUri} size={112} level="M" marginSize={0} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-gray-900 text-sm md:text-base leading-snug">
+            Scan this on your phone
+          </p>
+          <p className="text-xs md:text-sm text-gray-600 leading-snug mt-1">
+            Opens your Messages app with the reply already typed. Just hit send.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface ConfirmationExitPopupProps {
   location: 'setter' | 'closer';
