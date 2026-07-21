@@ -2348,6 +2348,8 @@ export function ConfirmationExitPopup({
       faq_location: location,
       channel: 'sms',
       coach_first_name: coachFirstName,
+      travis_history: travisHistory ?? null,
+      time_hook_variant: getTimeHook(travisHistory) ? travisHistory : 'generic',
     });
     setPersonProperties({
       coach_first_name: coachFirstName,
