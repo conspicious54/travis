@@ -655,7 +655,7 @@ export function PassionProductMethodSection() {
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
           <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video ring-1 ring-gray-200">
-            <YouTubeLazyEmbed videoId="uHr6HOnaFyQ" title="How the Passion Product Method works" />
+            <YouTubeLazyEmbed videoId="hvVvNNGJ4Js" title="How the Passion Product Method works" />
           </div>
         </div>
       </div>
