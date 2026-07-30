@@ -7,6 +7,7 @@ import {
   CreditCardQuiz,
   ConfirmationExitPopup,
   WindowsConfirmBlock,
+  WarmCohortNudge,
   MeetYourCoach,
   NextStepsList,
   ConfirmationFAQ,
@@ -631,7 +632,7 @@ function formatHumanTime(d: Date): string {
   });
 }
 
-function CloserConfirmationBanner({ meeting, firstName, compact = false }: { meeting: MeetingInfo | null; firstName: string; compact?: boolean }) {
+function CloserConfirmationBanner({ meeting, firstName, compact = false, travisHistory }: { meeting: MeetingInfo | null; firstName: string; compact?: boolean; travisHistory?: import('../lib/personalization').TravisHistory }) {
   const [region, setRegion] = useState<Region>('us');
   const [platform, setPlatform] = useState<Platform>('desktop');
   const { markDone, completed } = usePrepChecklist();
@@ -790,6 +791,7 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false }: { mee
         ) : (
           /* Micro-ask: confirm via text */
           <div className={`bg-white border-2 border-gray-200 rounded-2xl shadow-sm ${compact ? 'p-5 animate-banner-rise-3' : 'p-6 md:p-7'}`}>
+            <WarmCohortNudge travisHistory={travisHistory} location="closer" />
             <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
               {platform === 'windows'
                 ? "To confirm you'll attend:"
@@ -1036,7 +1038,7 @@ function CloserPageBody({
     {
       key: 'banner',
       label: 'Your Call',
-      content: <CloserConfirmationBanner meeting={meeting} firstName={firstName} compact />,
+      content: <CloserConfirmationBanner meeting={meeting} firstName={firstName} compact travisHistory={p?.travisHistory} />,
       gate: {
         canAdvance: () => completed.microAsk,
         title: 'Have you confirmed your call yet?',
@@ -1075,7 +1077,7 @@ function CloserPageBody({
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <CloserConfirmationBanner meeting={meeting} firstName={firstName} />
+      <CloserConfirmationBanner meeting={meeting} firstName={firstName} travisHistory={p?.travisHistory} />
       <ResearchVideo travisHistory={p?.travisHistory} />
       <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
       <PassionProductMethodSection />

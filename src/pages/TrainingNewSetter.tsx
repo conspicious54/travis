@@ -7,6 +7,7 @@ import {
   CreditCardQuiz,
   ConfirmationExitPopup,
   WindowsConfirmBlock,
+  WarmCohortNudge,
   NextStepsList,
   ConfirmationFAQ,
   MobileConfirmStickyBar,
@@ -141,10 +142,12 @@ function SetterConfirmationBanner({
   firstName,
   onSaved,
   compact = false,
+  travisHistory,
 }: {
   firstName: string;
   onSaved: () => void;
   compact?: boolean;
+  travisHistory?: import('../lib/personalization').TravisHistory;
 }) {
   const [region, setRegion] = useState<Region>('us');
   const [platform, setPlatform] = useState<Platform>('desktop');
@@ -272,6 +275,7 @@ function SetterConfirmationBanner({
         ) : (
         /* Micro-ask: confirm via text */
         <div className={`bg-white border-2 border-gray-200 rounded-2xl shadow-sm ${compact ? 'p-5 animate-banner-rise-3' : 'p-6 md:p-7'}`}>
+          <WarmCohortNudge travisHistory={travisHistory} location="setter" />
           <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
             {platform === 'windows'
               ? "To confirm you'll be available for the call:"
@@ -501,7 +505,7 @@ function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPage
     {
       key: 'banner',
       label: 'Your Call',
-      content: <SetterConfirmationBanner firstName={firstName} onSaved={() => {}} compact />,
+      content: <SetterConfirmationBanner firstName={firstName} onSaved={() => {}} compact travisHistory={p?.travisHistory} />,
       gate: {
         canAdvance: () => completed.microAsk,
         title: 'Have you confirmed your call yet?',
@@ -542,7 +546,7 @@ function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPage
      ScrollToNextButton) that complement a long scroll page. */
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <SetterConfirmationBanner firstName={firstName} onSaved={() => {}} />
+      <SetterConfirmationBanner firstName={firstName} onSaved={() => {}} travisHistory={p?.travisHistory} />
       <ResearchVideo travisHistory={p?.travisHistory} />
       <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
       <PassionProductMethodSection />

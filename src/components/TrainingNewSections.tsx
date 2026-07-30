@@ -2041,6 +2041,57 @@ export function MobileConfirmStickyBar({
    Only fires once per session.
 ──────────────────────────────────────────────────────────────────── */
 
+/* ───── Warm cohort nudge ────────────────────────────────────────
+   Inline callout for visitors whose travisHistory is 'over_year'
+   or 'months' - the "warm cohort" who's been consuming Travis's
+   content for a while but ghosts the confirmation flow at ~2x the
+   rate of cold visitors (recent/never). Hypothesis: warm = comfort,
+   comfort doesn't drive action. The nudge references their own time
+   invested to break the passive-consumer default.
+
+   Fires on every warm view (not exit-intent gated like the popup),
+   so it hits ~20x the surface area for the segment where we're
+   trying to move behavior. Renders nothing for cold or unknown
+   cohorts.
+──────────────────────────────────────────────────────────────────── */
+
+interface WarmCohortNudgeProps {
+  travisHistory?: TravisHistory;
+  location: 'setter' | 'closer';
+}
+
+function warmDuration(travisHistory?: TravisHistory): string | null {
+  if (travisHistory === 'over_year') return 'over a year';
+  if (travisHistory === 'months') return 'months';
+  return null;
+}
+
+export function WarmCohortNudge({ travisHistory, location }: WarmCohortNudgeProps) {
+  const duration = warmDuration(travisHistory);
+
+  useEffect(() => {
+    if (!duration) return;
+    trackEvent('warm_cohort_nudge_shown', {
+      travis_history: travisHistory ?? null,
+      duration,
+      location,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!duration) return null;
+
+  return (
+    <div className="max-w-lg mx-auto mb-4 px-4 py-3 bg-orange-50 border border-orange-200 rounded-lg text-center">
+      <p className="text-sm md:text-base text-gray-800 leading-snug">
+        You've been following for{' '}
+        <span className="font-bold text-orange-700">{duration}</span>. You'll
+        only hit your goal if you take action.
+      </p>
+    </div>
+  );
+}
+
 /* ───── Windows confirm block ────────────────────────────────────
    Shown on both setter and closer confirmation pages when the
    visitor is on Windows. The sms: link is unreliable on Windows
