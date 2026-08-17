@@ -2068,18 +2068,39 @@ function warmDuration(travisHistory?: TravisHistory): string | null {
 
 export function WarmCohortNudge({ travisHistory, location }: WarmCohortNudgeProps) {
   const duration = warmDuration(travisHistory);
+  // Early-return BEFORE mounting the inner component. Guarantees the
+  // effect that fires warm_cohort_nudge_shown only ever exists when
+  // duration is a real string, so it can't fire with duration=null.
+  // (Prior single-component version had an effect with [] deps that
+  // could capture a stale null-duration closure from the pre-hydration
+  // render before personalization loaded.)
+  if (!duration) return null;
+  return (
+    <WarmCohortNudgeInner
+      travisHistory={travisHistory as TravisHistory}
+      location={location}
+      duration={duration}
+    />
+  );
+}
 
+function WarmCohortNudgeInner({
+  travisHistory,
+  location,
+  duration,
+}: {
+  travisHistory: TravisHistory;
+  location: 'setter' | 'closer';
+  duration: string;
+}) {
   useEffect(() => {
-    if (!duration) return;
     trackEvent('warm_cohort_nudge_shown', {
-      travis_history: travisHistory ?? null,
+      travis_history: travisHistory,
       duration,
       location,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  if (!duration) return null;
 
   return (
     <div className="max-w-lg mx-auto mb-4 px-4 py-3 bg-orange-50 border border-orange-200 rounded-lg text-center">
