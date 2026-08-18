@@ -113,6 +113,8 @@ export const TRAVIS = {
   firstName: 'Travis',
   fullName: 'Travis Marziani',
   role: 'Founder, Passion Product',
+  // Self-hosted on our R2 bucket. The previous boldjourney.com CDN URL
+  // started returning 403 (hotlink protection or the file moved).
   photoUrl:
-    'https://cdn.boldjourney.com/wp-content/uploads/2023/09/c-TravisMarziani__8_1694708666679.jpg',
+    'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisStage.jpg',
 };
