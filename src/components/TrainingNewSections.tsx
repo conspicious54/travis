@@ -302,6 +302,30 @@ const MONTHLY_VIDEO_IDS: readonly string[] = [
 
 type VideoVariant = 'new_audience' | 'monthly';
 
+/* Per-video chapter timings. Key is the YouTube video ID. Only videos
+   in this map render the on-page chapter panel; anything else plays
+   without chapters. Add a new entry each month when the monthly video
+   is re-recorded — timings come from the recording session. Timestamps
+   are seconds into the video where each chapter starts. */
+type VideoChapter = { title: string; startSec: number };
+const VIDEO_CHAPTERS_BY_ID: Record<string, readonly VideoChapter[]> = {
+  // Aug 2026 monthly video (non-due-diligence variant)
+  'Aycx0nGFe5I': [
+    { title: 'You Just Beat 90% of My Audience',   startSec: 0 },
+    { title: "Why You've Been Stuck",              startSec: 67 },
+    { title: 'Why Right Now Is Different',         startSec: 163 },
+    { title: 'The One Regret Every Student Has',   startSec: 329 },
+    { title: 'Two Versions of You in 6 Months',    startSec: 382 },
+    { title: 'The Ask',                            startSec: 518 },
+  ],
+};
+
+function formatChapterTime(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 function pickResearchVideo(
   travisHistory: TravisHistory | undefined
 ): { id: string; variant: VideoVariant; monthIdx: number | null } {
@@ -320,6 +344,9 @@ function pickResearchVideo(
 export function ResearchVideo({ travisHistory }: { travisHistory?: TravisHistory } = {}) {
   const { markDone } = usePrepChecklist();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const chapterReportedRef = useRef<Set<number>>(new Set());
 
   // Prop wins; if absent, read from localStorage personalization so
   // standalone usages (Training / TrainingNew pages) get the
@@ -339,6 +366,11 @@ export function ResearchVideo({ travisHistory }: { travisHistory?: TravisHistory
     () => pickResearchVideo(effectiveHistory),
     [effectiveHistory]
   );
+
+  // Chapters render only when we've catalogued timings for this
+  // specific video ID (see VIDEO_CHAPTERS_BY_ID). New monthly recordings
+  // get chapters by adding an entry — no other code change needed.
+  const chapters = VIDEO_CHAPTERS_BY_ID[videoId];
 
   useEffect(() => {
     // Record which variant the visitor saw - lets us compare
@@ -383,10 +415,20 @@ export function ResearchVideo({ travisHistory }: { travisHistory?: TravisHistory
         // state 0 = ENDED
         if (data?.event === 'onStateChange' && data?.info === 0) {
           markDone('video');
+          setIsPlaying(false);
         }
         // state 1 = PLAYING - record that the video was started
         if (data?.event === 'onStateChange' && data?.info === 1) {
           trackEvent('main_video_started', { variant, video_id: videoId });
+          setIsPlaying(true);
+        }
+        // state 2 = PAUSED — stop polling for currentTime
+        if (data?.event === 'onStateChange' && data?.info === 2) {
+          setIsPlaying(false);
+        }
+        // Response to getCurrentTime commands arrives inside infoDelivery
+        if (data?.event === 'infoDelivery' && typeof data?.info?.currentTime === 'number') {
+          setCurrentTime(data.info.currentTime);
         }
       } catch {
         /* ignore */
@@ -399,6 +441,50 @@ export function ResearchVideo({ travisHistory }: { travisHistory?: TravisHistory
       window.removeEventListener('message', handleMessage);
     };
   }, [markDone, videoId, variant]);
+
+  // While playing, poll YouTube for currentTime. YouTube doesn't push
+  // time updates on its own — polling is how we drive the chapter panel.
+  // No effect if we don't have chapters for this video (avoids
+  // unnecessary postMessage traffic).
+  useEffect(() => {
+    if (!isPlaying || !chapters) return;
+    const iv = setInterval(() => {
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ event: 'command', func: 'getCurrentTime' }),
+        '*'
+      );
+    }, 750);
+    return () => clearInterval(iv);
+  }, [isPlaying, chapters]);
+
+  // Derive current chapter from playback time. -1 before playback starts.
+  const currentChapterIdx = (() => {
+    if (!chapters) return -1;
+    let idx = -1;
+    for (let i = 0; i < chapters.length; i++) {
+      if (currentTime >= chapters[i].startSec) idx = i;
+      else break;
+    }
+    return idx;
+  })();
+
+  // Fire video_chapter_reached on first-reach of each chapter. Gives us
+  // watch-depth data at chapter resolution instead of only start/end.
+  useEffect(() => {
+    if (!chapters || currentChapterIdx < 0) return;
+    if (chapterReportedRef.current.has(currentChapterIdx)) return;
+    chapterReportedRef.current.add(currentChapterIdx);
+    trackEvent('video_chapter_reached', {
+      video_id: videoId,
+      variant,
+      chapter_index: currentChapterIdx,
+      chapter_title: chapters[currentChapterIdx].title,
+      chapter_start_sec: chapters[currentChapterIdx].startSec,
+      total_chapters: chapters.length,
+    });
+  }, [currentChapterIdx, videoId, variant, chapters]);
+
+  const chapterCounter = currentChapterIdx < 0 ? 0 : currentChapterIdx + 1;
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-6 pb-8 md:pt-8 md:pb-10">
@@ -432,6 +518,63 @@ export function ResearchVideo({ travisHistory }: { travisHistory?: TravisHistory
           />
         </div>
       </div>
+
+      {chapters && (
+        <div className="mt-5 rounded-2xl border border-orange-100 bg-gradient-to-b from-orange-50/50 to-white p-4 md:p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[11px] md:text-xs font-bold uppercase tracking-[0.15em] text-orange-700">
+              Video chapters
+            </p>
+            <p className="text-xs md:text-sm text-gray-500 font-semibold tabular-nums">
+              {chapterCounter} of {chapters.length}
+            </p>
+          </div>
+
+          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-4">
+            <div
+              className="h-full bg-gradient-to-r from-orange-400 to-orange-600 transition-all duration-500 ease-out"
+              style={{ width: `${Math.max(0, Math.min(100, (chapterCounter / chapters.length) * 100))}%` }}
+            />
+          </div>
+
+          <ul className="space-y-1">
+            {chapters.map((ch, i) => {
+              const done = i < currentChapterIdx;
+              const active = i === currentChapterIdx && currentTime > 0;
+              return (
+                <li
+                  key={ch.title}
+                  className={`flex items-center gap-3 py-1.5 ${
+                    active
+                      ? 'text-gray-900 font-bold'
+                      : done
+                      ? 'text-gray-500'
+                      : 'text-gray-400'
+                  }`}
+                >
+                  <span
+                    className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black ${
+                      done
+                        ? 'bg-green-500 text-white'
+                        : active
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {done ? <Check className="w-3 h-3" strokeWidth={3.5} /> : i + 1}
+                  </span>
+                  <span className="text-sm md:text-base leading-snug flex-1 min-w-0 truncate">
+                    {ch.title}
+                  </span>
+                  <span className="text-[11px] md:text-xs text-gray-400 tabular-nums shrink-0">
+                    {formatChapterTime(ch.startSec)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
