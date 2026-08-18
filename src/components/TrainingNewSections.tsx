@@ -309,7 +309,9 @@ type VideoVariant = 'new_audience' | 'monthly';
    are seconds into the video where each chapter starts. */
 type VideoChapter = { title: string; startSec: number };
 const VIDEO_CHAPTERS_BY_ID: Record<string, readonly VideoChapter[]> = {
-  // Aug 2026 monthly video (non-due-diligence variant)
+  // Aug 2026 monthly video (non-due-diligence — warm cohort:
+  // months / over_year / unknown → gets the momentum / "you've been
+  // watching, now act" framing)
   'Aycx0nGFe5I': [
     { title: 'You Just Beat 90% of My Audience',   startSec: 0 },
     { title: "Why You've Been Stuck",              startSec: 67 },
@@ -317,6 +319,19 @@ const VIDEO_CHAPTERS_BY_ID: Record<string, readonly VideoChapter[]> = {
     { title: 'The One Regret Every Student Has',   startSec: 329 },
     { title: 'Two Versions of You in 6 Months',    startSec: 382 },
     { title: 'The Ask',                            startSec: 518 },
+  ],
+  // Due-diligence video (cold cohort: never / recent → gets the
+  // "who am I / here's my track record / do your research with me"
+  // framing). Wired via NEW_AUDIENCE_VIDEO_ID in pickResearchVideo.
+  '3r8rmP0Eh6Q': [
+    { title: 'You Were Going to Google Me Anyway',  startSec: 0 },
+    { title: 'Who I Am',                            startSec: 47 },
+    { title: "What I've Actually Built",            startSec: 124 },
+    { title: 'How My Students Actually Do',         startSec: 274 },
+    { title: 'What I Actually Promise',             startSec: 331 },
+    { title: 'Inside the Program',                  startSec: 431 },
+    { title: 'The Accountability Difference',       startSec: 496 },
+    { title: 'Do the Research With Me',             startSec: 572 },
   ],
 };
 
