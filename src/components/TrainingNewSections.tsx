@@ -2252,9 +2252,14 @@ function WarmCohortNudgeInner({
   duration: string;
 }) {
   useEffect(() => {
+    // Property is named `nudge_duration` (not `duration`) because PostHog
+    // appears to reserve / overwrite the bare `duration` key — every
+    // event previously fired with duration=null despite the source
+    // value being a real string. Renamed to a unique key so it
+    // survives PostHog's ingestion.
     trackEvent('warm_cohort_nudge_shown', {
       travis_history: travisHistory,
-      duration,
+      nudge_duration: duration,
       location,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
