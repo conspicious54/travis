@@ -35,6 +35,7 @@ import { ProductScorecard } from './pages/ProductScorecard';
 import { ProductEstimator } from './pages/ProductEstimator';
 import { Migration } from './pages/Migration';
 import { TermsOfService } from './pages/TermsOfService';
+import { RefundPolicy } from './pages/RefundPolicy';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { LiveTraining } from './pages/LiveTraining';
 import {
@@ -136,6 +137,7 @@ function AppWrapper() {
                 <Route path="/productestimator" element={<ProductEstimator />} />
                 <Route path="/migration" element={<Migration />} />
                 <Route path="/termsofservice" element={<TermsOfService />} />
+                <Route path="/refundpolicy" element={<RefundPolicy />} />
                 <Route path="/privacypolicy" element={<PrivacyPolicy />} />
                 <Route path="/live-training" element={<LiveTraining />} />
                 <Route path="/passionproductmethod" element={<PassionProductMethodRedirect />} />
