@@ -81,6 +81,20 @@ export const COACHES: Record<string, Coach> = {
       "Benjamin is one of my newest in-house Amazon coaches at Passion Product. Sharp, thoughtful, and the kind of coach who'll meet you where you are and give you the straight read on what to do next.",
     bio: "He's been trained directly on the Passion Product method and works with our students through every stage - from picking the right product to building a brand that actually scales. On your call he'll cut through the noise and tell you exactly where to put your focus.",
   },
+  // Alexis Fuentes - closer, HubSpot ownerId 168062240. Photo URL is
+  // blank until we self-host her image on our R2 bucket (matches
+  // existing pattern used before Ty's photo landed).
+  'alexis fuentes': {
+    id: 'alexis',
+    firstName: 'Alexis',
+    fullName: 'Alexis Fuentes',
+    role: 'Passion Product Lead Amazon Coach',
+    tenure: 'On the Passion Product team',
+    photoUrl: '',
+    travisIntro:
+      "Alexis is one of my newest in-house Amazon coaches at Passion Product. Direct, focused, and the kind of coach who'll help you cut through the noise and figure out what actually matters for your situation.",
+    bio: "She's been trained directly on the Passion Product method and is working with our students through every stage of their launch. On your call she'll help you get clear on the exact next steps for where you're at right now.",
+  },
   // HubSpot owner name is "Tycho" (or similar spelling). The forgiving
   // matcher in getCoachByOwnerName picks him up regardless. Visitors
   // see "Ty" everywhere — that's the name he goes by.
