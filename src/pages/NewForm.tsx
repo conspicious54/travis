@@ -325,7 +325,12 @@ export function NewForm() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white text-gray-900">
-      <main className="max-w-4xl mx-auto px-5 pt-8 md:pt-12 pb-16">
+      {/* Container width matches CF's actual form area (~770px in
+          their viewport). Previously max-w-4xl (896px) was ~15%
+          wider than CF's, which let the eyebrow fit on one line
+          and gave the whole hero different proportions than the
+          reference. max-w-3xl (768px) is a much closer match. */}
+      <main className="max-w-3xl mx-auto px-5 pt-8 md:pt-12 pb-16">
         {/* Logo header — matches the CF lead page. Self-hosted on
             the passionproduct.com WordPress CDN (same image CF uses). */}
         <div className="flex justify-center mb-6 md:mb-8">
@@ -357,7 +362,7 @@ export function NewForm() {
               )}
             </p>
           ) : null}
-          <h1 className="text-xl md:text-4xl lg:text-[2.65rem] font-black tracking-normal leading-tight max-w-4xl mx-auto">
+          <h1 className="text-xl md:text-4xl lg:text-[2.65rem] font-black tracking-normal leading-tight">
             <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
               {headlineText}
             </span>
