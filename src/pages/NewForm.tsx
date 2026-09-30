@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronsRight, Flame } from 'lucide-react';
-import { identifyUser, trackEvent, trackConversionLead, useFeatureFlag } from '../lib/posthog';
+import { Flame } from 'lucide-react';
+import { identifyUser, trackEvent, trackConversionLead } from '../lib/posthog';
 import { getCleanIdentity, persistIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
 import { persistUtmsFromUrl, readAttribution, syncContactUtms } from '../lib/syncUtm';
@@ -47,25 +47,9 @@ const COUNTDOWN_STORAGE_KEY = 'pp_newform_countdown_started_at';
 const STAGE_TAG = 'newform_optin';
 /* ──────────────────────────────────────────────────────────────── */
 
-const COUNTRY_DIAL: Array<{ code: string; dial: string; flag: string; name: string }> = [
-  { code: 'US', dial: '+1',   flag: '🇺🇸', name: 'United States' },
-  { code: 'CA', dial: '+1',   flag: '🇨🇦', name: 'Canada' },
-  { code: 'GB', dial: '+44',  flag: '🇬🇧', name: 'United Kingdom' },
-  { code: 'AU', dial: '+61',  flag: '🇦🇺', name: 'Australia' },
-  { code: 'NZ', dial: '+64',  flag: '🇳🇿', name: 'New Zealand' },
-  { code: 'IE', dial: '+353', flag: '🇮🇪', name: 'Ireland' },
-  { code: 'IN', dial: '+91',  flag: '🇮🇳', name: 'India' },
-  { code: 'DE', dial: '+49',  flag: '🇩🇪', name: 'Germany' },
-  { code: 'FR', dial: '+33',  flag: '🇫🇷', name: 'France' },
-  { code: 'ES', dial: '+34',  flag: '🇪🇸', name: 'Spain' },
-  { code: 'IT', dial: '+39',  flag: '🇮🇹', name: 'Italy' },
-  { code: 'NL', dial: '+31',  flag: '🇳🇱', name: 'Netherlands' },
-  { code: 'BR', dial: '+55',  flag: '🇧🇷', name: 'Brazil' },
-  { code: 'MX', dial: '+52',  flag: '🇲🇽', name: 'Mexico' },
-  { code: 'PH', dial: '+63',  flag: '🇵🇭', name: 'Philippines' },
-  { code: 'SG', dial: '+65',  flag: '🇸🇬', name: 'Singapore' },
-  { code: 'ZA', dial: '+27',  flag: '🇿🇦', name: 'South Africa' },
-];
+// Passion Product logo — same asset the CF lead page uses (hosted
+// on passionproduct.com's WordPress). Verified 200 OK.
+const LOGO_URL = 'https://passionproduct.com/wp-content/uploads/2024/10/Passion-Product-only-logo-1-768x432.png';
 
 function getCountdownDeadline(): number {
   if (typeof window === 'undefined') return Date.now() + COUNTDOWN_MS;
@@ -110,7 +94,6 @@ export function NewForm() {
   const [lastname, setLastname]   = useState(seed.lastname);
   const [email, setEmail]         = useState(seed.email);
   const [phone, setPhone]         = useState(seed.phone);
-  const [dialCountry, setDialCountry] = useState<string>('US');
   // Honeypot - hidden field humans never touch but bots fill. If
   // anything lands in here, we silently drop the submission.
   const [honeypot, setHoneypot] = useState('');
@@ -142,9 +125,6 @@ export function NewForm() {
     });
     getCountry().then((info) => {
       setCountry(info);
-      if (info.code && COUNTRY_DIAL.some(c => c.code === info.code)) {
-        setDialCountry(info.code);
-      }
       trackEvent('newform_country_detected', {
         country_code: info.code || 'unknown',
         country_name: info.name || 'unknown',
@@ -160,19 +140,13 @@ export function NewForm() {
   }, []);
 
   const ttl = formatCountdown(deadline);
-  const dialEntry = COUNTRY_DIAL.find(c => c.code === dialCountry) || COUNTRY_DIAL[0];
 
-  /* Headline A/B/C test (PostHog flag: newform-headline-test).
-     Three variants:
-       - control: current "$100K" / "$140 Billion" framing
-       - quit_95: identity-based "How To Quit Your 9-5 By Building
-                  A 7-Figure Amazon Business" + beginners eyebrow
-       - 250k:    same shape as control, swap $100K to $250K
-     Goal event: newform_submitted. PostHog auto-records the
-     $feature_flag_called exposure when the hook reads the variant. */
-  const headlineVariant = useFeatureFlag('newform-headline-test');
-  const isQuit95 = headlineVariant === 'quit_95';
-  const is250k   = headlineVariant === '250k';
+  /* The previous newform-headline-test A/B experiment was paused as
+     part of the initiative to reduce visible differences between
+     this page and the ClickFunnels lead page it replaces. The default
+     headline below is the same one running on start.travismarziani.com.
+     Per-campaign headline overrides via UTM (see loadCampaignVariant
+     above) still work and take precedence. */
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,9 +182,11 @@ export function NewForm() {
 
     setSubmitting(true);
 
-    const fullPhone = cleanPhone.startsWith('+')
-      ? cleanPhone
-      : `${dialEntry.dial} ${cleanPhone}`;
+    // Phone is submitted as the visitor typed it — matches the
+    // ClickFunnels lead page behavior (plain phone input, no dial-
+    // code selector). Downstream Zapier / HubSpot workflows already
+    // handle formatting; country_code below tells them the region.
+    const fullPhone = cleanPhone;
 
     const countryInfo = country ?? (await getCountry().catch(() => null));
     const audience = countryInfo?.audience ?? 'non_target';
@@ -222,13 +198,11 @@ export function NewForm() {
       country_code: countryInfo?.code,
       country_name: countryInfo?.name,
       audience,
-      newform_dial_country: dialCountry,
     });
     trackEvent('newform_submitted', {
       audience,
       country_code: countryInfo?.code || 'unknown',
       country_name: countryInfo?.name || 'unknown',
-      dial_country: dialCountry,
       // Campaign attribution — non-null when the visitor arrived
       // with a matching utm_source + utm_campaign. Lets us measure
       // per-video / per-source conversion rate and reconstruct the
@@ -335,54 +309,48 @@ export function NewForm() {
     window.location.href = `${REDIRECT_TO}?${fwd.toString()}`;
   };
 
+  // Default hero copy — matches the ClickFunnels lead page verbatim.
+  // Variant.headline / supporting_copy override these when a UTM
+  // campaign matches an active row in campaignVariants.ts.
+  const DEFAULT_EYEBROW = 'Last Year, First Time Amazon Sellers Made Over $140 Billion In Sales';
+  const DEFAULT_HEADLINE = 'Learn the Exact Process I Use to Help Sellers Reach $100K on Amazon in 2026';
+  const eyebrowText = variant ? variant.supporting_copy : DEFAULT_EYEBROW;
+  const headlineText = (variant?.headline) || DEFAULT_HEADLINE;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white text-gray-900">
-      <main className="max-w-4xl mx-auto px-5 pt-12 md:pt-20 pb-16">
-        {/* Hero. Rendering priority:
-              1. Campaign variant from utm_source + utm_campaign (if
-                 matched an active row in campaignVariants.ts)
-              2. newform-headline-test PostHog flag (per-visitor A/B)
-              3. Default copy
-            Variant-empty optional fields inherit the default eyebrow
-            or headline so a variant can override JUST the headline
-            without touching supporting_copy, etc. */}
+      <main className="max-w-4xl mx-auto px-5 pt-8 md:pt-12 pb-16">
+        {/* Logo header — matches the CF lead page. Self-hosted on
+            the passionproduct.com WordPress CDN (same image CF uses). */}
+        <div className="flex justify-center mb-6 md:mb-8">
+          <img
+            src={LOGO_URL}
+            alt="Passion Product"
+            className="h-16 md:h-20 w-auto"
+            loading="eager"
+          />
+        </div>
+
+        {/* Hero — CF-matching copy by default; variant overrides
+            headline / supporting_copy when a UTM campaign matches. */}
         <div className="text-center mb-10 md:mb-12">
-          {variant ? (
-            <>
-              {variant.supporting_copy ? (
-                <p className="text-lg md:text-2xl text-gray-700 leading-snug max-w-3xl mx-auto mb-4 md:mb-5">
-                  {variant.supporting_copy}
-                </p>
-              ) : null}
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02]">
-                <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
-                  {variant.headline || `Learn the Exact Process I Use to Help Sellers Reach $${is250k ? '250K' : '100K'} on Amazon in 2026`}
-                </span>
-              </h1>
-            </>
-          ) : isQuit95 ? (
-            <>
-              <p className="text-lg md:text-2xl text-gray-700 leading-snug max-w-3xl mx-auto mb-4 md:mb-5">
-                The Proven Formula For Absolute Beginners
-              </p>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02]">
-                <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
-                  How To Quit Your 9-5 By Building A 7-Figure Amazon Business
-                </span>
-              </h1>
-            </>
-          ) : (
-            <>
-              <p className="text-lg md:text-2xl text-gray-700 leading-snug max-w-3xl mx-auto mb-4 md:mb-5">
-                Last Year, First Time Amazon Sellers Made Over <span className="font-bold text-gray-900">$140 Billion</span> In Sales
-              </p>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02]">
-                <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
-                  Learn the Exact Process I Use to Help Sellers Reach ${is250k ? '250K' : '100K'} on Amazon in 2026
-                </span>
-              </h1>
-            </>
-          )}
+          {eyebrowText ? (
+            <p className="text-lg md:text-2xl text-gray-700 leading-snug max-w-3xl mx-auto mb-4 md:mb-5">
+              {eyebrowText === DEFAULT_EYEBROW ? (
+                <>
+                  Last Year, First Time Amazon Sellers Made Over{' '}
+                  <span className="font-bold text-gray-900">$140 Billion</span> In Sales
+                </>
+              ) : (
+                eyebrowText
+              )}
+            </p>
+          ) : null}
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02]">
+            <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
+              {headlineText}
+            </span>
+          </h1>
 
           {/* "What you get" offer box — variant-controlled, hidden by
               default. Only renders when the matched variant has
@@ -446,12 +414,13 @@ export function NewForm() {
                 />
               </div>
 
-              {/* First + last name */}
+              {/* Form fields — placeholder-only look matches the
+                  ClickFunnels lead page (no visible labels above).
+                  Labels remain in the DOM as sr-only for a11y and
+                  autofill hint purposes. */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="firstname" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    First Name
-                  </label>
+                  <label htmlFor="firstname" className="sr-only">First Name</label>
                   <input
                     id="firstname"
                     type="text"
@@ -461,16 +430,14 @@ export function NewForm() {
                     autoCapitalize="words"
                     spellCheck={false}
                     required
-                    placeholder="Your first name"
+                    placeholder="Your First Name..."
                     value={firstname}
                     onChange={(e) => setFirstname(e.target.value)}
                     className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                   />
                 </div>
                 <div>
-                  <label htmlFor="lastname" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Last Name
-                  </label>
+                  <label htmlFor="lastname" className="sr-only">Last Name</label>
                   <input
                     id="lastname"
                     type="text"
@@ -480,7 +447,7 @@ export function NewForm() {
                     autoCapitalize="words"
                     spellCheck={false}
                     required
-                    placeholder="Your last name"
+                    placeholder="Your Last Name..."
                     value={lastname}
                     onChange={(e) => setLastname(e.target.value)}
                     className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
@@ -488,11 +455,8 @@ export function NewForm() {
                 </div>
               </div>
 
-              {/* Email - inputMode=email surfaces @ key on mobile */}
               <div>
-                <label htmlFor="email" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Email
-                </label>
+                <label htmlFor="email" className="sr-only">Email</label>
                 <input
                   id="email"
                   type="email"
@@ -502,45 +466,32 @@ export function NewForm() {
                   autoCapitalize="off"
                   spellCheck={false}
                   required
-                  placeholder="you@example.com"
+                  placeholder="Your Email Address Here..."
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                 />
               </div>
 
-              {/* Phone - inputMode=tel pops the numeric keypad,
-                  enterKeyHint=done changes the return key label */}
+              {/* Phone — plain input to match CF. Dial-code selector
+                  was removed to reduce visible differences between
+                  this page and the CF page it replaces. Downstream
+                  systems (Zapier, HubSpot) use the country_code we
+                  detect via IP for region context. */}
               <div>
-                <label htmlFor="phone" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Phone
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    aria-label="Country dial code"
-                    value={dialCountry}
-                    onChange={(e) => setDialCountry(e.target.value)}
-                    className="appearance-none pl-3 pr-8 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
-                  >
-                    {COUNTRY_DIAL.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.flag} {c.code} ({c.dial})
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    id="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    inputMode="tel"
-                    enterKeyHint="done"
-                    required
-                    placeholder="Mobile number"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="flex-1 px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
-                  />
-                </div>
+                <label htmlFor="phone" className="sr-only">Phone</label>
+                <input
+                  id="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  enterKeyHint="done"
+                  required
+                  placeholder="Your Phone Number Here..."
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+                />
               </div>
 
               <p className="text-center text-sm text-gray-700">
@@ -557,9 +508,8 @@ export function NewForm() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5 active:translate-y-0"
               >
-                <ChevronsRight className="w-6 h-6" />
                 {submitting ? 'Reserving Your Spot...' : (variant?.cta_text || 'SIGN UP TO WATCH NOW')}
               </button>
 
