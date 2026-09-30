@@ -47,9 +47,15 @@ const COUNTDOWN_STORAGE_KEY = 'pp_newform_countdown_started_at';
 const STAGE_TAG = 'newform_optin';
 /* ──────────────────────────────────────────────────────────────── */
 
-// Passion Product logo — same asset the CF lead page uses (hosted
-// on passionproduct.com's WordPress). Verified 200 OK.
-const LOGO_URL = 'https://passionproduct.com/wp-content/uploads/2024/10/Passion-Product-only-logo-1-768x432.png';
+// Passion Product logo — the exact 2-line "PASSION PRODUCT" mark
+// used on the CF lead page. Hotlinked from CF's CDN for now. This
+// is a temporary third-party dependency; once ready to cut over,
+// self-host on our R2 bucket to remove the CF dependency (see
+// TravisStage.jpg / Alexis.png for the R2 self-hosting pattern).
+// The `passionproduct.com` WordPress asset that was here before
+// loads the "PASSION PRODUCT FORMULA" 3-line logo instead — wrong
+// mark for parity with CF.
+const LOGO_URL = 'https://images.clickfunnels.com/cdn-cgi/image/width=600,fit=scale-down,f=auto,q=80/https://statics.myclickfunnels.com/workspace/JznPnP/image/3631772/file/2aac1eea4e8a9afc85bc3526b2ffca0e.jpg';
 
 function getCountdownDeadline(): number {
   if (typeof window === 'undefined') return Date.now() + COUNTDOWN_MS;
