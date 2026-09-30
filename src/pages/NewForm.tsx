@@ -331,22 +331,27 @@ export function NewForm() {
           />
         </div>
 
-        {/* Hero — CF-matching copy by default; variant overrides
-            headline / supporting_copy when a UTM campaign matches. */}
-        <div className="text-center mb-10 md:mb-12">
+        {/* Hero — CF-matching copy AND sizing by default; variant
+            overrides headline / supporting_copy when a UTM campaign
+            matches. Sizes derived from the CF page's actual CSS:
+              Eyebrow: 1rem mobile / 1.53rem desktop, font-weight 700
+              Headline: 1.25rem mobile / 2.65rem desktop, font-weight 900
+            Line-heights and letter-spacing loosened accordingly so
+            the long headline doesn't crush into itself. */}
+        <div className="text-center mb-8 md:mb-10">
           {eyebrowText ? (
-            <p className="text-lg md:text-2xl text-gray-700 leading-snug max-w-3xl mx-auto mb-4 md:mb-5">
+            <p className="text-base md:text-2xl font-bold text-gray-800 leading-snug max-w-3xl mx-auto mb-3 md:mb-4">
               {eyebrowText === DEFAULT_EYEBROW ? (
                 <>
                   Last Year, First Time Amazon Sellers Made Over{' '}
-                  <span className="font-bold text-gray-900">$140 Billion</span> In Sales
+                  <span className="font-black text-gray-900">$140 Billion</span> In Sales
                 </>
               ) : (
                 eyebrowText
               )}
             </p>
           ) : null}
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02]">
+          <h1 className="text-xl md:text-4xl lg:text-[2.65rem] font-black tracking-normal leading-tight max-w-4xl mx-auto">
             <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
               {headlineText}
             </span>
