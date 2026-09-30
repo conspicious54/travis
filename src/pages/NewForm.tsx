@@ -7,6 +7,8 @@ import { getCountry, type CountryInfo } from '../lib/detectCountry';
 import { persistUtmsFromUrl, readAttribution, syncContactUtms } from '../lib/syncUtm';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { retryFetch } from '../lib/retryFetch';
+import { loadCampaignVariant } from '../lib/campaignVariant';
+import { findLeadMagnet } from '../config/leadMagnets';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /newform - webinar opt-in form ────────────────────────────
@@ -118,6 +120,17 @@ export function NewForm() {
   const [deadline] = useState<number>(() => getCountdownDeadline());
   const [, setNow] = useState<number>(() => Date.now());
 
+  /* Campaign variant is resolved synchronously from static config on
+     first render, so there's no default → variant flicker. When present,
+     the variant's headline / supporting copy / CTA / offer-box content
+     overrides the defaults; empty fields inherit the defaults. When
+     absent (missing/unknown/inactive UTMs, or no variant at all), the
+     default page renders as before. The matched id is stashed in
+     sessionStorage by loadCampaignVariant so the submit payload can
+     still attach attribution if URL params later get stripped. */
+  const [variant] = useState(() => loadCampaignVariant());
+  const leadMagnet = variant ? findLeadMagnet(variant.lead_magnet_id) : null;
+
   useEffect(() => {
     document.title = 'Passion Product Formula - Free Training';
     // Capture utm_* into sessionStorage so they survive the form
@@ -216,6 +229,12 @@ export function NewForm() {
       country_code: countryInfo?.code || 'unknown',
       country_name: countryInfo?.name || 'unknown',
       dial_country: dialCountry,
+      // Campaign attribution — non-null when the visitor arrived
+      // with a matching utm_source + utm_campaign. Lets us measure
+      // per-video / per-source conversion rate and reconstruct the
+      // exact resource each lead was promised.
+      campaign_variant_id: variant?.id ?? null,
+      lead_magnet_id: leadMagnet?.id ?? null,
     });
     // Top-of-funnel conversion - GTM tags can fan this out to
     // Google Ads "Form Submission" conversion, Meta Pixel "Lead",
@@ -256,6 +275,13 @@ export function NewForm() {
           country_code: countryInfo?.code || '',
           country_name: countryInfo?.name || '',
           audience,
+          // Campaign attribution — the downstream Zapier / email
+          // automation should read lead_magnet_delivery to fulfill
+          // the exact resource this lead was promised. Unknown to
+          // register-webinar today; passed through as-is.
+          campaign_variant_id: variant?.id || '',
+          lead_magnet_id: leadMagnet?.id || '',
+          lead_magnet_delivery: leadMagnet?.delivery_reference || '',
         }),
         tag: 'newform_register',
       });
@@ -301,15 +327,40 @@ export function NewForm() {
     for (const [k, v] of Object.entries(attribution)) {
       if (v) fwd.set(k, v);
     }
+    // Forward matched campaign attribution downstream so /router → /nextstep
+    // → /applynow → Typeform can preserve which resource / variant this
+    // lead came in on. Router already forwards the full query string.
+    if (variant?.id) fwd.set('campaign_variant_id', variant.id);
+    if (leadMagnet?.id) fwd.set('lead_magnet_id', leadMagnet.id);
     window.location.href = `${REDIRECT_TO}?${fwd.toString()}`;
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white text-gray-900">
       <main className="max-w-4xl mx-auto px-5 pt-12 md:pt-20 pb-16">
-        {/* Hero - variant-controlled via newform-headline-test flag. */}
+        {/* Hero. Rendering priority:
+              1. Campaign variant from utm_source + utm_campaign (if
+                 matched an active row in campaignVariants.ts)
+              2. newform-headline-test PostHog flag (per-visitor A/B)
+              3. Default copy
+            Variant-empty optional fields inherit the default eyebrow
+            or headline so a variant can override JUST the headline
+            without touching supporting_copy, etc. */}
         <div className="text-center mb-10 md:mb-12">
-          {isQuit95 ? (
+          {variant ? (
+            <>
+              {variant.supporting_copy ? (
+                <p className="text-lg md:text-2xl text-gray-700 leading-snug max-w-3xl mx-auto mb-4 md:mb-5">
+                  {variant.supporting_copy}
+                </p>
+              ) : null}
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02]">
+                <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
+                  {variant.headline || `Learn the Exact Process I Use to Help Sellers Reach $${is250k ? '250K' : '100K'} on Amazon in 2026`}
+                </span>
+              </h1>
+            </>
+          ) : isQuit95 ? (
             <>
               <p className="text-lg md:text-2xl text-gray-700 leading-snug max-w-3xl mx-auto mb-4 md:mb-5">
                 The Proven Formula For Absolute Beginners
@@ -332,6 +383,35 @@ export function NewForm() {
               </h1>
             </>
           )}
+
+          {/* "What you get" offer box — variant-controlled, hidden by
+              default. Only renders when the matched variant has
+              show_offer_box:true AND an offer_title. */}
+          {variant?.show_offer_box && variant.offer_title ? (
+            <div className="mt-8 md:mt-10 max-w-2xl mx-auto rounded-2xl border-2 border-orange-200 bg-gradient-to-b from-orange-50/70 to-white p-5 md:p-7 text-left shadow-sm">
+              <p className="text-[11px] md:text-xs font-bold uppercase tracking-[0.2em] text-orange-700 mb-2">
+                What you get
+              </p>
+              <h2 className="text-xl md:text-2xl font-black text-gray-900 mb-2 leading-tight">
+                {variant.offer_title}
+              </h2>
+              {variant.offer_description ? (
+                <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-3">
+                  {variant.offer_description}
+                </p>
+              ) : null}
+              {variant.offer_bullets.length > 0 ? (
+                <ul className="space-y-1.5">
+                  {variant.offer_bullets.map((b, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm md:text-base text-gray-800">
+                      <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-orange-500" />
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         {/* Form card */}
@@ -480,7 +560,7 @@ export function NewForm() {
                 className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
               >
                 <ChevronsRight className="w-6 h-6" />
-                {submitting ? 'Reserving Your Spot...' : 'SIGN UP TO WATCH NOW'}
+                {submitting ? 'Reserving Your Spot...' : (variant?.cta_text || 'SIGN UP TO WATCH NOW')}
               </button>
 
               <p className="text-xs text-gray-500 leading-relaxed">
