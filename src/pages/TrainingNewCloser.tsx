@@ -19,7 +19,13 @@ import {
 import { MobileWalkthrough, useIsMobileViewport, type WalkthroughStep } from '../components/MobileWalkthrough';
 import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, AlertTriangle, ArrowDown, Check } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
-import { useExperimentInit } from '../experiments/useExperiment';
+import { useExperimentInit, useExperiment } from '../experiments/useExperiment';
+import {
+  AddToCalendarButton,
+  MutualFitMicroCopy,
+  LowCapitalLaunchStatChip,
+  AndroidCallFallback,
+} from '../experiments/variants';
 import {
   identifyUser,
   setPersonProperties,
@@ -50,14 +56,23 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 // user navigates back to step 1 of the walkthrough).
 let arrivalCelebrated = false;
 
-type Platform = 'ios' | 'android' | 'windows' | 'desktop';
+type Platform = 'ios' | 'android' | 'windows' | 'mac' | 'desktop';
 function detectPlatform(): Platform {
   if (typeof navigator === 'undefined') return 'desktop';
   const ua = navigator.userAgent;
   if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
   if (/Android/.test(ua)) return 'android';
   if (/Windows NT/i.test(ua)) return 'windows';
+  // Mac handles sms:// natively via Messages; everything else (Linux,
+  // ChromeOS, unknown) can't open sms:// at all and needs the QR
+  // fallback. 'desktop' here means "non-Mac desktop that needs QR."
+  if (/Mac OS X|Macintosh/.test(ua)) return 'mac';
   return 'desktop';
+}
+
+// Needs the QR / self-report block (sms:// won't work in-browser).
+function needsQrFallback(platform: Platform): boolean {
+  return platform === 'windows' || platform === 'desktop';
 }
 
 /* ───────────────────── closer-specific sections ──────────────────── */
@@ -638,6 +653,12 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false, travisH
   const [platform, setPlatform] = useState<Platform>('desktop');
   const { markDone, completed } = usePrepChecklist();
 
+  // Cycle-1 experiment variants for inside-banner inserts
+  const vIosCtaCoachName = useExperiment('closer-ios-cta-coach-name');
+  const vAndroidFallback = useExperiment('closer-android-call-fallback');
+  const vKnownATC        = useExperiment('closer-known-add-to-calendar');
+  const vHighMutual      = useExperiment('closer-high-capital-mutual-fit');
+
   useEffect(() => {
     setRegion(detectRegion());
     setPlatform(detectPlatform());
@@ -793,13 +814,23 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false, travisH
           /* Micro-ask: confirm via text */
           <div className={`bg-white border-2 border-gray-200 rounded-2xl shadow-sm ${compact ? 'p-5 animate-banner-rise-3' : 'p-6 md:p-7'}`}>
             <WarmCohortNudge travisHistory={travisHistory} location="closer" />
+            {/* Cycle-1 inserts above the CTA */}
+            {vKnownATC?.id === 'atc' && meeting?.start && !meeting.startUnknown && (
+              <AddToCalendarButton
+                startISO={meeting.start}
+                title={`Call with ${coachFirstName} — Passion Product strategy call`}
+                description={`See you ${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}. We'll text you the dial-in details.`}
+                location="closer"
+              />
+            )}
             <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
-              {platform === 'windows'
+              {needsQrFallback(platform)
                 ? "To confirm you'll attend:"
                 : "To confirm you'll attend, tap the button below and hit send:"}
             </p>
+            {vHighMutual?.id === 'mutual-fit' && <MutualFitMicroCopy location="closer" />}
 
-            {platform === 'windows' ? (
+            {needsQrFallback(platform) ? (
               <WindowsConfirmBlock
                 phoneDisplay={phone.display}
                 phoneRaw={phone.raw}
@@ -808,15 +839,22 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false, travisH
                 location="closer"
               />
             ) : (
-              <div className="flex items-stretch justify-center max-w-lg mx-auto">
-                <a
-                  href={`sms:${phone.raw}?&body=${smsBody}`}
-                  onClick={handleConfirmText}
-                  className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer active:scale-[0.98] ${completed.microAsk ? '' : 'animate-confirm-pulse-blue'}`}
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  Confirm via Text
-                </a>
+              <div className="flex flex-col items-center max-w-lg mx-auto">
+                <div className="flex items-stretch justify-center w-full">
+                  <a
+                    href={`sms:${phone.raw}?&body=${smsBody}`}
+                    onClick={handleConfirmText}
+                    className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer active:scale-[0.98] ${completed.microAsk ? '' : 'animate-confirm-pulse-blue'}`}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    {vIosCtaCoachName?.id === 'coach-name' && platform === 'ios'
+                      ? `Confirm with Coach ${coachFirstName}`
+                      : 'Confirm via Text'}
+                  </a>
+                </div>
+                {vAndroidFallback?.id === 'with-call-fallback' && platform === 'android' && (
+                  <AndroidCallFallback phoneRaw={phone.raw} location="closer" />
+                )}
               </div>
             )}
 
@@ -1037,20 +1075,36 @@ function CloserPageBody({
   const isLowCapital = p?.capital === 'none' || p?.capital === 'save';
   const showCreditCard = isLowCapital && p?.region === 'usa';
 
-  const allSteps: (WalkthroughStep | null)[] = [
-    {
-      key: 'banner',
-      label: 'Your Call',
-      content: <CloserConfirmationBanner meeting={meeting} firstName={firstName} compact travisHistory={p?.travisHistory} />,
-      gate: {
-        canAdvance: () => completed.microAsk,
-        title: 'Have you confirmed your call yet?',
-        body: 'We cancel slots that don\'t reply YES within 12 hours. Tap "Confirm via Text" above so we know you\'re coming.',
-        stayLabel: 'Go back and confirm',
-        advanceLabel: 'I\'ll do it later',
-      },
+  // Cycle-1 experiment hooks for layout + chip injection
+  const vLowCapitalChip = useExperiment('closer-low-capital-launch-stat');
+  const vVideoFirst     = useExperiment('closer-new-video-first');
+  const showLowCapitalChip = vLowCapitalChip?.id === 'chip';
+  const videoFirst = vVideoFirst?.id === 'video-first';
+  const researchVideoWithChip = (
+    <>
+      <ResearchVideo travisHistory={p?.travisHistory} />
+      {showLowCapitalChip && <LowCapitalLaunchStatChip location="closer" />}
+    </>
+  );
+
+  const bannerStep: WalkthroughStep = {
+    key: 'banner',
+    label: 'Your Call',
+    content: <CloserConfirmationBanner meeting={meeting} firstName={firstName} compact travisHistory={p?.travisHistory} />,
+    gate: {
+      canAdvance: () => completed.microAsk,
+      title: 'Have you confirmed your call yet?',
+      body: 'We cancel slots that don\'t reply YES within 12 hours. Tap "Confirm via Text" above so we know you\'re coming.',
+      stayLabel: 'Go back and confirm',
+      advanceLabel: 'I\'ll do it later',
     },
-    { key: 'research', label: 'Research', content: <ResearchVideo travisHistory={p?.travisHistory} /> },
+  };
+  const researchStep: WalkthroughStep = { key: 'research', label: 'Research', content: researchVideoWithChip };
+
+  const allSteps: (WalkthroughStep | null)[] = [
+    // Video-first variant (familiarity:new): research precedes banner so
+    // new visitors see Travis speak before being asked to confirm.
+    ...(videoFirst ? [researchStep, bannerStep] : [bannerStep, researchStep]),
     { key: 'passion-product-method', label: 'The Method', content: <PassionProductMethodSection /> },
     { key: 'accelerator-overview', label: 'Accelerator', content: <AcceleratorSection /> },
     { key: 'faq', label: 'FAQ', content: <ConfirmationFAQ p={p} location="closer" /> },
@@ -1078,10 +1132,11 @@ function CloserPageBody({
     );
   }
 
+  const desktopBanner = <CloserConfirmationBanner meeting={meeting} firstName={firstName} travisHistory={p?.travisHistory} />;
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <CloserConfirmationBanner meeting={meeting} firstName={firstName} travisHistory={p?.travisHistory} />
-      <ResearchVideo travisHistory={p?.travisHistory} />
+      {videoFirst ? researchVideoWithChip : desktopBanner}
+      {videoFirst ? desktopBanner : researchVideoWithChip}
       <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
       <PassionProductMethodSection />
       <AcceleratorSection />

@@ -43,7 +43,8 @@ export type ExperimentStatus = 'running' | 'completed';
  *  listed facets. Leaving a facet unset means "doesn't matter". */
 export interface SegmentTarget {
   device?: 'mobile' | 'desktop';
-  desktopOS?: 'mac' | 'windows';
+  desktopOS?: 'mac' | 'windows' | 'other';
+  mobileOS?: 'ios' | 'android';
   familiarity?: 'new' | 'known';
   capital?: 'high' | 'low';
 }
@@ -91,7 +92,163 @@ export interface Experiment {
 ──────────────────────────────────────────────────────────────────── */
 
 export const EXPERIMENTS: readonly Experiment[] = [
-  // Seeded empty - the first cycle's job is to propose + populate.
+  /* ─────────── CYCLE 1 (started 2026-10-01) ─────────── */
+
+  // Closer × mobile iOS: CTA personalization
+  // Baseline: mobile closer ~82% confirm — near ceiling, but iOS specifically
+  // is the dominant arm. Testing coach-name personalization for marginal lift.
+  {
+    id: 'closer-ios-cta-coach-name',
+    page: 'closer',
+    segment: { device: 'mobile', mobileOS: 'ios' },
+    hypothesis:
+      'Personalizing the CTA with the coach first name ("Confirm with Coach <X>") lifts click rate over the generic "Confirm via Text" among already-high-intent iOS mobile visitors.',
+    startedAt: '2026-10-01',
+    status: 'running',
+    variants: [
+      { id: 'control',    label: 'Confirm via Text' },
+      { id: 'coach-name', label: 'Confirm with Coach <Name>' },
+    ],
+  },
+
+  // Closer × mobile Android: tel: fallback escape hatch
+  // Baseline: Android confirm meaningfully lower than iOS on the same page -
+  // suspect flaky sms:// pre-fill on some Android messaging apps.
+  {
+    id: 'closer-android-call-fallback',
+    page: 'closer',
+    segment: { device: 'mobile', mobileOS: 'android' },
+    hypothesis:
+      'Android sms:// pre-fill is flaky across OEMs/messaging apps. Adding a tel: fallback link below the SMS button gives visitors whose compose window broke an escape hatch, lifting confirm rate.',
+    startedAt: '2026-10-01',
+    status: 'running',
+    variants: [
+      { id: 'control',            label: 'SMS button only' },
+      { id: 'with-call-fallback', label: 'SMS + tel: fallback link' },
+    ],
+  },
+
+  // Closer × familiarity:new: video-first page order
+  // Baseline: new (never + recent) at 70% vs known at 77% - new visitors
+  // need more trust-building before being asked to confirm.
+  {
+    id: 'closer-new-video-first',
+    page: 'closer',
+    segment: { familiarity: 'new' },
+    hypothesis:
+      'New visitors (never + recent) need to see the ResearchVideo before being asked to confirm. Placing the video above the confirm block builds enough trust to lift confirm clicks.',
+    startedAt: '2026-10-01',
+    status: 'running',
+    variants: [
+      { id: 'control',     label: 'Confirm first, then video' },
+      { id: 'video-first', label: 'Video first, then confirm' },
+    ],
+  },
+
+  // Setter × familiarity:new: social proof + Amazon Ads badge
+  {
+    id: 'setter-new-amazon-ads-chip',
+    page: 'setter',
+    segment: { familiarity: 'new' },
+    hypothesis:
+      "Social proof (14k students taught + Amazon Ads Verified Partner badge) rendered directly above the confirm CTA raises trust in a sub-population that doesn't know Travis yet, lifting confirm clicks.",
+    startedAt: '2026-10-01',
+    status: 'running',
+    variants: [
+      { id: 'control',    label: 'No chip above CTA' },
+      { id: 'proof-chip', label: 'Social proof + Amazon Ads chip above CTA' },
+    ],
+  },
+
+  // Closer × familiarity:known: Add-to-calendar button
+  {
+    id: 'closer-known-add-to-calendar',
+    page: 'closer',
+    segment: { familiarity: 'known' },
+    hypothesis:
+      "Visitors who have followed Travis for months+ already trust us - the risk is no-show, not no-trust. An Add-to-Calendar button above the confirm block captures intent via micro-commitment and should lift confirm follow-through.",
+    startedAt: '2026-10-01',
+    status: 'running',
+    variants: [
+      { id: 'control', label: 'No add-to-cal button' },
+      { id: 'atc',     label: 'Add to Google Calendar button above confirm' },
+    ],
+  },
+
+  // Setter × familiarity:known: within-24h expectation block
+  {
+    id: 'setter-known-within-24h',
+    page: 'setter',
+    segment: { familiarity: 'known' },
+    hypothesis:
+      "Known-cohort setter visitors have already engaged with Travis for months. A 'We'll text you within 24h' expectation-setting block above confirm reduces the between-signup-and-setter-call anxiety that drives drop-off.",
+    startedAt: '2026-10-01',
+    status: 'running',
+    variants: [
+      { id: 'control',   label: 'Baseline confirm block' },
+      { id: 'within-24h', label: '"We will text you within 24h" expectation block' },
+    ],
+  },
+
+  // Closer × capital:low: launch-stat chip + scroll button
+  {
+    id: 'closer-low-capital-launch-stat',
+    page: 'closer',
+    segment: { capital: 'low' },
+    hypothesis:
+      "Low-capital visitors (save + none) are secretly worried they can't afford this. A '40%+ launch under $2k' stat chip below the first video with a jump-to-examples button reassures them before the confirm ask.",
+    startedAt: '2026-10-01',
+    status: 'running',
+    variants: [
+      { id: 'control', label: 'No stat chip' },
+      { id: 'chip',    label: '40%+ launch stat + scroll-to-examples button' },
+    ],
+  },
+
+  // Setter × capital:low: same chip
+  {
+    id: 'setter-low-capital-launch-stat',
+    page: 'setter',
+    segment: { capital: 'low' },
+    hypothesis:
+      'Same reassurance as the closer-side low-capital test, pre-call. Low-capital setter visitors need to know the barrier is lower than they fear before they commit to the next step.',
+    startedAt: '2026-10-01',
+    status: 'running',
+    variants: [
+      { id: 'control', label: 'No stat chip' },
+      { id: 'chip',    label: '40%+ launch stat + scroll-to-examples button' },
+    ],
+  },
+
+  // Closer × capital:high: mutual-fit micro-copy
+  {
+    id: 'closer-high-capital-mutual-fit',
+    page: 'closer',
+    segment: { capital: 'high' },
+    hypothesis:
+      'High-capital visitors fear a hard-sell call. A single-line "This is a mutual-fit check, not a pitch" micro-copy above the confirm CTA reduces that fear and increases follow-through.',
+    startedAt: '2026-10-01',
+    status: 'running',
+    variants: [
+      { id: 'control',     label: 'No micro-copy' },
+      { id: 'mutual-fit',  label: '"Mutual-fit check, not a pitch" line above CTA' },
+    ],
+  },
+
+  // Setter × capital:high: same micro-copy
+  {
+    id: 'setter-high-capital-mutual-fit',
+    page: 'setter',
+    segment: { capital: 'high' },
+    hypothesis:
+      'Same reassurance pre-call. High-capital setter visitors drop off between signup and setter outreach when they expect a pitchy conversation. The micro-copy reframes the upcoming call.',
+    startedAt: '2026-10-01',
+    status: 'running',
+    variants: [
+      { id: 'control',     label: 'No micro-copy' },
+      { id: 'mutual-fit',  label: '"Mutual-fit check, not a pitch" line above CTA' },
+    ],
+  },
 ];
 
 /* ─────────────────────────── LOOKUP HELPERS ─────────────────────── */
@@ -118,6 +275,7 @@ export function matchesSegment(
 ): boolean {
   if (target.device       && !memberships.has(`device:${target.device}`))             return false;
   if (target.desktopOS    && !memberships.has(`desktopOS:${target.desktopOS}`))       return false;
+  if (target.mobileOS     && !memberships.has(`mobileOS:${target.mobileOS}`))         return false;
   if (target.familiarity  && !memberships.has(`familiarity:${target.familiarity}`))   return false;
   if (target.capital      && !memberships.has(`capital:${target.capital}`))           return false;
   return true;
@@ -186,6 +344,7 @@ function laneKeysFor(e: Experiment): string[] {
   const prefix = `${e.page}/`;
   if (e.segment.device)      keys.push(`${prefix}device:${e.segment.device}`);
   if (e.segment.desktopOS)   keys.push(`${prefix}desktopOS:${e.segment.desktopOS}`);
+  if (e.segment.mobileOS)    keys.push(`${prefix}mobileOS:${e.segment.mobileOS}`);
   if (e.segment.familiarity) keys.push(`${prefix}familiarity:${e.segment.familiarity}`);
   if (e.segment.capital)     keys.push(`${prefix}capital:${e.segment.capital}`);
   return keys;

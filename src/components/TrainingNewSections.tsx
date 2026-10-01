@@ -2384,10 +2384,31 @@ export function WindowsConfirmBlock({
   // messaging app with the body prefilled.
   const smsUri = `sms:${phoneRaw}?body=${smsBody}`;
 
+  // Windows users can't click the sms:// link (no handler), so we show
+  // a QR + text instructions. That means we have zero visibility into
+  // whether they ACTUALLY sent the text, since the confirm happens
+  // entirely off-browser. The self-report button below closes most of
+  // the measurement gap: 10s after the block appears (long enough for
+  // a real "scan + send" sequence to plausibly complete), a small "I
+  // just sent it" button fades in. One click fires
+  // `windows_confirm_self_reported`. Not ground truth (users can lie
+  // or forget) but turns an unmeasurable segment into one with signal.
+  const [selfReportVisible, setSelfReportVisible] = useState(false);
+  const [selfReported, setSelfReported] = useState(false);
+
   useEffect(() => {
     trackEvent('windows_confirm_block_shown', { region, location });
+    const t = setTimeout(() => setSelfReportVisible(true), 10_000);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleSelfReport = () => {
+    if (selfReported) return;
+    setSelfReported(true);
+    trackEvent('windows_confirm_self_reported', { region, location });
+    markConfirmClicked();
+  };
 
   return (
     <div className="max-w-lg mx-auto space-y-3">
@@ -2423,6 +2444,31 @@ export function WindowsConfirmBlock({
           </p>
         </div>
       </div>
+
+      {/* Self-report confirmation button - closes the Windows measurement
+          gap. Appears after a short delay so it reflects a real completion,
+          not a reflex click on page load. */}
+      {selfReportVisible && (
+        <button
+          type="button"
+          onClick={handleSelfReport}
+          disabled={selfReported}
+          className={`w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-colors ${
+            selfReported
+              ? 'bg-green-100 text-green-800 cursor-default'
+              : 'bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer'
+          }`}
+        >
+          {selfReported ? (
+            <>
+              <Check className="w-4 h-4" strokeWidth={3} />
+              Got it - thanks for confirming
+            </>
+          ) : (
+            <>I just sent the text</>
+          )}
+        </button>
+      )}
     </div>
   );
 }

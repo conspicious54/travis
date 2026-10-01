@@ -18,7 +18,13 @@ import {
 import { CheckCircle, Phone, Star, Shield, MessageSquare, AlertTriangle, ArrowDown, Check } from 'lucide-react';
 import { MobileWalkthrough, useIsMobileViewport, type WalkthroughStep } from '../components/MobileWalkthrough';
 import { getPersonalization, type Personalization } from '../lib/personalization';
-import { useExperimentInit } from '../experiments/useExperiment';
+import { useExperimentInit, useExperiment } from '../experiments/useExperiment';
+import {
+  AmazonAdsSocialProofChip,
+  Within24hExpectationBlock,
+  MutualFitMicroCopy,
+  LowCapitalLaunchStatChip,
+} from '../experiments/variants';
 import {
   identifyUser,
   setPersonProperties,
@@ -65,14 +71,23 @@ function detectRegion(): Region {
   return 'us';
 }
 
-type Platform = 'ios' | 'android' | 'windows' | 'desktop';
+type Platform = 'ios' | 'android' | 'windows' | 'mac' | 'desktop';
 
 function detectPlatform(): Platform {
   const ua = navigator.userAgent;
   if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
   if (/Android/.test(ua)) return 'android';
   if (/Windows NT/i.test(ua)) return 'windows';
+  // Mac handles sms:// natively via Messages; everything else (Linux,
+  // ChromeOS, unknown) can't open sms:// at all and needs the QR
+  // fallback. 'desktop' here means "non-Mac desktop that needs QR."
+  if (/Mac OS X|Macintosh/.test(ua)) return 'mac';
   return 'desktop';
+}
+
+// Needs the QR / self-report block (sms:// won't work in-browser).
+function needsQrFallback(platform: Platform): boolean {
+  return platform === 'windows' || platform === 'desktop';
 }
 
 /* vCard 3.0:
@@ -154,6 +169,11 @@ function SetterConfirmationBanner({
   const [platform, setPlatform] = useState<Platform>('desktop');
   const [saved, setSaved] = useState(false);
   const { markDone, completed } = usePrepChecklist();
+
+  // Cycle-1 experiment variants
+  const vNewProof    = useExperiment('setter-new-amazon-ads-chip');
+  const vKnown24h    = useExperiment('setter-known-within-24h');
+  const vHighMutual  = useExperiment('setter-high-capital-mutual-fit');
 
   useEffect(() => {
     setRegion(detectRegion());
@@ -277,13 +297,17 @@ function SetterConfirmationBanner({
         /* Micro-ask: confirm via text */
         <div className={`bg-white border-2 border-gray-200 rounded-2xl shadow-sm ${compact ? 'p-5 animate-banner-rise-3' : 'p-6 md:p-7'}`}>
           <WarmCohortNudge travisHistory={travisHistory} location="setter" />
+          {/* Cycle-1 above-CTA inserts, each gated by the experiment hook */}
+          {vNewProof?.id === 'proof-chip' && <AmazonAdsSocialProofChip location="setter" />}
+          {vKnown24h?.id === 'within-24h' && <Within24hExpectationBlock location="setter" />}
           <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
-            {platform === 'windows'
+            {needsQrFallback(platform)
               ? "To confirm you'll be available for the call:"
               : "To confirm you'll be available for the call, tap the button below and hit send:"}
           </p>
+          {vHighMutual?.id === 'mutual-fit' && <MutualFitMicroCopy location="setter" />}
 
-          {platform === 'windows' ? (
+          {needsQrFallback(platform) ? (
             <WindowsConfirmBlock
               phoneDisplay={phone.display}
               phoneRaw={phone.raw}
@@ -499,6 +523,17 @@ function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPage
   const isLowCapital = p?.capital === 'none' || p?.capital === 'save';
   const showCreditCard = isLowCapital && p?.region === 'usa';
 
+  // Cycle-1: low-capital stat chip renders directly after ResearchVideo
+  // when the experiment arm is active.
+  const vLowCapitalChip = useExperiment('setter-low-capital-launch-stat');
+  const showLowCapitalChip = vLowCapitalChip?.id === 'chip';
+  const researchVideoWithChip = (
+    <>
+      <ResearchVideo travisHistory={p?.travisHistory} />
+      {showLowCapitalChip && <LowCapitalLaunchStatChip location="setter" />}
+    </>
+  );
+
   /* Build the walkthrough step list. Same content components as
      desktop, just sliced into individually-paged steps. No coach
      step (setter doesn't know which closer the call will be with
@@ -517,7 +552,7 @@ function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPage
         advanceLabel: 'I\'ll do it later',
       },
     },
-    { key: 'research', label: 'Research', content: <ResearchVideo travisHistory={p?.travisHistory} /> },
+    { key: 'research', label: 'Research', content: researchVideoWithChip },
     { key: 'passion-product-method', label: 'The Method', content: <PassionProductMethodSection /> },
     { key: 'accelerator-overview', label: 'Accelerator', content: <AcceleratorSection /> },
     { key: 'faq', label: 'FAQ', content: <ConfirmationFAQ p={p} location="setter" /> },
@@ -550,7 +585,7 @@ function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPage
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <SetterConfirmationBanner firstName={firstName} onSaved={() => {}} travisHistory={p?.travisHistory} />
-      <ResearchVideo travisHistory={p?.travisHistory} />
+      {researchVideoWithChip}
       <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
       <PassionProductMethodSection />
       <AcceleratorSection />

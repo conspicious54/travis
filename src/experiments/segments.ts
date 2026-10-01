@@ -24,13 +24,15 @@
 import type { TravisHistory, Capital } from '../lib/personalization';
 
 export type Device = 'mobile' | 'desktop';
-export type DesktopOS = 'mac' | 'windows' | null; // null when mobile
+export type DesktopOS = 'mac' | 'windows' | 'other' | null; // null when mobile
+export type MobileOS = 'ios' | 'android' | null;            // null when desktop
 export type Familiarity = 'new' | 'known' | 'unknown';
 export type CapitalBucket = 'high' | 'low' | 'unknown';
 
 export interface SegmentFacts {
   device: Device;
   desktopOS: DesktopOS;
+  mobileOS: MobileOS;
   familiarity: Familiarity;
   capital: CapitalBucket;
 }
@@ -42,6 +44,7 @@ export function visitorMemberships(facts: SegmentFacts): Set<string> {
   const m = new Set<string>();
   m.add(`device:${facts.device}`);
   if (facts.desktopOS) m.add(`desktopOS:${facts.desktopOS}`);
+  if (facts.mobileOS) m.add(`mobileOS:${facts.mobileOS}`);
   if (facts.familiarity !== 'unknown') m.add(`familiarity:${facts.familiarity}`);
   if (facts.capital !== 'unknown') m.add(`capital:${facts.capital}`);
   return m;
@@ -64,7 +67,13 @@ export function detectDesktopOS(ua: string): DesktopOS {
   if (/iPhone|iPad|iPod|Android/.test(ua)) return null;
   if (/Mac OS X|Macintosh/.test(ua)) return 'mac';
   if (/Windows NT/i.test(ua)) return 'windows';
-  return null; // Linux etc. fall out of this lane too
+  return 'other'; // Linux, ChromeOS, etc.
+}
+
+export function detectMobileOS(ua: string): MobileOS {
+  if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
+  if (/Android/.test(ua)) return 'android';
+  return null;
 }
 
 export function mapFamiliarity(history: TravisHistory | undefined): Familiarity {
@@ -88,6 +97,7 @@ export function resolveSegmentFacts(input: {
   return {
     device: detectDevice(input.userAgent),
     desktopOS: detectDesktopOS(input.userAgent),
+    mobileOS: detectMobileOS(input.userAgent),
     familiarity: mapFamiliarity(input.travisHistory),
     capital: mapCapitalBucket(input.capital),
   };
