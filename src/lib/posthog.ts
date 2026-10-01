@@ -25,7 +25,22 @@ declare global {
       isFeatureEnabled: (key: string) => boolean | undefined;
       onFeatureFlags: (cb: (flags: string[]) => void) => void;
       reloadFeatureFlags: () => void;
+      get_distinct_id?: () => string;
     };
+  }
+}
+
+/** PostHog's stable per-visitor id. Used by the experiment framework
+ *  to deterministically assign variants. Returns null if PostHog
+ *  hasn't loaded yet — callers fall back to 'anon' which will stop
+ *  being used once PostHog hydrates and the hook re-runs. */
+export function getDistinctId(): string | null {
+  const p = ph();
+  if (!p) return null;
+  try {
+    return p.get_distinct_id?.() ?? null;
+  } catch {
+    return null;
   }
 }
 
@@ -260,9 +275,27 @@ export function setPersonProperties(properties: Record<string, any>) {
   ph()?.setPersonProperties(cleaned);
 }
 
-/** Fire a custom event */
+/** Fire a custom event. Every event is auto-enriched with the current
+    visitor's active experiment variant assignments as `active_experiments`
+    (array of "<experimentId>:<variantId>" strings). This lets any insight
+    in PostHog filter / group by variant without each call site needing
+    to know which experiments it belongs to.
+
+    The experiments module registers its token-reader with us at import
+    time via setActiveExperimentsReader to avoid a static import cycle
+    (useExperiment imports trackEvent from this file). */
+let activeExperimentsReader: (() => string[]) | null = null;
+
+export function setActiveExperimentsReader(reader: () => string[]): void {
+  activeExperimentsReader = reader;
+}
+
 export function trackEvent(event: string, properties?: Record<string, any>) {
-  ph()?.capture(event, properties);
+  const active = activeExperimentsReader ? activeExperimentsReader() : [];
+  const enriched = active.length > 0
+    ? { ...properties, active_experiments: active }
+    : properties;
+  ph()?.capture(event, enriched);
 }
 
 /* ───── pre-built events for our funnel ───────────────────────────── */

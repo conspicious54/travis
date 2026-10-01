@@ -19,6 +19,7 @@ import {
 import { MobileWalkthrough, useIsMobileViewport, type WalkthroughStep } from '../components/MobileWalkthrough';
 import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, AlertTriangle, ArrowDown, Check } from 'lucide-react';
 import { getPersonalization, type Personalization } from '../lib/personalization';
+import { useExperimentInit } from '../experiments/useExperiment';
 import {
   identifyUser,
   setPersonProperties,
@@ -924,6 +925,7 @@ export function TrainingNewCloser() {
   useScrollDepth('closer');
   useDwellHeartbeat('closer');
   useSproutvideoTracking('closer');
+  useExperimentInit({ page: 'closer' });
 
   useEffect(() => {
     setPopupRegion(detectRegion());
@@ -970,6 +972,7 @@ export function TrainingNewCloser() {
       reason: personalization.reason,
       situation: personalization.situation,
       capital: personalization.capital,
+      travis_history: personalization.travisHistory,
       has_meeting: !!urlMeeting,
     });
   }, []);

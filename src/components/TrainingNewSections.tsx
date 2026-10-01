@@ -373,7 +373,13 @@ export function ResearchVideo({ travisHistory }: { travisHistory?: TravisHistory
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
   const chapterReportedRef = useRef<Set<number>>(new Set());
+  // Watch-depth buckets reported once each per page mount. One of the
+  // three experiment KPIs - "percentage of the video watched" is read
+  // off these events in PostHog.
+  const watchBucketsReportedRef = useRef<Set<number>>(new Set());
+  const highWaterPctRef = useRef<number>(0);
 
   // Prop wins; if absent, read from localStorage personalization so
   // standalone usages (Training / TrainingNew pages) get the
@@ -448,14 +454,23 @@ export function ResearchVideo({ travisHistory }: { travisHistory?: TravisHistory
         if (data?.event === 'onStateChange' && data?.info === 1) {
           trackEvent('main_video_started', { variant, video_id: videoId });
           setIsPlaying(true);
+          // Fetch duration once per play - needed for watch-pct buckets.
+          iframeRef.current?.contentWindow?.postMessage(
+            JSON.stringify({ event: 'command', func: 'getDuration' }),
+            '*'
+          );
         }
         // state 2 = PAUSED — stop polling for currentTime
         if (data?.event === 'onStateChange' && data?.info === 2) {
           setIsPlaying(false);
         }
-        // Response to getCurrentTime commands arrives inside infoDelivery
+        // Response to getCurrentTime / getDuration commands arrives inside
+        // infoDelivery (duration arrives as info.duration).
         if (data?.event === 'infoDelivery' && typeof data?.info?.currentTime === 'number') {
           setCurrentTime(data.info.currentTime);
+        }
+        if (data?.event === 'infoDelivery' && typeof data?.info?.duration === 'number' && data.info.duration > 0) {
+          setDuration(data.info.duration);
         }
       } catch {
         /* ignore */
@@ -470,11 +485,10 @@ export function ResearchVideo({ travisHistory }: { travisHistory?: TravisHistory
   }, [markDone, videoId, variant]);
 
   // While playing, poll YouTube for currentTime. YouTube doesn't push
-  // time updates on its own — polling is how we drive the chapter panel.
-  // No effect if we don't have chapters for this video (avoids
-  // unnecessary postMessage traffic).
+  // time updates on its own — polling drives both the chapter panel
+  // and the watch-pct bucket events (one of the 3 experiment KPIs).
   useEffect(() => {
-    if (!isPlaying || !chapters) return;
+    if (!isPlaying) return;
     const iv = setInterval(() => {
       iframeRef.current?.contentWindow?.postMessage(
         JSON.stringify({ event: 'command', func: 'getCurrentTime' }),
@@ -482,7 +496,50 @@ export function ResearchVideo({ travisHistory }: { travisHistory?: TravisHistory
       );
     }, 750);
     return () => clearInterval(iv);
-  }, [isPlaying, chapters]);
+  }, [isPlaying]);
+
+  // Report 25/50/75/100% watch buckets once each. Keeps a high-water
+  // mark so a user who seeks forward past a threshold still records the
+  // bucket, while backwards-seeking doesn't double-fire. Separate from
+  // chapter telemetry because the chapter structure differs by video
+  // but watch-pct is uniform across all variants.
+  useEffect(() => {
+    if (duration <= 0 || currentTime <= 0) return;
+    const pct = (currentTime / duration) * 100;
+    if (pct > highWaterPctRef.current) highWaterPctRef.current = pct;
+    for (const bucket of [25, 50, 75, 100] as const) {
+      if (highWaterPctRef.current >= bucket && !watchBucketsReportedRef.current.has(bucket)) {
+        watchBucketsReportedRef.current.add(bucket);
+        trackEvent('main_video_watch_bucket', {
+          bucket,
+          variant,
+          video_id: videoId,
+          duration_sec: Math.round(duration),
+        });
+      }
+    }
+  }, [currentTime, duration, variant, videoId]);
+
+  // Fire a final high-water-mark pct on page hide / unmount so even
+  // visitors who closed the tab mid-video contribute a watch-pct point.
+  useEffect(() => {
+    const emitFinal = () => {
+      if (highWaterPctRef.current <= 0) return;
+      trackEvent('main_video_final_pct', {
+        pct: Math.round(highWaterPctRef.current),
+        variant,
+        video_id: videoId,
+      });
+    };
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') emitFinal();
+    };
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      document.removeEventListener('visibilitychange', onHide);
+      emitFinal();
+    };
+  }, [variant, videoId]);
 
   // Derive current chapter from playback time. -1 before playback starts.
   const currentChapterIdx = (() => {

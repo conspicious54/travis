@@ -18,6 +18,7 @@ import {
 import { CheckCircle, Phone, Star, Shield, MessageSquare, AlertTriangle, ArrowDown, Check } from 'lucide-react';
 import { MobileWalkthrough, useIsMobileViewport, type WalkthroughStep } from '../components/MobileWalkthrough';
 import { getPersonalization, type Personalization } from '../lib/personalization';
+import { useExperimentInit } from '../experiments/useExperiment';
 import {
   identifyUser,
   setPersonProperties,
@@ -424,6 +425,7 @@ export function TrainingNewSetter() {
   useScrollDepth('setter');
   useDwellHeartbeat('setter');
   useSproutvideoTracking('setter');
+  useExperimentInit({ page: 'setter' });
 
   useEffect(() => {
     setPopupRegion(detectRegion());
@@ -458,6 +460,7 @@ export function TrainingNewSetter() {
       reason: personalization.reason,
       situation: personalization.situation,
       capital: personalization.capital,
+      travis_history: personalization.travisHistory,
     });
   }, []);
 
