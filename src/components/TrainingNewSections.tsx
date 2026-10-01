@@ -302,38 +302,50 @@ const MONTHLY_VIDEO_IDS: readonly string[] = [
 
 type VideoVariant = 'new_audience' | 'monthly';
 
-/* Per-video chapter timings. Key is the YouTube video ID. Only videos
-   in this map render the on-page chapter panel; anything else plays
-   without chapters. Add a new entry each month when the monthly video
-   is re-recorded — timings come from the recording session. Timestamps
-   are seconds into the video where each chapter starts. */
+/* Chapter timings for the on-page chapter panel.
+
+   Every monthly video follows the same 6-chapter template (titles and
+   timings held constant across recordings), so one shared MONTHLY_CHAPTERS
+   definition covers all entries in MONTHLY_VIDEO_IDS without needing a
+   per-video override each month.
+
+   The due-diligence video (shown to the cold cohort) has its own
+   8-chapter structure and is keyed separately.
+
+   Timestamps are seconds into the video where each chapter starts. */
 type VideoChapter = { title: string; startSec: number };
-const VIDEO_CHAPTERS_BY_ID: Record<string, readonly VideoChapter[]> = {
-  // Aug 2026 monthly video (non-due-diligence — warm cohort:
-  // months / over_year / unknown → gets the momentum / "you've been
-  // watching, now act" framing)
-  'Aycx0nGFe5I': [
-    { title: 'You Just Beat 90% of My Audience',   startSec: 0 },
-    { title: "Why You've Been Stuck",              startSec: 67 },
-    { title: 'Why Right Now Is Different',         startSec: 163 },
-    { title: 'The One Regret Every Student Has',   startSec: 329 },
-    { title: 'Two Versions of You in 6 Months',    startSec: 382 },
-    { title: 'The Ask',                            startSec: 518 },
-  ],
-  // Due-diligence video (cold cohort: never / recent → gets the
-  // "who am I / here's my track record / do your research with me"
-  // framing). Wired via NEW_AUDIENCE_VIDEO_ID in pickResearchVideo.
-  '3r8rmP0Eh6Q': [
-    { title: 'You Were Going to Google Me Anyway',  startSec: 0 },
-    { title: 'Who I Am',                            startSec: 47 },
-    { title: "What I've Actually Built",            startSec: 124 },
-    { title: 'How My Students Actually Do',         startSec: 274 },
-    { title: 'What I Actually Promise',             startSec: 331 },
-    { title: 'Inside the Program',                  startSec: 431 },
-    { title: 'The Accountability Difference',       startSec: 496 },
-    { title: 'Do the Research With Me',             startSec: 572 },
-  ],
-};
+
+const MONTHLY_CHAPTERS: readonly VideoChapter[] = [
+  { title: 'You Just Beat 90% of My Audience',   startSec: 0 },
+  { title: "Why You've Been Stuck",              startSec: 67 },
+  { title: 'Why Right Now Is Different',         startSec: 163 },
+  { title: 'The One Regret Every Student Has',   startSec: 329 },
+  { title: 'Two Versions of You in 6 Months',    startSec: 382 },
+  { title: 'The Ask',                            startSec: 518 },
+];
+
+const NEW_AUDIENCE_CHAPTERS: readonly VideoChapter[] = [
+  { title: 'You Were Going to Google Me Anyway',  startSec: 0 },
+  { title: 'Who I Am',                            startSec: 47 },
+  { title: "What I've Actually Built",            startSec: 124 },
+  { title: 'How My Students Actually Do',         startSec: 274 },
+  { title: 'What I Actually Promise',             startSec: 331 },
+  { title: 'Inside the Program',                  startSec: 431 },
+  { title: 'The Accountability Difference',       startSec: 496 },
+  { title: 'Do the Research With Me',             startSec: 572 },
+];
+
+/* Resolve chapters by variant + id. Monthly videos all share one
+   chapter set; the new-audience video has its own. Anything else
+   (future one-off videos, say) returns null and hides the panel. */
+function getChaptersFor(
+  videoId: string,
+  variant: VideoVariant
+): readonly VideoChapter[] | null {
+  if (variant === 'monthly') return MONTHLY_CHAPTERS;
+  if (videoId === NEW_AUDIENCE_VIDEO_ID) return NEW_AUDIENCE_CHAPTERS;
+  return null;
+}
 
 function formatChapterTime(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -382,10 +394,10 @@ export function ResearchVideo({ travisHistory }: { travisHistory?: TravisHistory
     [effectiveHistory]
   );
 
-  // Chapters render only when we've catalogued timings for this
-  // specific video ID (see VIDEO_CHAPTERS_BY_ID). New monthly recordings
-  // get chapters by adding an entry — no other code change needed.
-  const chapters = VIDEO_CHAPTERS_BY_ID[videoId];
+  // All monthly videos share one chapter template; the new-audience
+  // video has its own. Added monthly recordings pick up chapters
+  // automatically — no code change required.
+  const chapters = getChaptersFor(videoId, variant);
 
   useEffect(() => {
     // Record which variant the visitor saw - lets us compare
