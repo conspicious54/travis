@@ -44,7 +44,7 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 type Region = 'us' | 'eu' | 'aunz';
 
 const PHONE_NUMBERS: Record<Region, { display: string; raw: string; label: string }> = {
-  us:   { display: '(661) 443-6480',    raw: '+16614436480',  label: 'USA / Canada' },
+  us:   { display: '(405) 347-4762',    raw: '+14053474762',  label: 'USA / Canada' },
   eu:   { display: '+44 7723 573445',   raw: '+447723573445', label: 'UK / Europe' },
   aunz: { display: '+61 485 041 884',   raw: '+61485041884',  label: 'Australia / NZ' },
 };
@@ -78,15 +78,15 @@ function detectPlatform(): Platform {
    - FN: is the display name (what iOS/Android Contacts shows)
    - N:  is the structured name used for sorting (last;first;...)
    We put "(Travis' coach)" in the surname slot so iOS's
-   sort-by-last-name groups Santiago near Travis-related contacts,
+   sort-by-last-name groups the coach near Travis-related contacts,
    while the FN drives the actual displayed contact card label.
    Curly apostrophe (U+2019) used to match the brand styling.  */
 function generateVCard(phone: string): string {
   return [
     'BEGIN:VCARD',
     'VERSION:3.0',
-    "N:(Travis’ coach);Santiago;;;",
-    "FN:Santiago (Travis’ coach)",
+    "N:(Travis’ coach);Ibrahim;;;",
+    "FN:Ibrahim (Travis’ coach)",
     `TEL;TYPE=CELL:${phone}`,
     'EMAIL:travis@travismarziani.com',
     'NOTE:Save this contact so you recognize the number when we call.',
@@ -100,7 +100,7 @@ function downloadVCard(phone: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Santiago-Travis-Coach.vcf';
+  a.download = 'Ibrahim-Travis-Coach.vcf';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -175,9 +175,9 @@ function SetterConfirmationBanner({
   const isMobile = platform === 'ios' || platform === 'android';
 
   // Setter flow has no booked meeting yet, so we can't know which
-  // coach will end up taking the call. Default to Santiago - he's
+  // coach will end up taking the call. Default to Ibrahim - he's
   // currently the active setter doing the first outreach.
-  const coachFirstName = 'Santiago';
+  const coachFirstName = 'Ibrahim';
 
   usePhoneCopyTracking(phone.display, 'setter', region);
   const armAppSwitch = useConfirmAppSwitch('setter');
@@ -246,11 +246,11 @@ function SetterConfirmationBanner({
           We'll be calling you from{' '}
           <span className="font-bold text-gray-900">{phone.display}</span>.
         </p>
-        {/* "Save Santiago" line is desktop-only in compact mode -
+        {/* "Save Ibrahim" line is desktop-only in compact mode -
             redundant on mobile where save-to-contacts button is right below */}
         {!compact && (
           <p className="text-sm md:text-base text-gray-500 mb-10">
-            Save it as <span className="font-bold text-gray-700">"Santiago (Travis’ coach)"</span> so you know it's us when we call.
+            Save it as <span className="font-bold text-gray-700">"Ibrahim (Travis’ coach)"</span> so you know it's us when we call.
           </p>
         )}
 
@@ -344,7 +344,7 @@ function SetterConfirmationBanner({
             {saved ? (
               <div className="inline-flex items-center gap-2 bg-green-50 border-2 border-green-300 rounded-xl px-5 py-3 text-green-800 font-bold text-sm">
                 <CheckCircle className="w-5 h-5" />
-                Santiago saved to your contacts.
+                Ibrahim saved to your contacts.
               </div>
             ) : (
               <button
@@ -352,7 +352,7 @@ function SetterConfirmationBanner({
                 className="inline-flex items-center gap-2 px-7 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors shadow-md text-sm md:text-base cursor-pointer"
               >
                 <Phone className="w-4 h-4" />
-                Save Santiago to Contacts
+                Save Ibrahim to Contacts
               </button>
             )}
           </div>
@@ -363,7 +363,7 @@ function SetterConfirmationBanner({
             <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
               <li>Open Contacts</li>
               <li>Add <span className="font-mono font-bold">{phone.display}</span></li>
-              <li>Save as <span className="font-bold">"Santiago (Travis’ coach)"</span></li>
+              <li>Save as <span className="font-bold">"Ibrahim (Travis’ coach)"</span></li>
             </ol>
           </div>
         )}
@@ -396,7 +396,7 @@ function SetterFinalCTA({ firstName }: { firstName: string }) {
                 Check your email
               </p>
               <p className="text-white font-bold text-base md:text-lg leading-snug mb-2">
-                Look for an email titled <span className="text-orange-300">"I need to tell you something before your call"</span>
+                Look for an email titled <span className="text-orange-300">"Please confirm: your Amazon strategy call"</span>
               </p>
               <p className="text-slate-400 text-sm leading-relaxed">
                 It has important info for your call. Open it, read it, and you'll be ready to go.
@@ -461,7 +461,7 @@ export function TrainingNewSetter() {
     });
   }, []);
 
-  const popupCoach = 'Santiago';
+  const popupCoach = 'Ibrahim';
   const popupSmsBody = encodeURIComponent(
     `Hi Coach ${popupCoach}, YES, confirming my call${p?.firstName ? ` - ${p.firstName}` : ''}`
   );

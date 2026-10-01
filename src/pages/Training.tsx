@@ -62,7 +62,7 @@ function FinalCTA({ firstName }: { firstName: string }) {
                 Check your email
               </p>
               <p className="text-white font-bold text-base md:text-lg leading-snug mb-2">
-                Look for an email titled <span className="text-orange-300">"I need to tell you something before your call"</span>
+                Look for an email titled <span className="text-orange-300">"Please confirm: your Amazon strategy call"</span>
               </p>
               <p className="text-slate-400 text-sm leading-relaxed">
                 It has important info for your call. Open it, read it, and you'll be ready to go.

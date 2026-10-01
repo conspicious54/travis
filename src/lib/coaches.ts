@@ -107,9 +107,19 @@ export const COACHES: Record<string, Coach> = {
       "Ty is one of my newest in-house Amazon coaches at Passion Product. Sharp, focused, and the kind of coach who'll cut straight to what actually matters for your situation.",
     bio: "He's been trained directly on the Passion Product method and is working with our students through every stage of their launch. On your call he'll help you get clear on the exact next steps for where you're at right now.",
   },
-  // Santiago is a setter - kept here so getCoachByOwnerName resolves him
-  // if a HubSpot owner happens to use his name. Setter SMS confirmations
-  // also reference this entry via firstName.
+  // Setters below - kept here so getCoachByOwnerName resolves them when a
+  // HubSpot owner's name matches. Setter SMS/vCard default is now Ibrahim.
+  'ibrahim cisse': {
+    id: 'ibrahim',
+    firstName: 'Ibrahim',
+    fullName: 'Ibrahim Cissé',
+    role: 'Passion Product Setter',
+    tenure: 'On the Passion Product team',
+    photoUrl: '',
+    travisIntro:
+      "Ibrahim is on our team at Passion Product. He's the first person you'll talk to before your strategy call.",
+    bio: "He'll get you set up with the right next steps and make sure you're matched with the right coach for your situation.",
+  },
   'santiago espinoza': {
     id: 'santiago',
     firstName: 'Santiago',

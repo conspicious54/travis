@@ -671,12 +671,12 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false, travisH
 
   // Resolve the booked coach's first name so the confirmation text opens
   // with "Hi Coach <Name>" - lets the coach auto-identify who's texting.
-  // Falls back to Jesse when HubSpot hasn't returned an owner or the
+  // Falls back to Ibrahim when HubSpot hasn't returned an owner or the
   // owner is still the generic "Passion Product Team" placeholder.
   const coachFirstName = (() => {
     const organizer = meeting?.organizer?.trim();
-    if (!organizer || organizer === 'Passion Product Team') return 'Jesse';
-    return organizer.split(/\s+/)[0] || 'Jesse';
+    if (!organizer || organizer === 'Passion Product Team') return 'Ibrahim';
+    return organizer.split(/\s+/)[0] || 'Ibrahim';
   })();
 
   const confirmationBody = (() => {
@@ -888,7 +888,7 @@ function CloserFinalCTA({ meeting, firstName }: { meeting: MeetingInfo | null; f
                 Check your email
               </p>
               <p className="text-white font-bold text-base md:text-lg leading-snug mb-2">
-                Look for an email titled <span className="text-orange-300">"I need to tell you something before your call"</span>
+                Look for an email titled <span className="text-orange-300">"Please confirm: your Amazon strategy call"</span>
               </p>
               <p className="text-slate-400 text-sm leading-relaxed">
                 It has important info for your call. Open it, read it, and you'll be ready to go.
@@ -976,8 +976,8 @@ export function TrainingNewCloser() {
 
   const popupCoach = (() => {
     const organizer = meeting?.organizer?.trim();
-    if (!organizer || organizer === 'Passion Product Team') return 'Jesse';
-    return organizer.split(/\s+/)[0] || 'Jesse';
+    if (!organizer || organizer === 'Passion Product Team') return 'Ibrahim';
+    return organizer.split(/\s+/)[0] || 'Ibrahim';
   })();
   const popupPhone = getCloserPhone(meeting?.organizer, popupRegion);
   const popupFullName = [

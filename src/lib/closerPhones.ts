@@ -52,6 +52,17 @@ const CLOSER_PHONES: Record<string, CloserPhoneMap> = {
     eu:   { display: '+44 7458 157796',  raw: '+447458157796', label: 'Benjamin - UK' },
     aunz: { display: '+61 468 081 873',  raw: '+61468081873',  label: 'Benjamin - AU' },
   },
+  'alexis fuentes': {
+    us:   { display: '(509) 740-0380',   raw: '+15097400380',  label: 'Alexis - US' },
+    eu:   { display: '+44 7361 590144',  raw: '+447361590144', label: 'Alexis - UK' },
+    aunz: { display: '+61 485 038 611',  raw: '+61485038611',  label: 'Alexis - AU' },
+  },
+  // HubSpot owner name is "Tycho" / "Ty Moolenaar" - matcher is forgiving.
+  'tycho': {
+    us:   { display: '(830) 289-5348',   raw: '+18302895348',  label: 'Ty - US' },
+    eu:   { display: '+44 7915 921445',  raw: '+447915921445', label: 'Ty - UK' },
+    aunz: { display: '+61 468 081 873',  raw: '+61468081873',  label: 'Ty - AU' },
+  },
 };
 
 /**

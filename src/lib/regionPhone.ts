@@ -6,9 +6,9 @@
 export type Region = 'us' | 'eu' | 'aunz';
 
 export const PHONE_NUMBERS: Record<Region, { display: string; raw: string; label: string }> = {
-  us:   { display: '(830) 357-7613',   raw: '+18303577613',  label: 'US / Canada' },
-  eu:   { display: '+44 7853 306509',  raw: '+447853306509', label: 'Europe / UK' },
-  aunz: { display: '+61 489 089 374',  raw: '+61489089374',  label: 'Australia / NZ' },
+  us:   { display: '(405) 347-4762',   raw: '+14053474762',  label: 'US / Canada' },
+  eu:   { display: '+44 7723 573445',  raw: '+447723573445', label: 'Europe / UK' },
+  aunz: { display: '+61 485 041 884',  raw: '+61485041884',  label: 'Australia / NZ' },
 };
 
 export function detectRegion(): Region {
