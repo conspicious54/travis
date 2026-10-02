@@ -324,48 +324,49 @@ export function NewForm() {
   const headlineText = (variant?.headline) || DEFAULT_HEADLINE;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white text-gray-900">
-      {/* Container width matches CF's actual form area (~770px in
-          their viewport). Previously max-w-4xl (896px) was ~15%
-          wider than CF's, which let the eyebrow fit on one line
-          and gave the whole hero different proportions than the
-          reference. max-w-3xl (768px) is a much closer match. */}
-      <main className="max-w-3xl mx-auto px-5 pt-8 md:pt-12 pb-16">
-        {/* Logo header — matches the CF lead page. Self-hosted on
-            the passionproduct.com WordPress CDN (same image CF uses). */}
-        <div className="flex justify-center mb-6 md:mb-8">
+    <div className="min-h-screen bg-white text-gray-900">
+      {/* Container width matches the CF lead page's actual form-area
+          width (~1088px at 1440 viewport). Prior max-w-3xl (768) was
+          ~30% narrower than CF, which pushed everything to the center
+          and shrank the hero. Measured from the live CF page, not
+          guessed — see cycle 2 diff notes. */}
+      <main className="max-w-[1088px] mx-auto px-5 pt-6 md:pt-10 pb-16">
+        {/* Logo header. CF renders at ~122x62 at every viewport;
+            matching exactly so the fixed-pixel size doesn't swell
+            on desktop like h-16 md:h-20 was doing (159x80). */}
+        <div className="flex justify-center mb-5 md:mb-6">
           <img
             src={LOGO_URL}
             alt="Passion Product"
-            className="h-16 md:h-20 w-auto"
+            className="h-[62px] w-auto"
             loading="eager"
           />
         </div>
 
-        {/* Hero — CF-matching copy AND sizing by default; variant
-            overrides headline / supporting_copy when a UTM campaign
-            matches. Sizes derived from the CF page's actual CSS:
-              Eyebrow: 1rem mobile / 1.53rem desktop, font-weight 700
-              Headline: 1.25rem mobile / 2.65rem desktop, font-weight 900
-            Line-heights and letter-spacing loosened accordingly so
-            the long headline doesn't crush into itself. */}
+        {/* Hero — sizes, weights, colors, letter-spacing all pulled
+            from the live CF page via computed CSS inspection. Measured
+            values (mobile 375 / desktop 1440):
+              Eyebrow:  17px / 36.72px, weight 400, letter-spacing 0.48px,
+                        line-height 140% / 100%, color #000
+              Headline: 21.25px / 63.6px, weight 900, letter-spacing 0.48px,
+                        line-height 140% / 120%, color #F28000 (solid)
+            CF uses Oswald; we keep our Poppins stack (user approved
+            the font swap). Everything else is 1-for-1. */}
         <div className="text-center mb-8 md:mb-10">
           {eyebrowText ? (
-            <p className="text-base md:text-2xl font-bold text-gray-800 leading-snug max-w-3xl mx-auto mb-3 md:mb-4">
+            <p className="text-[17px] md:text-[36.72px] font-normal text-black leading-[1.4] md:leading-none tracking-[0.48px] mb-3 md:mb-4">
               {eyebrowText === DEFAULT_EYEBROW ? (
                 <>
                   Last Year, First Time Amazon Sellers Made Over{' '}
-                  <span className="font-black text-gray-900">$140 Billion</span> In Sales
+                  <span className="font-black">$140 Billion</span> In Sales
                 </>
               ) : (
                 eyebrowText
               )}
             </p>
           ) : null}
-          <h1 className="text-xl md:text-4xl lg:text-[2.65rem] font-black tracking-normal leading-tight">
-            <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">
-              {headlineText}
-            </span>
+          <h1 className="text-[21.25px] md:text-[63.6px] font-black tracking-[0.48px] leading-[1.4] md:leading-[1.2] text-[#F28000]">
+            {headlineText}
           </h1>
 
           {/* "What you get" offer box — variant-controlled, hidden by
@@ -503,7 +504,7 @@ export function NewForm() {
                   inputMode="tel"
                   enterKeyHint="done"
                   required
-                  placeholder="Your Phone Number Here..."
+                  placeholder="(201) 555-0123"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
@@ -524,7 +525,7 @@ export function NewForm() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5 active:translate-y-0"
+                className="w-full bg-[#F00300] hover:bg-[#D80200] disabled:opacity-60 disabled:cursor-not-allowed text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-red-500/25 transition-all hover:shadow-xl active:translate-y-0"
               >
                 {submitting ? 'Reserving Your Spot...' : (variant?.cta_text || 'SIGN UP TO WATCH NOW')}
               </button>
