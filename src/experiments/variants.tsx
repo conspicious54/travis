@@ -8,7 +8,7 @@
    should stay inline in that page component instead. ──────────── */
 
 import { useEffect } from 'react';
-import { Calendar, ArrowDown, TrendingUp, BadgeCheck, Users } from 'lucide-react';
+import { Calendar, ArrowDown, TrendingUp, Users } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
 
 /* "Over 40% of our students launch with less than $2k" chip. Shown
@@ -86,14 +86,8 @@ export function MutualFitMicroCopy({
 
 /* Social proof chip with Amazon Ads Verified Partner badge. Renders
    above the confirm CTA on the setter page for new (never/recent)
-   visitors.
-
-   TODO: upload the real Amazon Ads partner lockup to R2 and swap the
-   BadgeCheck placeholder for an <img src="..."/>. Current form uses a
-   lucide icon so nothing renders broken while the real asset is
-   pending. The claim text ("Amazon Ads Verified Partner") must only
-   stay live if we actually hold that status - treat the asset upload
-   as blocking confirmation that we do. */
+   visitors. Only keep this live if we actually hold Amazon Ads
+   Partner Network status - the claim text is on the page. */
 export function AmazonAdsSocialProofChip({
   location,
 }: {
@@ -110,9 +104,14 @@ export function AmazonAdsSocialProofChip({
         <Users className="w-3.5 h-3.5" strokeWidth={2.5} />
         14,000+ students taught
       </span>
-      <span className="inline-flex items-center gap-1.5 bg-[#232F3E] text-white px-3 py-1.5 rounded-full font-semibold">
-        <BadgeCheck className="w-3.5 h-3.5 text-[#FF9900]" strokeWidth={2.5} fill="currentColor" />
-        Amazon Ads Verified Partner
+      <span className="inline-flex items-center gap-2 bg-[#232F3E] text-white pl-2 pr-3 py-1.5 rounded-full font-semibold">
+        <img
+          src="https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/AmazonAds.png"
+          alt="Amazon Ads"
+          className="h-4 w-auto"
+          loading="lazy"
+        />
+        Verified Partner
       </span>
     </div>
   );
