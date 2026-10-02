@@ -109,6 +109,7 @@ export function AmazonAdsSocialProofChip({
           src="https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/AmazonAds.png"
           alt="Amazon Ads"
           className="h-4 w-auto"
+          style={{ filter: 'brightness(0) invert(1)' }}
           loading="lazy"
         />
         Verified Partner
