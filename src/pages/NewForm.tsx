@@ -356,7 +356,7 @@ export function NewForm() {
             Gaps measured from CF: logo→eyebrow 35px, eyebrow→headline 5px. */}
         <div className="text-center mb-8 md:mb-10">
           {eyebrowText ? (
-            <p className="text-[17px] md:text-[32px] font-normal text-black leading-[1.4] md:leading-none tracking-[0.48px] mb-3 md:mb-1">
+            <p className="text-[17px] md:text-[30px] font-normal text-black leading-[1.4] md:leading-none tracking-[0.48px] mb-3 md:mb-1">
               {eyebrowText === DEFAULT_EYEBROW ? (
                 <>
                   Last Year, First Time Amazon Sellers Made Over{' '}
