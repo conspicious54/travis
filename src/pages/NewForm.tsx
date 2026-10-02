@@ -325,16 +325,15 @@ export function NewForm() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      {/* Container width matches the CF lead page's actual form-area
-          width (~1088px at 1440 viewport). Prior max-w-3xl (768) was
-          ~30% narrower than CF, which pushed everything to the center
-          and shrank the hero. Measured from the live CF page, not
-          guessed — see cycle 2 diff notes. */}
-      <main className="max-w-[1088px] mx-auto px-5 pt-6 md:pt-10 pb-16">
-        {/* Logo header. CF renders at ~122x62 at every viewport;
-            matching exactly so the fixed-pixel size doesn't swell
-            on desktop like h-16 md:h-20 was doing (159x80). */}
-        <div className="flex justify-center mb-5 md:mb-6">
+      {/* Container is max-w-[1088px] (CF's measured form-area width).
+          Desktop drops horizontal padding so the content fills the
+          full 1088 — otherwise px-5 shaves 40px and the hero wraps
+          onto an extra line. Mobile keeps px-5 for safe-area breathing
+          room on <1088 viewports. */}
+      <main className="max-w-[1088px] mx-auto px-5 md:px-0 pt-6 md:pt-10 pb-16">
+        {/* Logo. CF: 122x62 at every viewport; mb-9 reproduces CF's
+            ~35px gap down to the eyebrow. */}
+        <div className="flex justify-center mb-5 md:mb-9">
           <img
             src={LOGO_URL}
             alt="Passion Product"
@@ -343,18 +342,21 @@ export function NewForm() {
           />
         </div>
 
-        {/* Hero — sizes, weights, colors, letter-spacing all pulled
-            from the live CF page via computed CSS inspection. Measured
-            values (mobile 375 / desktop 1440):
-              Eyebrow:  17px / 36.72px, weight 400, letter-spacing 0.48px,
-                        line-height 140% / 100%, color #000
-              Headline: 21.25px / 63.6px, weight 900, letter-spacing 0.48px,
-                        line-height 140% / 120%, color #F28000 (solid)
-            CF uses Oswald; we keep our Poppins stack (user approved
-            the font swap). Everything else is 1-for-1. */}
+        {/* Hero — sizes picked so the wrapping matches CF line-for-line
+            in Poppins, not just the raw pixel values from CF (which is
+            Oswald, a narrower face).
+              Eyebrow desktop:  32px keeps it on one line in Poppins
+                               (CF's 36.72px in Oswald also 1 line, but
+                               36.72 in Poppins wraps to 2).
+              Headline desktop: 52px keeps it on two lines in Poppins
+                               (CF's 63.6px in Oswald also 2 lines, but
+                               54px+ in Poppins wraps to 3).
+            Mobile sizes stay at CF-literal values (17 / 21.25) — on
+            narrow viewports both pages break identically.
+            Gaps measured from CF: logo→eyebrow 35px, eyebrow→headline 5px. */}
         <div className="text-center mb-8 md:mb-10">
           {eyebrowText ? (
-            <p className="text-[17px] md:text-[36.72px] font-normal text-black leading-[1.4] md:leading-none tracking-[0.48px] mb-3 md:mb-4">
+            <p className="text-[17px] md:text-[32px] font-normal text-black leading-[1.4] md:leading-none tracking-[0.48px] mb-3 md:mb-1">
               {eyebrowText === DEFAULT_EYEBROW ? (
                 <>
                   Last Year, First Time Amazon Sellers Made Over{' '}
@@ -365,7 +367,7 @@ export function NewForm() {
               )}
             </p>
           ) : null}
-          <h1 className="text-[21.25px] md:text-[63.6px] font-black tracking-[0.48px] leading-[1.4] md:leading-[1.2] text-[#F28000]">
+          <h1 className="text-[21.25px] md:text-[52px] font-black tracking-[0.48px] leading-[1.4] md:leading-[1.2] text-[#F28000]">
             {headlineText}
           </h1>
 
