@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Flame } from 'lucide-react';
 import { identifyUser, trackEvent, trackConversionLead } from '../lib/posthog';
 import { getCleanIdentity, persistIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
@@ -584,9 +583,6 @@ export function NewForm() {
       <footer className="bg-slate-900 text-slate-300">
         <div className="max-w-4xl mx-auto px-5 py-10">
           <div className="flex flex-col items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center">
-              <Flame className="w-5 h-5 text-white" />
-            </div>
             <p className="text-sm text-slate-400">
               Copyright © {new Date().getFullYear()} Passion Product LLC |{' '}
               <Link to="/privacypolicy" className="text-slate-300 hover:text-white underline">Privacy Policy</Link> |{' '}
