@@ -583,6 +583,12 @@ export function NewForm() {
       <footer className="bg-slate-900 text-slate-300">
         <div className="max-w-4xl mx-auto px-5 py-10">
           <div className="flex flex-col items-center gap-3 mb-6">
+            <img
+              src="https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Passion%20Product%20Formula%20-%20ICON.png"
+              alt="Passion Product Formula"
+              className="w-12 h-12 rounded-lg object-contain"
+              loading="lazy"
+            />
             <p className="text-sm text-slate-400">
               Copyright © {new Date().getFullYear()} Passion Product LLC |{' '}
               <Link to="/privacypolicy" className="text-slate-300 hover:text-white underline">Privacy Policy</Link> |{' '}
