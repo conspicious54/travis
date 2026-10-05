@@ -367,23 +367,26 @@ export function NewForm() {
               )}
             </p>
           ) : null}
-          {/* Default headline: lead-in sits in a muted dark gray at a
-              lower weight so the orange, font-black "$100K on Amazon in
-              2026" clause is unambiguously the hero line. Variant
-              headlines keep the uniform orange since we don't know which
-              clause to lean on. */}
-          <h1 className="text-[21.25px] md:text-[52px] tracking-[0.48px] leading-[1.4] md:leading-[1.2]">
+          {/* Default headline: lead-in at font-semibold (600), the
+              "$100K on Amazon in 2026" clause at font-black (900) — same
+              Poppins face, same orange, 300-unit weight gap. Weights
+              above 700 are now actually loaded (see index.css); before
+              this fix anything 800/900 was faux-bolded to look identical
+              to 700, which is why prior weight-only changes were
+              invisible on screen. Variant headlines keep uniform weight
+              since we don't know which clause to lean on. */}
+          <h1 className="text-[21.25px] md:text-[52px] tracking-[0.48px] leading-[1.4] md:leading-[1.2] text-[#F28000]">
             {headlineText === DEFAULT_HEADLINE ? (
               <>
-                <span className="font-bold text-gray-900">
+                <span className="font-semibold">
                   Learn the Exact Process I Use to Help Sellers Reach
                 </span>{' '}
-                <span className="font-black text-[#F28000]">
+                <span className="font-black">
                   $100K on Amazon in 2026
                 </span>
               </>
             ) : (
-              <span className="font-black text-[#F28000]">{headlineText}</span>
+              <span className="font-black">{headlineText}</span>
             )}
           </h1>
 
