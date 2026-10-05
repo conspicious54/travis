@@ -367,8 +367,20 @@ export function NewForm() {
               )}
             </p>
           ) : null}
-          <h1 className="text-[21.25px] md:text-[52px] font-black tracking-[0.48px] leading-[1.4] md:leading-[1.2] text-[#F28000]">
-            {headlineText}
+          {/* Default headline splits so "$100K on Amazon in 2026" sits
+              at font-black while the lead-in drops to font-extrabold —
+              gives the money-and-year clause the visual emphasis the rest
+              of the headline doesn't need. Variant headlines keep uniform
+              weight since we don't know which clause to lean on. */}
+          <h1 className="text-[21.25px] md:text-[52px] font-extrabold tracking-[0.48px] leading-[1.4] md:leading-[1.2] text-[#F28000]">
+            {headlineText === DEFAULT_HEADLINE ? (
+              <>
+                Learn the Exact Process I Use to Help Sellers Reach{' '}
+                <span className="font-black">$100K on Amazon in 2026</span>
+              </>
+            ) : (
+              headlineText
+            )}
           </h1>
 
           {/* "What you get" offer box — variant-controlled, hidden by
