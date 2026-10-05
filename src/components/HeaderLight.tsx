@@ -10,7 +10,7 @@ export const HeaderLight = () => {
       </a>
       <div className="absolute left-1/2 -translate-x-1/2">
         <img 
-          src="https://passionproduct.com/wp-content/uploads/2024/10/Passion-Product-only-logo-1-768x432.png" 
+          src="https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/PassionProductFormulaLogo.webp"
           alt="Passion Product" 
           className="h-14"
         />

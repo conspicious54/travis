@@ -2947,8 +2947,8 @@ export function SharedFooter() {
     <div className="bg-gray-900 py-8">
       <div className="max-w-4xl mx-auto px-4 text-center">
         <img
-          src="https://passionproduct.com/wp-content/uploads/2024/10/Passion-Product-only-logo-1-768x432.png"
-          alt="Passion Product"
+          src="https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/PassionProductFormulaLogo.webp"
+          alt="Passion Product Formula"
           className="h-10 mx-auto mb-4"
         />
         <p className="text-gray-500 text-xs">

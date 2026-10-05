@@ -55,7 +55,7 @@ const STAGE_TAG = 'newform_optin';
 // The `passionproduct.com` WordPress asset that was here before
 // loads the "PASSION PRODUCT FORMULA" 3-line logo instead — wrong
 // mark for parity with CF.
-const LOGO_URL = 'https://images.clickfunnels.com/cdn-cgi/image/width=600,fit=scale-down,f=auto,q=80/https://statics.myclickfunnels.com/workspace/JznPnP/image/3631772/file/2aac1eea4e8a9afc85bc3526b2ffca0e.jpg';
+const LOGO_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/PassionProductFormulaLogo.webp';
 
 function getCountdownDeadline(): number {
   if (typeof window === 'undefined') return Date.now() + COUNTDOWN_MS;
