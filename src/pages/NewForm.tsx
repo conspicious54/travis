@@ -56,6 +56,85 @@ const STAGE_TAG = 'newform_optin';
 // mark for parity with CF.
 const LOGO_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/PassionProductFormulaLogo.webp';
 
+/* ───── Country dial codes ────────────────────────────────────────
+   Target markets listed first (US / CA / UK / AU / NZ / IE), then
+   secondary English-speaking + major Western European + handful of
+   high-traffic international markets. Visitors can click the pill
+   on the phone field to pick their country - we also prefill from
+   their IP via getCountry() so the default is usually right.
+
+   Flag column is emoji; works everywhere Apple/Google/Windows
+   render Unicode flag sequences (99%+ of modern browsers).
+──────────────────────────────────────────────────────────────────── */
+interface DialCountry {
+  code: string;      // ISO alpha-2
+  name: string;
+  dial: string;      // e.g. "+1"
+  flag: string;      // emoji
+}
+
+const COUNTRY_DIAL: readonly DialCountry[] = [
+  // Target markets (English-speaking primary)
+  { code: 'US', name: 'United States',  dial: '+1',   flag: '🇺🇸' },
+  { code: 'CA', name: 'Canada',         dial: '+1',   flag: '🇨🇦' },
+  { code: 'GB', name: 'United Kingdom', dial: '+44',  flag: '🇬🇧' },
+  { code: 'AU', name: 'Australia',      dial: '+61',  flag: '🇦🇺' },
+  { code: 'NZ', name: 'New Zealand',    dial: '+64',  flag: '🇳🇿' },
+  { code: 'IE', name: 'Ireland',        dial: '+353', flag: '🇮🇪' },
+  // Western Europe
+  { code: 'DE', name: 'Germany',        dial: '+49',  flag: '🇩🇪' },
+  { code: 'FR', name: 'France',         dial: '+33',  flag: '🇫🇷' },
+  { code: 'ES', name: 'Spain',          dial: '+34',  flag: '🇪🇸' },
+  { code: 'IT', name: 'Italy',          dial: '+39',  flag: '🇮🇹' },
+  { code: 'NL', name: 'Netherlands',    dial: '+31',  flag: '🇳🇱' },
+  { code: 'BE', name: 'Belgium',        dial: '+32',  flag: '🇧🇪' },
+  { code: 'PT', name: 'Portugal',       dial: '+351', flag: '🇵🇹' },
+  { code: 'CH', name: 'Switzerland',    dial: '+41',  flag: '🇨🇭' },
+  { code: 'AT', name: 'Austria',        dial: '+43',  flag: '🇦🇹' },
+  // Nordics
+  { code: 'SE', name: 'Sweden',         dial: '+46',  flag: '🇸🇪' },
+  { code: 'NO', name: 'Norway',         dial: '+47',  flag: '🇳🇴' },
+  { code: 'DK', name: 'Denmark',        dial: '+45',  flag: '🇩🇰' },
+  { code: 'FI', name: 'Finland',        dial: '+358', flag: '🇫🇮' },
+  // Other high-traffic
+  { code: 'PL', name: 'Poland',         dial: '+48',  flag: '🇵🇱' },
+  { code: 'IN', name: 'India',          dial: '+91',  flag: '🇮🇳' },
+  { code: 'SG', name: 'Singapore',      dial: '+65',  flag: '🇸🇬' },
+  { code: 'HK', name: 'Hong Kong',      dial: '+852', flag: '🇭🇰' },
+  { code: 'AE', name: 'UAE',            dial: '+971', flag: '🇦🇪' },
+  { code: 'ZA', name: 'South Africa',   dial: '+27',  flag: '🇿🇦' },
+  { code: 'BR', name: 'Brazil',         dial: '+55',  flag: '🇧🇷' },
+  { code: 'MX', name: 'Mexico',         dial: '+52',  flag: '🇲🇽' },
+  { code: 'JP', name: 'Japan',          dial: '+81',  flag: '🇯🇵' },
+];
+
+const DEFAULT_DIAL = COUNTRY_DIAL[0]; // US
+
+function findDialByCountryCode(code: string | undefined | null): DialCountry {
+  if (!code) return DEFAULT_DIAL;
+  const upper = code.toUpperCase();
+  return COUNTRY_DIAL.find((c) => c.code === upper) ?? DEFAULT_DIAL;
+}
+
+/** Compose a submission-ready phone from a visitor-typed local number
+ *  plus the selected dial country.
+ *   - If visitor typed a value starting with '+', trust their format
+ *     and strip spaces/dashes but keep the leading '+'.
+ *   - Otherwise strip all non-digit chars, drop a leading 0 (common
+ *     EU/UK local-format artefact), and prepend the dial code.
+ *  Result is a clean E.164-ish string suitable for HubSpot/Zapier. */
+function composePhone(raw: string, dial: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('+')) {
+    return '+' + trimmed.slice(1).replace(/\D/g, '');
+  }
+  const digits = trimmed.replace(/\D/g, '').replace(/^0+/, '');
+  if (!digits) return '';
+  return `${dial}${digits}`;
+}
+
+
 function getCountdownDeadline(): number {
   if (typeof window === 'undefined') return Date.now() + COUNTDOWN_MS;
   try {
@@ -105,6 +184,12 @@ export function NewForm() {
   const [error, setError]         = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [country, setCountry]     = useState<CountryInfo | null>(null);
+  // Dial-code country for the phone field. Defaults to US, auto-updates
+  // when IP geo returns a match. Visitor can override via the pill
+  // selector left of the phone input.
+  const [dialCountry, setDialCountry] = useState<DialCountry>(DEFAULT_DIAL);
+  const [dialTouched, setDialTouched] = useState(false);
+  const [dialOpen, setDialOpen]       = useState(false);
   const [deadline] = useState<number>(() => getCountdownDeadline());
   const [, setNow] = useState<number>(() => Date.now());
 
@@ -136,8 +221,15 @@ export function NewForm() {
         audience: info.audience,
         source: info.source,
       });
+      // Prefill the dial selector from IP country when the visitor
+      // hasn't manually picked one yet. If the detected code isn't in
+      // COUNTRY_DIAL, findDialByCountryCode falls back to US.
+      if (!dialTouched) {
+        const match = findDialByCountryCode(info.code);
+        setDialCountry(match);
+      }
     });
-  }, [seed.email, seed.phone]);
+  }, [seed.email, seed.phone, dialTouched]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -187,11 +279,12 @@ export function NewForm() {
 
     setSubmitting(true);
 
-    // Phone is submitted as the visitor typed it — matches the
-    // ClickFunnels lead page behavior (plain phone input, no dial-
-    // code selector). Downstream Zapier / HubSpot workflows already
-    // handle formatting; country_code below tells them the region.
-    const fullPhone = cleanPhone;
+    // Phone is composed from the visitor's selected dial country +
+    // the local-format number they typed. composePhone normalizes to
+    // a clean E.164-ish string (strips spaces/dashes, drops leading
+    // 0s, prepends dial code) unless the visitor typed their own '+'
+    // prefix, in which case we trust it.
+    const fullPhone = composePhone(cleanPhone, dialCountry.dial);
 
     const countryInfo = country ?? (await getCountry().catch(() => null));
     const audience = countryInfo?.audience ?? 'non_target';
@@ -203,11 +296,20 @@ export function NewForm() {
       country_code: countryInfo?.code,
       country_name: countryInfo?.name,
       audience,
+      newform_dial_country: dialCountry.code,
+      newform_dial_touched: dialTouched,
     });
     trackEvent('newform_submitted', {
       audience,
       country_code: countryInfo?.code || 'unknown',
       country_name: countryInfo?.name || 'unknown',
+      // Dial-country lets us see when the IP-detected country and the
+      // visitor's self-selected dial differ (often means they're
+      // travelling, on a VPN, or have a foreign SIM in their home
+      // country). Also flags visitors who manually picked vs took
+      // the IP default - 'touched' means they tapped the selector.
+      dial_country: dialCountry.code,
+      dial_touched: dialTouched,
       // Campaign attribution — non-null when the visitor arrived
       // with a matching utm_source + utm_campaign. Lets us measure
       // per-video / per-source conversion rate and reconstruct the
@@ -510,25 +612,85 @@ export function NewForm() {
                 />
               </div>
 
-              {/* Phone — plain input to match CF. Dial-code selector
-                  was removed to reduce visible differences between
-                  this page and the CF page it replaces. Downstream
-                  systems (Zapier, HubSpot) use the country_code we
-                  detect via IP for region context. */}
+              {/* Phone — dial-country selector on the left, number
+                  input on the right, visually joined. Default dial is
+                  prefilled from IP geolocation (see getCountry() in
+                  the mount effect); visitor can override by clicking
+                  the pill. composePhone normalizes before submit so
+                  downstream sees a clean E.164-ish string regardless
+                  of how the visitor typed it. */}
               <div>
                 <label htmlFor="phone" className="sr-only">Phone</label>
-                <input
-                  id="phone"
-                  type="tel"
-                  autoComplete="tel"
-                  inputMode="tel"
-                  enterKeyHint="done"
-                  required
-                  placeholder="(201) 555-0123"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
-                />
+                <div className="relative flex rounded-lg bg-gray-50 border border-gray-300 focus-within:bg-white focus-within:ring-2 focus-within:ring-orange-500 focus-within:border-orange-500 transition">
+                  <button
+                    type="button"
+                    onClick={() => setDialOpen((v) => !v)}
+                    aria-haspopup="listbox"
+                    aria-expanded={dialOpen}
+                    className="shrink-0 flex items-center gap-1.5 px-3 py-3 border-r border-gray-300 text-gray-800 hover:bg-gray-100 rounded-l-lg cursor-pointer font-medium"
+                  >
+                    <span className="text-lg leading-none" aria-hidden="true">{dialCountry.flag}</span>
+                    <span className="tabular-nums text-sm">{dialCountry.dial}</span>
+                    <svg className={`w-3.5 h-3.5 text-gray-500 transition-transform ${dialOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.4a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  <input
+                    id="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    enterKeyHint="done"
+                    required
+                    placeholder="Your Phone Number Here..."
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="flex-1 min-w-0 px-4 py-3 bg-transparent text-gray-900 placeholder:text-gray-400 outline-none rounded-r-lg"
+                  />
+
+                  {dialOpen && (
+                    <>
+                      {/* Overlay to close on outside click */}
+                      <button
+                        type="button"
+                        aria-label="Close country selector"
+                        onClick={() => setDialOpen(false)}
+                        className="fixed inset-0 z-30 cursor-default"
+                      />
+                      <ul
+                        role="listbox"
+                        className="absolute z-40 top-full left-0 mt-1 w-72 max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl py-1"
+                      >
+                        {COUNTRY_DIAL.map((c) => {
+                          const selected = c.code === dialCountry.code;
+                          return (
+                            <li key={c.code}>
+                              <button
+                                type="button"
+                                role="option"
+                                aria-selected={selected}
+                                onClick={() => {
+                                  setDialCountry(c);
+                                  setDialTouched(true);
+                                  setDialOpen(false);
+                                  trackEvent('newform_dial_country_changed', {
+                                    from: dialCountry.code,
+                                    to: c.code,
+                                  });
+                                }}
+                                className={`w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-orange-50 cursor-pointer ${selected ? 'bg-orange-50 font-semibold' : ''}`}
+                              >
+                                <span className="text-lg leading-none shrink-0">{c.flag}</span>
+                                <span className="flex-1 min-w-0 truncate text-gray-900">{c.name}</span>
+                                <span className="tabular-nums text-gray-500 shrink-0">{c.dial}</span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </>
+                  )}
+                </div>
               </div>
 
               <p className="text-center text-sm text-gray-700">
