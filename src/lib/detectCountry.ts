@@ -98,6 +98,20 @@ const ISO_TO_NAME: Record<string, string> = {
   RU: 'Russia',
 };
 
+/** Synchronous cache peek — returns just the ISO country code, or
+ *  null if nothing cached. Used by callers that need a dial-code
+ *  default on first render without awaiting the API. */
+export function readCachedCountryCode(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.code === 'string') return parsed.code;
+  } catch { /* no-op */ }
+  return null;
+}
+
 function readCache(): CountryInfo | null {
   if (typeof window === 'undefined') return null;
   try {

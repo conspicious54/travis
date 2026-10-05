@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { identifyUser, trackEvent, trackConversionLead } from '../lib/posthog';
 import { getCleanIdentity, persistIdentity } from '../lib/urlParams';
-import { getCountry, type CountryInfo } from '../lib/detectCountry';
+import { getCountry, readCachedCountryCode, type CountryInfo } from '../lib/detectCountry';
 import { persistUtmsFromUrl, readAttribution, syncContactUtms } from '../lib/syncUtm';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { retryFetch } from '../lib/retryFetch';
@@ -184,10 +184,14 @@ export function NewForm() {
   const [error, setError]         = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [country, setCountry]     = useState<CountryInfo | null>(null);
-  // Dial-code country for the phone field. Defaults to US, auto-updates
-  // when IP geo returns a match. Visitor can override via the pill
-  // selector left of the phone input.
-  const [dialCountry, setDialCountry] = useState<DialCountry>(DEFAULT_DIAL);
+  // Dial-code country for the phone field. Synchronous initial value
+  // from the sessionStorage geo cache (returning visitors / inter-tab
+  // navigation) so the right flag renders on first paint with no
+  // US → actual-country flicker. First-time visitors still start at
+  // US, then swap when the IP API resolves in the mount effect below.
+  const [dialCountry, setDialCountry] = useState<DialCountry>(() =>
+    findDialByCountryCode(readCachedCountryCode())
+  );
   const [dialTouched, setDialTouched] = useState(false);
   const [dialOpen, setDialOpen]       = useState(false);
   const [deadline] = useState<number>(() => getCountdownDeadline());
