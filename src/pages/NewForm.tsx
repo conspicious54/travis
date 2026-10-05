@@ -367,19 +367,23 @@ export function NewForm() {
               )}
             </p>
           ) : null}
-          {/* Default headline splits so "$100K on Amazon in 2026" sits
-              at font-black while the lead-in drops to font-extrabold —
-              gives the money-and-year clause the visual emphasis the rest
-              of the headline doesn't need. Variant headlines keep uniform
-              weight since we don't know which clause to lean on. */}
-          <h1 className="text-[21.25px] md:text-[52px] font-extrabold tracking-[0.48px] leading-[1.4] md:leading-[1.2] text-[#F28000]">
+          {/* Default headline: lead-in sits in a muted dark gray at a
+              lower weight so the orange, font-black "$100K on Amazon in
+              2026" clause is unambiguously the hero line. Variant
+              headlines keep the uniform orange since we don't know which
+              clause to lean on. */}
+          <h1 className="text-[21.25px] md:text-[52px] tracking-[0.48px] leading-[1.4] md:leading-[1.2]">
             {headlineText === DEFAULT_HEADLINE ? (
               <>
-                Learn the Exact Process I Use to Help Sellers Reach{' '}
-                <span className="font-black">$100K on Amazon in 2026</span>
+                <span className="font-bold text-gray-900">
+                  Learn the Exact Process I Use to Help Sellers Reach
+                </span>{' '}
+                <span className="font-black text-[#F28000]">
+                  $100K on Amazon in 2026
+                </span>
               </>
             ) : (
-              headlineText
+              <span className="font-black text-[#F28000]">{headlineText}</span>
             )}
           </h1>
 
