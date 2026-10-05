@@ -208,6 +208,15 @@ export function NewForm() {
   const [variant] = useState(() => loadCampaignVariant());
   const leadMagnet = variant ? findLeadMagnet(variant.lead_magnet_id) : null;
 
+  /* Phone field is only shown to target-market visitors (US / CA / UK /
+     AU / NZ / IE — see TARGET_COUNTRIES in detectCountry.ts). Non-target
+     leads route to Mailchimp and never get a sales call, so collecting
+     a phone just adds friction for leads we don't phone-contact anyway.
+     While geo is still resolving (country === null) we show the field
+     by default — removing it after the fact would feel broken, and
+     target visitors are the common case. */
+  const showPhoneField = country === null || country.audience === 'target';
+
   useEffect(() => {
     document.title = 'Passion Product Formula - Free Training';
     // Capture utm_* into sessionStorage so they survive the form
@@ -276,7 +285,11 @@ export function NewForm() {
       setError('Please enter a valid email address.');
       return;
     }
-    if (!cleanPhone) {
+    // Phone required for target-market visitors only. Non-target
+    // audiences never get a sales call anyway (Mailchimp routing,
+    // email-only funnel), so collecting a phone just adds friction
+    // for leads that don't need one.
+    if (showPhoneField && !cleanPhone) {
       setError('Please enter your phone number so we can text you a reminder.');
       return;
     }
@@ -287,7 +300,9 @@ export function NewForm() {
     // the local-format number they typed. composePhone normalizes to
     // a clean E.164-ish string (strips spaces/dashes, drops leading
     // 0s, prepends dial code) unless the visitor typed their own '+'
-    // prefix, in which case we trust it.
+    // prefix, in which case we trust it. Non-target visitors never
+    // saw the field, so cleanPhone is empty and composePhone returns
+    // an empty string, which downstream code already handles.
     const fullPhone = composePhone(cleanPhone, dialCountry.dial);
 
     const countryInfo = country ?? (await getCountry().catch(() => null));
@@ -622,7 +637,13 @@ export function NewForm() {
                   the mount effect); visitor can override by clicking
                   the pill. composePhone normalizes before submit so
                   downstream sees a clean E.164-ish string regardless
-                  of how the visitor typed it. */}
+                  of how the visitor typed it.
+
+                  Entire field hidden for non-target audiences — those
+                  leads don't get a sales call, so phone collection is
+                  pure friction with no downstream payoff. See
+                  showPhoneField derivation above. */}
+              {showPhoneField && (
               <div>
                 <label htmlFor="phone" className="sr-only">Phone</label>
                 <div className="relative flex rounded-lg bg-gray-50 border border-gray-300 focus-within:bg-white focus-within:ring-2 focus-within:ring-orange-500 focus-within:border-orange-500 transition">
@@ -696,6 +717,7 @@ export function NewForm() {
                   )}
                 </div>
               </div>
+              )}
 
               <p className="text-center text-sm text-gray-700">
                 Fill in the form above so we can send you your{' '}
@@ -717,9 +739,18 @@ export function NewForm() {
               </button>
 
               <p className="text-xs text-gray-500 leading-relaxed">
-                By submitting this form, you agree to receive SMS messages from Passion Product, including
-                appointment reminders and notifications. Message frequency varies. Message and data rates may apply.
-                Reply OUT to unsubscribe. Reply HELP for help. Consent is not a condition of purchase.
+                {showPhoneField ? (
+                  <>
+                    By submitting this form, you agree to receive SMS messages from Passion Product, including
+                    appointment reminders and notifications. Message frequency varies. Message and data rates may apply.
+                    Reply OUT to unsubscribe. Reply HELP for help. Consent is not a condition of purchase.
+                  </>
+                ) : (
+                  <>
+                    By submitting this form, you agree to receive emails from Passion Product. You can
+                    unsubscribe at any time via the link at the bottom of any email.
+                  </>
+                )}
               </p>
             </form>
           </div>
