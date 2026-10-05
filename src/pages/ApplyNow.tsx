@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Clock, Flame, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Clock, ShieldCheck } from 'lucide-react';
 import { identifyUser, trackEvent, trackConversionApplication } from '../lib/posthog';
 import { useTabUrgency } from '../lib/useTabUrgency';
 import { getCleanIdentity, getMergedIdentity } from '../lib/urlParams';
@@ -250,15 +250,15 @@ export function ApplyNow() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      {/* Minimal header - flame mark only */}
+      {/* Minimal header - brand icon only */}
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-3xl mx-auto px-5 py-4 flex items-center justify-center">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/30 to-amber-500/30 rounded-full blur-md" />
-            <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-md shadow-orange-500/30">
-              <Flame className="w-4 h-4 text-white" />
-            </div>
-          </div>
+          <img
+            src="https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Passion%20Product%20Formula%20-%20ICON.png"
+            alt="Passion Product Formula"
+            className="w-10 h-10 rounded-lg object-contain"
+            loading="eager"
+          />
         </div>
       </header>
 

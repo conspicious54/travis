@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, CheckCircle2, Flame } from 'lucide-react';
+import { ArrowDown, CheckCircle2 } from 'lucide-react';
 import { identifyUser, trackEvent, useFeatureFlag } from '../lib/posthog';
 import { getCleanIdentity, getMergedIdentity } from '../lib/urlParams';
 import { persistUtmsFromUrl, readAttribution } from '../lib/syncUtm';
@@ -573,7 +573,6 @@ export function NextStep() {
         {/* Hero - compact stylized header */}
         <div className="text-center mb-3 md:mb-4">
           <div className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-wider mb-2.5">
-            <Flame className="w-3 h-3" />
             Free Training
           </div>
           <h1 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] mb-2 text-slate-900">
@@ -736,9 +735,12 @@ export function NextStep() {
       <footer className="bg-slate-900 text-slate-300">
         <div className="max-w-4xl mx-auto px-5 py-10">
           <div className="flex flex-col items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center">
-              <Flame className="w-5 h-5 text-white" />
-            </div>
+            <img
+              src="https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Passion%20Product%20Formula%20-%20ICON.png"
+              alt="Passion Product Formula"
+              className="w-12 h-12 rounded-lg object-contain"
+              loading="lazy"
+            />
             <p className="text-sm text-slate-400">
               Copyright © {new Date().getFullYear()} Passion Product LLC |{' '}
               <Link to="/privacypolicy" className="text-slate-300 hover:text-white underline">Privacy Policy</Link> |{' '}
