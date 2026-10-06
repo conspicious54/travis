@@ -388,11 +388,13 @@ export function NewForm() {
           campaign_variant_id: variant?.id || '',
           lead_magnet_id: leadMagnet?.id || '',
           lead_magnet_delivery: leadMagnet?.delivery_reference || '',
-          // Phone-field metadata — dial_country reflects the final
-          // selection used to compose the submitted phone; touched
-          // flags whether the visitor manually overrode the IP
-          // default (useful for VPN / traveller detection).
+          // Phone-field metadata — dial_country is the ISO alpha-2
+          // for the selector choice; dial_code is the "+X" prefix
+          // prepended to the phone; dial_touched flags whether the
+          // visitor manually overrode the IP default (useful for
+          // VPN / traveller detection).
           dial_country: dialCountry.code,
+          dial_code: dialCountry.dial,
           dial_touched: dialTouched,
           // Full source picture
           ...attributionForZap,

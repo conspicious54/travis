@@ -41,7 +41,11 @@ interface RegisterPayload {
   lead_magnet_id?: string;
   lead_magnet_delivery?: string;
   // Phone-field metadata (set only when the dial selector was shown).
+  //   dial_country: ISO alpha-2 of the selector choice (e.g. "US", "GB")
+  //   dial_code:    the actual "+X" prefix prepended to the phone (e.g. "+1", "+44")
+  //   dial_touched: true if visitor manually overrode the IP default
   dial_country?: string;
+  dial_code?: string;
   dial_touched?: boolean;
   // Full attribution envelope — UTM params + ad-platform click IDs +
   // Meta first-party cookies. Forwarded verbatim so Zapier /
@@ -130,6 +134,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
     lead_magnet_delivery: s(body.lead_magnet_delivery),
     // Phone / dial metadata
     dial_country: s(body.dial_country),
+    dial_code: s(body.dial_code),
     dial_touched: body.dial_touched === true ? true : undefined,
     // Attribution envelope — only forward fields that were provided
     utm_source:   s(body.utm_source),
@@ -181,6 +186,7 @@ interface ZapierPayload {
   lead_magnet_id?: string;
   lead_magnet_delivery?: string;
   dial_country?: string;
+  dial_code?: string;
   dial_touched?: boolean;
   utm_source?: string;
   utm_medium?: string;
