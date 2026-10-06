@@ -29,15 +29,14 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ─── Config - tune as needed ──────────────────────────────────── */
 // Funnel splits by audience at submit:
-//   target     → /loading → /nextstep  (fast path, skips the geo
-//                re-check /router would redundantly run; /newform
-//                already classified them as target).
-//   non-target → /router  → DQ capital question flow
-// /loading is a stripped copy of /router's loading UI — same visual
-// bridge, no ipapi.co re-check, no identity bridge (identity is in
-// the URL from the submit). /router remains unchanged for CF-origin
-// visitors who arrive without URL identity.
-const REDIRECT_TARGET      = '/loading';
+//   target     → /nextstep DIRECTLY  (skip /router — /newform already
+//                classified them as target; no reason to re-run the
+//                geo gate or show the loading screen for an in-funnel
+//                destination that'll render fast enough on its own)
+//   non-target → /router             → DQ capital question flow
+// /router remains unchanged for CF-origin visitors who arrive without
+// URL identity.
+const REDIRECT_TARGET      = '/nextstep';
 const REDIRECT_NON_TARGET  = '/router';
 // 4-minute urgency window. Long enough to feel real (a real
 // resource-allocation window, not a "fake forever" timer), short
