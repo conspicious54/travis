@@ -47,6 +47,11 @@ interface RegisterPayload {
   dial_country?: string;
   dial_code?: string;
   dial_touched?: boolean;
+  // Page path (incl. query string) where the submission happened,
+  // e.g. "/newform?utm_source=youtube&utm_campaign=oct-vid". No
+  // protocol / host — the domain is implicit (travisfba.com). Set
+  // by the frontend from window.location.pathname + .search.
+  page_path?: string;
   // Full attribution envelope — UTM params + ad-platform click IDs +
   // Meta first-party cookies. Forwarded verbatim so Zapier /
   // ActiveCampaign / Mailchimp / Meta CAPI can tie the lead to the
@@ -146,6 +151,12 @@ export const handler: Handler = async (event: HandlerEvent) => {
     dial_country: s(body.dial_country),
     dial_code: s(body.dial_code),
     dial_touched: body.dial_touched === true ? true : undefined,
+    // Submission context — the exact page path (incl. query) where
+    // the form was submitted, and the visitor's IP from the CDN edge
+    // header. IP comes from x-forwarded-for (first entry = client);
+    // falls back to x-real-ip then client-ip for less-common proxies.
+    page_path: s(body.page_path),
+    ip_address: extractClientIp(event.headers),
     // Attribution envelope — only forward fields that were provided
     utm_source:   s(body.utm_source),
     utm_medium:   s(body.utm_medium),
@@ -198,6 +209,8 @@ interface ZapierPayload {
   dial_country?: string;
   dial_code?: string;
   dial_touched?: boolean;
+  page_path?: string;
+  ip_address?: string;
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
@@ -241,4 +254,22 @@ async function forwardToZapier(
 
 function json(statusCode: number, body: unknown) {
   return { statusCode, headers: CORS, body: JSON.stringify(body) };
+}
+
+/** Extract the client IP from Netlify's edge request headers. The
+ *  standard is x-forwarded-for which is a comma-separated chain —
+ *  the first entry is the original client; the rest are proxy hops.
+ *  Falls back to x-real-ip or client-ip for less-common proxy
+ *  configurations. Returns undefined if nothing is set so JSON.stringify
+ *  omits the field cleanly. */
+function extractClientIp(headers: Record<string, string | undefined>): string | undefined {
+  const xff = headers['x-forwarded-for'] || headers['X-Forwarded-For'];
+  if (xff) {
+    const first = xff.split(',')[0]?.trim();
+    if (first) return first;
+  }
+  const alt = headers['x-real-ip'] || headers['X-Real-IP'] ||
+              headers['client-ip'] || headers['Client-IP'];
+  if (alt) return alt.trim();
+  return undefined;
 }

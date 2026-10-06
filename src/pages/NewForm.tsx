@@ -396,6 +396,14 @@ export function NewForm() {
           dial_country: dialCountry.code,
           dial_code: dialCountry.dial,
           dial_touched: dialTouched,
+          // Exact page path (incl. query string) where the submit
+          // happened. Lets downstream see which campaign variant
+          // URL produced the lead without having to reconstruct it
+          // from the UTMs. IP address is attached server-side in the
+          // Netlify function from the x-forwarded-for header.
+          page_path: typeof window !== 'undefined'
+            ? window.location.pathname + window.location.search
+            : '',
           // Full source picture
           ...attributionForZap,
         }),
