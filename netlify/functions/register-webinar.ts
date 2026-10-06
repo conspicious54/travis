@@ -110,6 +110,16 @@ export const handler: Handler = async (event: HandlerEvent) => {
   const firstname = (body.firstname || '').trim();
   const lastname = (body.lastname || '').trim();
   const submittedAt = new Date().toISOString();
+
+  // Downstream routing simplification: when the visitor isn't in a
+  // target country (US/CA/GB/AU/NZ/IE), replace the actual country
+  // code + name with "DQ" so Zapier filters / list routing can
+  // short-circuit on one value regardless of which non-target country
+  // they're in. The real audience flag is already on the payload for
+  // anyone who wants finer-grained routing. Target visitors see the
+  // normal ISO code (e.g. "US") and English country name.
+  const outCountryCode = audience === 'target' ? countryCode : 'DQ';
+  const outCountryName = audience === 'target' ? countryName : 'DQ';
   // Normalize string fields: trim + drop empty so Zapier sees clean
   // "field missing" vs "field is empty string".
   const s = (v?: string) => {
@@ -125,8 +135,8 @@ export const handler: Handler = async (event: HandlerEvent) => {
     stage,
     is_member: !!body.is_member,
     audience,
-    country_code: countryCode,
-    country_name: countryName,
+    country_code: outCountryCode,
+    country_name: outCountryName,
     submitted_at: submittedAt,
     // Campaign attribution
     campaign_variant_id: s(body.campaign_variant_id),
@@ -155,7 +165,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
   console.log(
     `[register-webinar] email=${email} name="${firstname} ${lastname}".trim() ` +
-    `stage="${stage}" audience=${audience} country=${countryCode || '?'} ` +
+    `stage="${stage}" audience=${audience} country=${outCountryCode || '?'} ` +
     `magnet=${body.lead_magnet_id || '-'} variant=${body.campaign_variant_id || '-'} ` +
     `utm=${body.utm_source || '-'}/${body.utm_campaign || '-'} ` +
     `zap_ok=${zapResult.ok} reason=${zapResult.reason || ''}`
