@@ -125,12 +125,13 @@ export const handler: Handler = async (event: HandlerEvent) => {
   // normal ISO code (e.g. "US") and English country name.
   const outCountryCode = audience === 'target' ? countryCode : 'DQ';
   const outCountryName = audience === 'target' ? countryName : 'DQ';
-  // Normalize string fields: trim + drop empty so Zapier sees clean
-  // "field missing" vs "field is empty string".
-  const s = (v?: string) => {
-    const t = (v || '').trim();
-    return t ? t : undefined;
-  };
+  // Normalize string fields: trim and ALWAYS return a string (empty
+  // if missing). Every field must be present in the Zapier payload
+  // even when blank so the Zap editor can map them regardless of
+  // whether a given test record happens to carry a value — otherwise
+  // Zapier's "sample data" view hides the field and downstream steps
+  // can't reference it.
+  const s = (v?: string) => (v || '').trim();
 
   const zapResult = await forwardToZapier({
     email,
@@ -150,13 +151,13 @@ export const handler: Handler = async (event: HandlerEvent) => {
     // Phone / dial metadata
     dial_country: s(body.dial_country),
     dial_code: s(body.dial_code),
-    dial_touched: body.dial_touched === true ? true : undefined,
+    dial_touched: body.dial_touched === true,
     // Submission context — the exact page path (incl. query) where
     // the form was submitted, and the visitor's IP from the CDN edge
     // header. IP comes from x-forwarded-for (first entry = client);
     // falls back to x-real-ip then client-ip for less-common proxies.
     page_path: s(body.page_path),
-    ip_address: extractClientIp(event.headers),
+    ip_address: extractClientIp(event.headers) || '',
     // Attribution envelope — only forward fields that were provided
     utm_source:   s(body.utm_source),
     utm_medium:   s(body.utm_medium),
@@ -192,6 +193,12 @@ export const handler: Handler = async (event: HandlerEvent) => {
   });
 };
 
+/* Every field is required (no "?") because the Netlify function always
+   emits every field — empty string / false if missing — so Zapier can
+   see and map them in the Zap editor regardless of whether a given
+   sample record happens to carry a value. If a field were omitted when
+   empty, Zapier's "sample data" view would hide it and downstream Zap
+   steps couldn't reference it. */
 interface ZapierPayload {
   email: string;
   phone: string;
@@ -203,28 +210,28 @@ interface ZapierPayload {
   country_code: string;
   country_name: string;
   submitted_at: string;
-  campaign_variant_id?: string;
-  lead_magnet_id?: string;
-  lead_magnet_delivery?: string;
-  dial_country?: string;
-  dial_code?: string;
-  dial_touched?: boolean;
-  page_path?: string;
-  ip_address?: string;
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-  utm_content?: string;
-  utm_term?: string;
-  utm_ad_group?: string;
-  gclid?: string;
-  fbclid?: string;
-  ttclid?: string;
-  gbraid?: string;
-  wbraid?: string;
-  li_fat_id?: string;
-  _fbp?: string;
-  _fbc?: string;
+  campaign_variant_id: string;
+  lead_magnet_id: string;
+  lead_magnet_delivery: string;
+  dial_country: string;
+  dial_code: string;
+  dial_touched: boolean;
+  page_path: string;
+  ip_address: string;
+  utm_source: string;
+  utm_medium: string;
+  utm_campaign: string;
+  utm_content: string;
+  utm_term: string;
+  utm_ad_group: string;
+  gclid: string;
+  fbclid: string;
+  ttclid: string;
+  gbraid: string;
+  wbraid: string;
+  li_fat_id: string;
+  _fbp: string;
+  _fbc: string;
 }
 
 async function forwardToZapier(
