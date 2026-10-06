@@ -26,11 +26,41 @@ const CORS = {
 interface RegisterPayload {
   email?: string;
   phone?: string;
+  firstname?: string;
+  lastname?: string;
   stage?: string;
   is_member?: boolean;
   country_code?: string;
   country_name?: string;
   audience?: 'target' | 'non_target';
+  // Campaign attribution — set by /newform when a UTM campaign matched
+  // a variant in src/config/campaignVariants.ts. Downstream Zapier /
+  // email automation should read lead_magnet_delivery to fulfill the
+  // exact resource the lead was promised.
+  campaign_variant_id?: string;
+  lead_magnet_id?: string;
+  lead_magnet_delivery?: string;
+  // Phone-field metadata (set only when the dial selector was shown).
+  dial_country?: string;
+  dial_touched?: boolean;
+  // Full attribution envelope — UTM params + ad-platform click IDs +
+  // Meta first-party cookies. Forwarded verbatim so Zapier /
+  // ActiveCampaign / Mailchimp / Meta CAPI can tie the lead to the
+  // source that produced them.
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  utm_ad_group?: string;
+  gclid?: string;
+  fbclid?: string;
+  ttclid?: string;
+  gbraid?: string;
+  wbraid?: string;
+  li_fat_id?: string;
+  _fbp?: string;
+  _fbc?: string;
 }
 
 // Server-side fallback in case the client didn't send audience -
@@ -73,22 +103,57 @@ export const handler: Handler = async (event: HandlerEvent) => {
       : classifyAudience(countryCode);
 
   const phone = (body.phone || '').trim();
+  const firstname = (body.firstname || '').trim();
+  const lastname = (body.lastname || '').trim();
   const submittedAt = new Date().toISOString();
+  // Normalize string fields: trim + drop empty so Zapier sees clean
+  // "field missing" vs "field is empty string".
+  const s = (v?: string) => {
+    const t = (v || '').trim();
+    return t ? t : undefined;
+  };
 
   const zapResult = await forwardToZapier({
     email,
     phone,
+    firstname,
+    lastname,
     stage,
     is_member: !!body.is_member,
     audience,
     country_code: countryCode,
     country_name: countryName,
     submitted_at: submittedAt,
+    // Campaign attribution
+    campaign_variant_id: s(body.campaign_variant_id),
+    lead_magnet_id: s(body.lead_magnet_id),
+    lead_magnet_delivery: s(body.lead_magnet_delivery),
+    // Phone / dial metadata
+    dial_country: s(body.dial_country),
+    dial_touched: body.dial_touched === true ? true : undefined,
+    // Attribution envelope — only forward fields that were provided
+    utm_source:   s(body.utm_source),
+    utm_medium:   s(body.utm_medium),
+    utm_campaign: s(body.utm_campaign),
+    utm_content:  s(body.utm_content),
+    utm_term:     s(body.utm_term),
+    utm_ad_group: s(body.utm_ad_group),
+    gclid:        s(body.gclid),
+    fbclid:       s(body.fbclid),
+    ttclid:       s(body.ttclid),
+    gbraid:       s(body.gbraid),
+    wbraid:       s(body.wbraid),
+    li_fat_id:    s(body.li_fat_id),
+    _fbp:         s(body._fbp),
+    _fbc:         s(body._fbc),
   });
 
   console.log(
-    `[register-webinar] email=${email} stage="${stage}" audience=${audience} ` +
-    `country=${countryCode || '?'} zap_ok=${zapResult.ok} reason=${zapResult.reason || ''}`
+    `[register-webinar] email=${email} name="${firstname} ${lastname}".trim() ` +
+    `stage="${stage}" audience=${audience} country=${countryCode || '?'} ` +
+    `magnet=${body.lead_magnet_id || '-'} variant=${body.campaign_variant_id || '-'} ` +
+    `utm=${body.utm_source || '-'}/${body.utm_campaign || '-'} ` +
+    `zap_ok=${zapResult.ok} reason=${zapResult.reason || ''}`
   );
 
   return json(200, {
@@ -104,12 +169,33 @@ export const handler: Handler = async (event: HandlerEvent) => {
 interface ZapierPayload {
   email: string;
   phone: string;
+  firstname: string;
+  lastname: string;
   stage: string;
   is_member: boolean;
   audience: 'target' | 'non_target';
   country_code: string;
   country_name: string;
   submitted_at: string;
+  campaign_variant_id?: string;
+  lead_magnet_id?: string;
+  lead_magnet_delivery?: string;
+  dial_country?: string;
+  dial_touched?: boolean;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  utm_ad_group?: string;
+  gclid?: string;
+  fbclid?: string;
+  ttclid?: string;
+  gbraid?: string;
+  wbraid?: string;
+  li_fat_id?: string;
+  _fbp?: string;
+  _fbc?: string;
 }
 
 async function forwardToZapier(

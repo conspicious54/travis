@@ -365,23 +365,37 @@ export function NewForm() {
       // retryFetch absorbs transient network errors + 429/5xx so a
       // flaky mobile connection doesn't burn the lead. Max 3 attempts
       // with 0/500/1500ms backoff (~2s worst case).
+      // Attribution envelope — URL + sessionStorage merge. Carries
+      // utm_* + ad-platform click IDs + Meta first-party cookies.
+      // Spread into the Zapier payload below so the full source
+      // picture arrives downstream for ActiveCampaign / Mailchimp /
+      // Meta CAPI routing.
+      const attributionForZap = readAttribution();
       const res = await retryFetch('/.netlify/functions/register-webinar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: cleanEmail,
           phone: fullPhone,
+          firstname: cleanFirst,
+          lastname: cleanLast,
           stage: STAGE_TAG,
           country_code: countryInfo?.code || '',
           country_name: countryInfo?.name || '',
           audience,
-          // Campaign attribution — the downstream Zapier / email
-          // automation should read lead_magnet_delivery to fulfill
-          // the exact resource this lead was promised. Unknown to
-          // register-webinar today; passed through as-is.
+          // Campaign attribution — Zapier / email automation reads
+          // lead_magnet_delivery to fulfill the exact resource.
           campaign_variant_id: variant?.id || '',
           lead_magnet_id: leadMagnet?.id || '',
           lead_magnet_delivery: leadMagnet?.delivery_reference || '',
+          // Phone-field metadata — dial_country reflects the final
+          // selection used to compose the submitted phone; touched
+          // flags whether the visitor manually overrode the IP
+          // default (useful for VPN / traveller detection).
+          dial_country: dialCountry.code,
+          dial_touched: dialTouched,
+          // Full source picture
+          ...attributionForZap,
         }),
         tag: 'newform_register',
       });
