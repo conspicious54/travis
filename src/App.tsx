@@ -14,6 +14,7 @@ import { Live } from './pages/Live';
 import { VA } from './pages/VA';
 import { PPC } from './pages/PPC';
 import { Router } from './pages/Router';
+import { Loading } from './pages/Loading';
 import { Book } from './pages/Book';
 import { NewForm } from './pages/NewForm';
 import { MoveForward } from './pages/MoveForward';
@@ -116,6 +117,7 @@ function AppWrapper() {
                 <Route path="/va" element={<VA />} />
                 <Route path="/ppc" element={<PPC />} />
                 <Route path="/router" element={<Router />} />
+                <Route path="/loading" element={<Loading />} />
                 <Route path="/book" element={<Book />} />
                 <Route path="/newform" element={<NewForm />} />
                 <Route path="/moveforward" element={<MoveForward />} />

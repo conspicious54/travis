@@ -28,12 +28,17 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 ────────────────────────────────────────────────────────────────── */
 
 /* ─── Config - tune as needed ──────────────────────────────────── */
-// Funnel: /newform (optin) -> /router (geo gate + DQ question)
-// -> /nextstep (VSL) -> /applynow (Typeform) -> ...
-// The router decides allowed vs DQ country and forwards the
-// qualified traffic to /nextstep. Sending the lead straight to
-// /router means every newform submission gets geo-routed.
-const REDIRECT_TO = '/router';
+// Funnel splits by audience at submit:
+//   target     → /loading → /nextstep  (fast path, skips the geo
+//                re-check /router would redundantly run; /newform
+//                already classified them as target).
+//   non-target → /router  → DQ capital question flow
+// /loading is a stripped copy of /router's loading UI — same visual
+// bridge, no ipapi.co re-check, no identity bridge (identity is in
+// the URL from the submit). /router remains unchanged for CF-origin
+// visitors who arrive without URL identity.
+const REDIRECT_TARGET      = '/loading';
+const REDIRECT_NON_TARGET  = '/router';
 // 4-minute urgency window. Long enough to feel real (a real
 // resource-allocation window, not a "fake forever" timer), short
 // enough that a re-visit later in the day legitimately shows
@@ -451,12 +456,19 @@ export function NewForm() {
     for (const [k, v] of Object.entries(attribution)) {
       if (v) fwd.set(k, v);
     }
-    // Forward matched campaign attribution downstream so /router → /nextstep
-    // → /applynow → Typeform can preserve which resource / variant this
-    // lead came in on. Router already forwards the full query string.
+    // Forward matched campaign attribution downstream so the next pages
+    // (/loading or /router → /nextstep → /applynow → Typeform) preserve
+    // which resource / variant this lead came in on. Both /loading and
+    // /router pass the full query string through on their own redirect.
     if (variant?.id) fwd.set('campaign_variant_id', variant.id);
     if (leadMagnet?.id) fwd.set('lead_magnet_id', leadMagnet.id);
-    window.location.href = `${REDIRECT_TO}?${fwd.toString()}`;
+    // Target vs non-target branch: target goes to the fast /loading
+    // path (same visual, no redundant geo re-check); non-target stays
+    // on /router so the DQ capital question still fires. Unknown
+    // audience (geo lookup failed) falls back to /router — safer to
+    // run the full gate than skip it.
+    const nextPage = audience === 'target' ? REDIRECT_TARGET : REDIRECT_NON_TARGET;
+    window.location.href = `${nextPage}?${fwd.toString()}`;
   };
 
   // Default hero copy — matches the ClickFunnels lead page verbatim.
