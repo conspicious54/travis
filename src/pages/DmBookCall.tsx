@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
-import { identifyUser, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
+import { identifyUser, setPersonProperties, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
+import { readLeadScoreFromUrl } from '../lib/leadScore';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
@@ -91,7 +92,11 @@ export function DmBookCall() {
   useEffect(() => {
     persistTypeformAnswers();
     persistUtmsFromUrl();
+    const { raw: leadScoreRaw, score: leadScore } = readLeadScoreFromUrl();
     trackBookingPageViewed('dm_setter');
+    if (leadScore !== null) {
+      trackEvent('lead_score_captured', { booking_type: 'dm_setter', lead_score: leadScore });
+    }
 
     const params = new URLSearchParams(window.location.search);
     const id = getCleanIdentity(params);
@@ -101,6 +106,9 @@ export function DmBookCall() {
         last_name: id.lastname ?? undefined,
         phone: id.phone ?? undefined,
       });
+    }
+    if (leadScore !== null) {
+      setPersonProperties({ typeform_score: leadScore });
     }
 
     const handleMessage = (event: MessageEvent) => {
@@ -124,7 +132,7 @@ export function DmBookCall() {
       // eslint-disable-next-line no-console
       console.log('[OnceHub booking confirmed - dm_setter]', event.data);
 
-      trackBookingCompleted('dm_setter');
+      trackBookingCompleted('dm_setter', leadScore !== null ? { lead_score: leadScore } : undefined);
 
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = getCleanIdentity(urlParams);
@@ -194,6 +202,7 @@ export function DmBookCall() {
       const redirectParams = new URLSearchParams();
       if (finalFirst) redirectParams.set('firstname', finalFirst);
       if (finalEmail) redirectParams.set('email',     finalEmail);
+      if (leadScoreRaw) redirectParams.set('leadscore', leadScoreRaw);
 
       const target = redirectParams.toString()
         ? `${REDIRECT_TO}?${redirectParams.toString()}`

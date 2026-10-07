@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
-import { identifyUser, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
+import { identifyUser, setPersonProperties, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
+import { readLeadScoreFromUrl } from '../lib/leadScore';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
@@ -93,7 +94,11 @@ export function BookCall() {
   useEffect(() => {
     persistTypeformAnswers();
     persistUtmsFromUrl();
+    const { raw: leadScoreRaw, score: leadScore } = readLeadScoreFromUrl();
     trackBookingPageViewed('setter');
+    if (leadScore !== null) {
+      trackEvent('lead_score_captured', { booking_type: 'setter', lead_score: leadScore });
+    }
 
     const params = new URLSearchParams(window.location.search);
     const id = getCleanIdentity(params);
@@ -103,6 +108,12 @@ export function BookCall() {
         last_name: id.lastname ?? undefined,
         phone: id.phone ?? undefined,
       });
+    }
+    // Tag the Person with the Typeform score so cohort analysis later
+    // (close rate / CDBC by score band) can be filtered without
+    // needing to re-join to HubSpot.
+    if (leadScore !== null) {
+      setPersonProperties({ typeform_score: leadScore });
     }
 
     const handleMessage = (event: MessageEvent) => {
@@ -126,7 +137,7 @@ export function BookCall() {
       // eslint-disable-next-line no-console
       console.log('[OnceHub booking confirmed - setter]', event.data);
 
-      trackBookingCompleted('setter');
+      trackBookingCompleted('setter', leadScore !== null ? { lead_score: leadScore } : undefined);
 
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = getCleanIdentity(urlParams);
@@ -196,6 +207,9 @@ export function BookCall() {
       const redirectParams = new URLSearchParams();
       if (finalFirst) redirectParams.set('firstname', finalFirst);
       if (finalEmail) redirectParams.set('email',     finalEmail);
+      // Forward the Typeform score so /trainingnew/setter and any
+      // post-booking logic can read it from URL params.
+      if (leadScoreRaw) redirectParams.set('leadscore', leadScoreRaw);
 
       const target = redirectParams.toString()
         ? `${REDIRECT_TO}?${redirectParams.toString()}`

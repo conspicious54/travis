@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
-import { identifyUser, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
+import { identifyUser, setPersonProperties, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
+import { readLeadScoreFromUrl } from '../lib/leadScore';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /dmbook - IG DM bundle closer scheduler ────────────────────
@@ -100,7 +101,11 @@ export function DmBook() {
   useEffect(() => {
     persistTypeformAnswers();
     persistUtmsFromUrl();
+    const { raw: leadScoreRaw, score: leadScore } = readLeadScoreFromUrl();
     trackBookingPageViewed('dm_closer');
+    if (leadScore !== null) {
+      trackEvent('lead_score_captured', { booking_type: 'dm_closer', lead_score: leadScore });
+    }
 
     const params = new URLSearchParams(window.location.search);
     const id = getCleanIdentity(params);
@@ -110,6 +115,9 @@ export function DmBook() {
         last_name: id.lastname ?? undefined,
         phone: id.phone ?? undefined,
       });
+    }
+    if (leadScore !== null) {
+      setPersonProperties({ typeform_score: leadScore });
     }
 
     const handleMessage = (event: MessageEvent) => {
@@ -135,7 +143,7 @@ export function DmBook() {
       // eslint-disable-next-line no-console
       console.log('[OnceHub booking confirmed - dm_closer]', event.data);
 
-      trackBookingCompleted('dm_closer');
+      trackBookingCompleted('dm_closer', leadScore !== null ? { lead_score: leadScore } : undefined);
 
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = getCleanIdentity(urlParams);
@@ -257,6 +265,7 @@ export function DmBook() {
       if (meetingTitle) redirectParams.set('title',     meetingTitle);
       if (ownerName)    redirectParams.set('owner',     ownerName);
       if (joinUrl)      redirectParams.set('join',      joinUrl);
+      if (leadScoreRaw) redirectParams.set('leadscore', leadScoreRaw);
 
       const target = redirectParams.toString()
         ? `${REDIRECT_TO}?${redirectParams.toString()}`

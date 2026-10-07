@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
-import { identifyUser, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
+import { identifyUser, setPersonProperties, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
+import { readLeadScoreFromUrl } from '../lib/leadScore';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /book - embedded OnceHub closer scheduler ─────────────────
@@ -99,7 +100,11 @@ export function Book() {
   useEffect(() => {
     persistTypeformAnswers();
     persistUtmsFromUrl();
+    const { raw: leadScoreRaw, score: leadScore } = readLeadScoreFromUrl();
     trackBookingPageViewed('closer');
+    if (leadScore !== null) {
+      trackEvent('lead_score_captured', { booking_type: 'closer', lead_score: leadScore });
+    }
 
     const params = new URLSearchParams(window.location.search);
     const id = getCleanIdentity(params);
@@ -109,6 +114,13 @@ export function Book() {
         last_name: id.lastname ?? undefined,
         phone: id.phone ?? undefined,
       });
+    }
+    // Tag the Person with the Typeform score so cohort analysis later
+    // (e.g. close rate / CDBC by score band) can be filtered without
+    // needing to re-join to HubSpot. Fires even when id.email is empty
+    // because the anonymous PostHog user still gets the property.
+    if (leadScore !== null) {
+      setPersonProperties({ typeform_score: leadScore });
     }
 
     const handleMessage = (event: MessageEvent) => {
@@ -134,7 +146,7 @@ export function Book() {
       // eslint-disable-next-line no-console
       console.log('[OnceHub booking confirmed - closer]', event.data);
 
-      trackBookingCompleted('closer');
+      trackBookingCompleted('closer', leadScore !== null ? { lead_score: leadScore } : undefined);
 
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = getCleanIdentity(urlParams);
@@ -256,6 +268,10 @@ export function Book() {
       if (meetingTitle) redirectParams.set('title',     meetingTitle);
       if (ownerName)    redirectParams.set('owner',     ownerName);
       if (joinUrl)      redirectParams.set('join',      joinUrl);
+      // Forward the Typeform score so /trainingnew/closer and any
+      // post-booking logic (coach routing, tiered messaging, PostHog
+      // event correlation) can read it from URL params.
+      if (leadScoreRaw) redirectParams.set('leadscore', leadScoreRaw);
 
       const target = redirectParams.toString()
         ? `${REDIRECT_TO}?${redirectParams.toString()}`
