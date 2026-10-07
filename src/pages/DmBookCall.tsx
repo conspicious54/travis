@@ -1,0 +1,343 @@
+import { useEffect, useRef } from 'react';
+import { CheckCircle, Sparkles } from 'lucide-react';
+import { identifyUser, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
+import { syncContactTimezone } from '../lib/syncTimezone';
+import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
+import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
+
+/* ───── /dmbookacall - IG DM bundle setter scheduler ───────────────
+   Standalone setter booking page for IG DM bundle traffic so it stays
+   attributed separately from /bookacall. Points at a different OnceHub
+   calendar (BKC-X753D2W8JR) so the DM team can tune availability /
+   routing without affecting the organic /bookacall flow.
+
+   Everything downstream (/trainingnew/setter confirmation, Kixie line
+   routing by visitor region) is identical — booking_type: 'dm_setter'
+   on the PostHog event marks the record as DM-sourced.
+────────────────────────────────────────────────────────────────── */
+
+const ONCEHUB_CALENDAR_ID = 'BKC-X753D2W8JR';
+const STORAGE_KEY = 'pp_booking_data';
+const REDIRECT_TO = '/trainingnew/setter';
+
+function persistTypeformAnswers() {
+  if (typeof window === 'undefined') return;
+  const params = new URLSearchParams(window.location.search);
+  const data: Record<string, string> = {
+    _captured_at: new Date().toISOString(),
+  };
+  const id = getCleanIdentity(params);
+  if (id.firstname) data.firstname = id.firstname;
+  if (id.lastname)  data.lastname  = id.lastname;
+  if (id.phone)     data.phone     = id.phone;
+  if (id.email)     data.email     = id.email;
+  for (const field of ['location', 'reason', 'tried', 'travis', 'value', 'money']) {
+    const val = getCleanParam(params, field);
+    if (val) data[field] = val;
+  }
+  if (Object.keys(data).length > 1) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch {
+      /* no-op */
+    }
+  }
+}
+
+function isOncehubBookingConfirmed(data: unknown): boolean {
+  if (!data) return false;
+  let typeStr = '';
+  if (typeof data === 'string') {
+    typeStr = data.toLowerCase();
+  } else if (typeof data === 'object') {
+    const d = data as Record<string, unknown>;
+    typeStr = [
+      typeof d.type === 'string' ? d.type : '',
+      typeof d.eventType === 'string' ? d.eventType : '',
+      typeof d.eventName === 'string' ? d.eventName : '',
+    ].join(' ').toLowerCase();
+  }
+  if (!typeStr.includes('booking')) return false;
+  return (
+    typeStr.includes('confirmed') ||
+    typeStr.includes('succeeded') ||
+    typeStr.includes('success') ||
+    typeStr.includes('complete') ||
+    typeStr.includes('scheduled')
+  );
+}
+
+function getOncehubPrefill(): { name?: string; email?: string; phone?: string } {
+  if (typeof window === 'undefined') return {};
+  const params = new URLSearchParams(window.location.search);
+  const id = getCleanIdentity(params);
+  const rawName = getCleanParam(params, 'name') || getCleanParam(params, 'fullname') || getCleanParam(params, 'full_name');
+  const name =
+    rawName ||
+    [id.firstname, id.lastname].filter(Boolean).join(' ').trim() ||
+    id.firstname ||
+    undefined;
+  return {
+    name: name || undefined,
+    email: id.email || undefined,
+    phone: id.phone || undefined,
+  };
+}
+
+export function DmBookCall() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    persistTypeformAnswers();
+    persistUtmsFromUrl();
+    trackBookingPageViewed('dm_setter');
+
+    const params = new URLSearchParams(window.location.search);
+    const id = getCleanIdentity(params);
+    if (id.email) {
+      identifyUser(id.email, {
+        first_name: id.firstname ?? undefined,
+        last_name: id.lastname ?? undefined,
+        phone: id.phone ?? undefined,
+      });
+    }
+
+    const handleMessage = (event: MessageEvent) => {
+      const origin = event.origin || '';
+      if (!origin.includes('oncehub.com') && !origin.includes('scheduleonce.com')) {
+        return;
+      }
+
+      let preview = '';
+      try {
+        preview = typeof event.data === 'string' ? event.data.slice(0, 800) : JSON.stringify(event.data).slice(0, 800);
+      } catch { /* no-op */ }
+      trackEvent('oncehub_postmessage_received', {
+        booking_type: 'dm_setter',
+        origin,
+        preview,
+      });
+
+      if (!isOncehubBookingConfirmed(event.data)) return;
+
+      // eslint-disable-next-line no-console
+      console.log('[OnceHub booking confirmed - dm_setter]', event.data);
+
+      trackBookingCompleted('dm_setter');
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlId = getCleanIdentity(urlParams);
+      const rawName = getCleanParam(urlParams, 'name') || getCleanParam(urlParams, 'fullname') || '';
+
+      let storedFirst = '';
+      let storedEmail = '';
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          storedFirst = parsed?.firstname || '';
+          storedEmail = parsed?.email     || '';
+        }
+      } catch { /* no-op */ }
+
+      let firstname = urlId.firstname || storedFirst || '';
+      if (!firstname && rawName) {
+        firstname = rawName.split(/\s+/)[0] || '';
+      }
+      const bookingEmail = urlId.email || storedEmail || '';
+
+      // OnceHub payload identity wins over URL/localStorage.
+      const payload: Record<string, unknown> =
+        (typeof event.data === 'object' && event.data !== null
+          ? ((event.data as Record<string, unknown>).payload as Record<string, unknown> | undefined) || (event.data as Record<string, unknown>)
+          : {}) || {};
+      const pickStr = (...keys: string[]): string => {
+        for (const k of keys) {
+          const v = payload[k];
+          if (typeof v === 'string' && v.trim()) return v.trim();
+          if (typeof v === 'number') return String(v);
+        }
+        return '';
+      };
+      const pickNested = (path: string[]): string => {
+        let cur: unknown = payload;
+        for (const seg of path) {
+          if (!cur || typeof cur !== 'object') return '';
+          cur = (cur as Record<string, unknown>)[seg];
+        }
+        return typeof cur === 'string' && cur.trim() ? cur.trim() : '';
+      };
+      const payloadEmail = pickStr('customer_email', 'attendee_email', 'guest_email') || pickNested(['customer', 'email']);
+      const payloadFirst = pickStr('customer_first_name', 'attendee_first_name') || pickNested(['customer', 'first_name']);
+      const payloadName  = pickStr('customer_name', 'attendee_name')              || pickNested(['customer', 'name']);
+      const payloadPhone = pickStr('customer_phone', 'attendee_phone', 'phone')   || pickNested(['customer', 'phone']);
+
+      let splitFirst = '';
+      if (payloadName && !payloadFirst) {
+        splitFirst = payloadName.split(/\s+/)[0] || '';
+      }
+      const finalEmail = payloadEmail || bookingEmail;
+      const finalFirst = payloadFirst || splitFirst || firstname;
+      const finalPhone = payloadPhone || '';
+
+      if (finalEmail) {
+        identifyUser(finalEmail, {
+          first_name: finalFirst || undefined,
+          phone:      finalPhone || undefined,
+        });
+      }
+
+      syncContactTimezone(finalEmail, 'bookacall_redirect');
+      syncContactUtms(finalEmail, 'bookacall_redirect');
+
+      const redirectParams = new URLSearchParams();
+      if (finalFirst) redirectParams.set('firstname', finalFirst);
+      if (finalEmail) redirectParams.set('email',     finalEmail);
+
+      const target = redirectParams.toString()
+        ? `${REDIRECT_TO}?${redirectParams.toString()}`
+        : REDIRECT_TO;
+
+      setTimeout(() => {
+        window.location.href = target;
+      }, 800);
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    const existing = document.querySelector('script[src*="cdn.oncehub.com/cal/embed.js"]');
+    if (!existing) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.oncehub.com/cal/embed.js';
+      script.async = true;
+      script.type = 'text/javascript';
+      document.body.appendChild(script);
+    }
+
+    const prefill = getOncehubPrefill();
+    const hasPrefill = !!(prefill.name || prefill.email || prefill.phone);
+    let pollHandle: ReturnType<typeof setInterval> | null = null;
+    if (hasPrefill) {
+      let attempts = 0;
+      const tryAddPrefill = (): boolean => {
+        const iframe = containerRef.current?.querySelector('iframe') as HTMLIFrameElement | null;
+        if (!iframe || !iframe.src) return false;
+        try {
+          const url = new URL(iframe.src);
+          let changed = false;
+          const setIfAbsent = (key: string, value: string) => {
+            if (!url.searchParams.has(key)) {
+              url.searchParams.set(key, value);
+              changed = true;
+            }
+          };
+          if (prefill.name) {
+            setIfAbsent('name', prefill.name);
+            const parts = prefill.name.split(/\s+/).filter(Boolean);
+            if (parts[0]) setIfAbsent('first_name', parts[0]);
+            if (parts.length > 1) setIfAbsent('last_name', parts.slice(1).join(' '));
+          }
+          if (prefill.email) {
+            setIfAbsent('email', prefill.email);
+          }
+          if (prefill.phone) {
+            setIfAbsent('phone', prefill.phone);
+            setIfAbsent('mobile', prefill.phone);
+            setIfAbsent('mobile_phone', prefill.phone);
+            setIfAbsent('phone_number', prefill.phone);
+            setIfAbsent('cellphone', prefill.phone);
+            const e164 = prefill.phone.replace(/[\s()-]/g, '');
+            if (e164 !== prefill.phone) {
+              url.searchParams.set('phone', e164);
+              url.searchParams.set('mobile', e164);
+              url.searchParams.set('mobile_phone', e164);
+              changed = true;
+            }
+          }
+          if (changed) iframe.src = url.toString();
+        } catch { /* no-op */ }
+        return true;
+      };
+      pollHandle = setInterval(() => {
+        attempts++;
+        if (tryAddPrefill() || attempts > 60) {
+          if (pollHandle) clearInterval(pollHandle);
+        }
+      }, 100);
+    }
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      if (pollHandle) clearInterval(pollHandle);
+    };
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white">
+      {/* Step bar */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold ring-4 ring-orange-100">
+                1
+              </div>
+              <span className="text-xs font-bold text-orange-600 uppercase tracking-wider">Book Call</span>
+            </div>
+            <div className="w-12 h-0.5 bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-bold">
+                2
+              </div>
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Prepare</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-10 md:py-14">
+        {/* Qualified celebration */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-green-700 mb-5">
+            <CheckCircle className="w-3.5 h-3.5" />
+            You Qualified
+          </div>
+
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.05] mb-4">
+            Congrats - You're In.<br />
+            <span className="text-orange-600">Now Pick Your Time.</span>
+          </h1>
+
+          <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto">
+            You're about to get on a call with Travis or one of his top coaches.
+          </p>
+        </div>
+
+        {/* Embedded OnceHub scheduler with framing */}
+        <div className="relative">
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
+              <Sparkles className="w-4 h-4 text-orange-600" />
+              <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below - spots fill up fast</p>
+            </div>
+            <div
+              ref={containerRef}
+              data-oh-booking-calendar-id={ONCEHUB_CALENDAR_ID}
+              style={{ minWidth: 320, height: 700 }}
+            />
+          </div>
+        </div>
+
+        {/* Reassurance below the embed */}
+        <div className="text-center mt-8 max-w-xl mx-auto">
+          <p className="text-sm text-gray-500">
+            After you book, you'll get a confirmation page with everything you need to prepare for your call - plus stories from real students who started exactly where you are.
+          </p>
+        </div>
+      </div>
+      <LegalDisclaimer />
+    </div>
+  );
+}

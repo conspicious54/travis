@@ -4,6 +4,7 @@ import { DarkMode } from './pages/DarkMode';
 import { LightMode } from './pages/LightMode';
 import { HomeRedirect } from './pages/HomeRedirect';
 import { BookCall } from './pages/BookCall';
+import { DmBookCall } from './pages/DmBookCall';
 import { Training } from './pages/Training';
 import { TrainingNew } from './pages/TrainingNew';
 import { TrainingNewSetter } from './pages/TrainingNewSetter';
@@ -15,6 +16,7 @@ import { VA } from './pages/VA';
 import { PPC } from './pages/PPC';
 import { Router } from './pages/Router';
 import { Book } from './pages/Book';
+import { DmBook } from './pages/DmBook';
 import { NewForm } from './pages/NewForm';
 import { MoveForward } from './pages/MoveForward';
 import { NextStep } from './pages/NextStep';
@@ -106,6 +108,7 @@ function AppWrapper() {
                 <Route path="/old-home" element={<DarkMode />} />
                 <Route path="/getstarted" element={<LightMode />} />
                 <Route path="/bookacall" element={<BookCall />} />
+                <Route path="/dmbookacall" element={<DmBookCall />} />
                 <Route path="/training" element={<Training />} />
                 <Route path="/trainingnew" element={<TrainingNew />} />
                 <Route path="/trainingnew/setter" element={<TrainingNewSetter />} />
@@ -117,6 +120,7 @@ function AppWrapper() {
                 <Route path="/ppc" element={<PPC />} />
                 <Route path="/router" element={<Router />} />
                 <Route path="/book" element={<Book />} />
+                <Route path="/dmbook" element={<DmBook />} />
                 <Route path="/newform" element={<NewForm />} />
                 <Route path="/moveforward" element={<MoveForward />} />
                 <Route path="/nextstep" element={<NextStep />} />
