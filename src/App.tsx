@@ -21,6 +21,7 @@ import { NewForm } from './pages/NewForm';
 import { MoveForward } from './pages/MoveForward';
 import { NextStep } from './pages/NextStep';
 import { ApplyNow } from './pages/ApplyNow';
+import { DmApplyNow } from './pages/DmApplyNow';
 import { WebinarBook } from './pages/WebinarBook';
 import { WebinarBookCall } from './pages/WebinarBookCall';
 import { RealCost } from './pages/RealCost';
@@ -126,6 +127,7 @@ function AppWrapper() {
                 <Route path="/nextstep" element={<NextStep />} />
                 <Route path="/fasttrack" element={<FastTrack />} />
                 <Route path="/applynow" element={<ApplyNow />} />
+                <Route path="/dmapplynow" element={<DmApplyNow />} />
                 <Route path="/webinar/book" element={<WebinarBook />} />
                 <Route path="/webinar/bookacall" element={<WebinarBookCall />} />
                 <Route path="/realcost" element={<RealCost />} />
