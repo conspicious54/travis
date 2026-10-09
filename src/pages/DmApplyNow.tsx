@@ -17,7 +17,7 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 ─────────────────────────────────────────────────────────────────── */
 
 const TYPEFORM_LIVE_ID = '01M4GPPZ5HGE10CAEK7WDCFMAN';
-const TYPEFORM_HEIGHT_PX = 720;
+const TYPEFORM_HEIGHT_PX = 900;
 
 const GROUP_PHOTO_URL  = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisGroup.jpg';
 const TRAVIS_STAGE_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisStage.jpg';
