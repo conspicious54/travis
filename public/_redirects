@@ -18,57 +18,57 @@
 # effectively bypass our funnel.
 # ────────────────────────────────────────────────────────────────────
 
-# ─── START-CUTOVER ──────────────────────────────────────────────────
+# ─── START-CUTOVER (ACTIVE) ─────────────────────────────────────────
 # Known paths → same path on start.travismarziani.com (preserves SEO,
 # bookmarks, and query strings — Netlify auto-forwards query params)
-#
-# https://travisfba.com/bookacall               https://start.travismarziani.com/bookacall               301!
-# https://travisfba.com/dmbookacall             https://start.travismarziani.com/dmbookacall             301!
-# https://travisfba.com/book                    https://start.travismarziani.com/book                    301!
-# https://travisfba.com/dmbook                  https://start.travismarziani.com/dmbook                  301!
-# https://travisfba.com/applynow                https://start.travismarziani.com/applynow                301!
-# https://travisfba.com/dmapplynow              https://start.travismarziani.com/dmapplynow              301!
-# https://travisfba.com/newform                 https://start.travismarziani.com/newform                 301!
-# https://travisfba.com/nextstep                https://start.travismarziani.com/nextstep                301!
-# https://travisfba.com/router                  https://start.travismarziani.com/router                  301!
-# https://travisfba.com/moveforward             https://start.travismarziani.com/moveforward             301!
-# https://travisfba.com/fasttrack               https://start.travismarziani.com/fasttrack               301!
-# https://travisfba.com/trainingnew/setter      https://start.travismarziani.com/trainingnew/setter      301!
-# https://travisfba.com/trainingnew/closer      https://start.travismarziani.com/trainingnew/closer      301!
-# https://travisfba.com/trainingnew             https://start.travismarziani.com/trainingnew             301!
-# https://travisfba.com/training                https://start.travismarziani.com/training                301!
-# https://travisfba.com/live-training           https://start.travismarziani.com/live-training           301!
-# https://travisfba.com/webinar/book            https://start.travismarziani.com/webinar/book            301!
-# https://travisfba.com/webinar/bookacall       https://start.travismarziani.com/webinar/bookacall       301!
-# https://travisfba.com/freecourse              https://start.travismarziani.com/freecourse              301!
-# https://travisfba.com/method                  https://start.travismarziani.com/method                  301!
-# https://travisfba.com/realcost                https://start.travismarziani.com/realcost                301!
-# https://travisfba.com/questions               https://start.travismarziani.com/questions               301!
-# https://travisfba.com/live                    https://start.travismarziani.com/live                    301!
-# https://travisfba.com/va                      https://start.travismarziani.com/va                      301!
-# https://travisfba.com/ppc                     https://start.travismarziani.com/ppc                     301!
-# https://travisfba.com/walmart                 https://start.travismarziani.com/walmart                 301!
-# https://travisfba.com/refund                  https://start.travismarziani.com/refund                  301!
-# https://travisfba.com/refundpolicy            https://start.travismarziani.com/refundpolicy            301!
-# https://travisfba.com/termsofservice          https://start.travismarziani.com/termsofservice          301!
-# https://travisfba.com/privacypolicy           https://start.travismarziani.com/privacypolicy           301!
-# https://travisfba.com/terms                   https://start.travismarziani.com/terms                   301!
-# https://travisfba.com/optin                   https://start.travismarziani.com/optin                   301!
-# https://travisfba.com/getstarted              https://start.travismarziani.com/getstarted              301!
-# https://travisfba.com/old-home                https://start.travismarziani.com/old-home                301!
-# https://travisfba.com/aj                      https://start.travismarziani.com/aj                      301!
-# https://travisfba.com/darryl                  https://start.travismarziani.com/darryl                  301!
-# https://travisfba.com/productresearchbonus    https://start.travismarziani.com/productresearchbonus    301!
-# https://travisfba.com/productscorecard        https://start.travismarziani.com/productscorecard        301!
-# https://travisfba.com/productestimator        https://start.travismarziani.com/productestimator        301!
-# https://travisfba.com/migration               https://start.travismarziani.com/migration               301!
-# https://travisfba.com/passionproductmethod    https://start.travismarziani.com/passionproductmethod    301!
-# https://travisfba.com/acceleratoroverview     https://start.travismarziani.com/acceleratoroverview     301!
-# https://travisfba.com/faq                     https://start.travismarziani.com/faq                     301!
-#
+
+https://travisfba.com/bookacall               https://start.travismarziani.com/bookacall               301!
+https://travisfba.com/dmbookacall             https://start.travismarziani.com/dmbookacall             301!
+https://travisfba.com/book                    https://start.travismarziani.com/book                    301!
+https://travisfba.com/dmbook                  https://start.travismarziani.com/dmbook                  301!
+https://travisfba.com/applynow                https://start.travismarziani.com/applynow                301!
+https://travisfba.com/dmapplynow              https://start.travismarziani.com/dmapplynow              301!
+https://travisfba.com/newform                 https://start.travismarziani.com/newform                 301!
+https://travisfba.com/nextstep                https://start.travismarziani.com/nextstep                301!
+https://travisfba.com/router                  https://start.travismarziani.com/router                  301!
+https://travisfba.com/moveforward             https://start.travismarziani.com/moveforward             301!
+https://travisfba.com/fasttrack               https://start.travismarziani.com/fasttrack               301!
+https://travisfba.com/trainingnew/setter      https://start.travismarziani.com/trainingnew/setter      301!
+https://travisfba.com/trainingnew/closer      https://start.travismarziani.com/trainingnew/closer      301!
+https://travisfba.com/trainingnew             https://start.travismarziani.com/trainingnew             301!
+https://travisfba.com/training                https://start.travismarziani.com/training                301!
+https://travisfba.com/live-training           https://start.travismarziani.com/live-training           301!
+https://travisfba.com/webinar/book            https://start.travismarziani.com/webinar/book            301!
+https://travisfba.com/webinar/bookacall       https://start.travismarziani.com/webinar/bookacall       301!
+https://travisfba.com/freecourse              https://start.travismarziani.com/freecourse              301!
+https://travisfba.com/method                  https://start.travismarziani.com/method                  301!
+https://travisfba.com/realcost                https://start.travismarziani.com/realcost                301!
+https://travisfba.com/questions               https://start.travismarziani.com/questions               301!
+https://travisfba.com/live                    https://start.travismarziani.com/live                    301!
+https://travisfba.com/va                      https://start.travismarziani.com/va                      301!
+https://travisfba.com/ppc                     https://start.travismarziani.com/ppc                     301!
+https://travisfba.com/walmart                 https://start.travismarziani.com/walmart                 301!
+https://travisfba.com/refund                  https://start.travismarziani.com/refund                  301!
+https://travisfba.com/refundpolicy            https://start.travismarziani.com/refundpolicy            301!
+https://travisfba.com/termsofservice          https://start.travismarziani.com/termsofservice          301!
+https://travisfba.com/privacypolicy           https://start.travismarziani.com/privacypolicy           301!
+https://travisfba.com/terms                   https://start.travismarziani.com/terms                   301!
+https://travisfba.com/optin                   https://start.travismarziani.com/optin                   301!
+https://travisfba.com/getstarted              https://start.travismarziani.com/getstarted              301!
+https://travisfba.com/old-home                https://start.travismarziani.com/old-home                301!
+https://travisfba.com/aj                      https://start.travismarziani.com/aj                      301!
+https://travisfba.com/darryl                  https://start.travismarziani.com/darryl                  301!
+https://travisfba.com/productresearchbonus    https://start.travismarziani.com/productresearchbonus    301!
+https://travisfba.com/productscorecard        https://start.travismarziani.com/productscorecard        301!
+https://travisfba.com/productestimator        https://start.travismarziani.com/productestimator        301!
+https://travisfba.com/migration               https://start.travismarziani.com/migration               301!
+https://travisfba.com/passionproductmethod    https://start.travismarziani.com/passionproductmethod    301!
+https://travisfba.com/acceleratoroverview     https://start.travismarziani.com/acceleratoroverview     301!
+https://travisfba.com/faq                     https://start.travismarziani.com/faq                     301!
+
 # Unknown paths on travisfba.com → start.travismarziani.com homepage
-# https://travisfba.com/*                       https://start.travismarziani.com/                        301!
-# https://www.travisfba.com/*                   https://start.travismarziani.com/                        301!
+https://travisfba.com/*                       https://start.travismarziani.com/                        301!
+https://www.travisfba.com/*                   https://start.travismarziani.com/                        301!
 # ─── END-CUTOVER ────────────────────────────────────────────────────
 
 # SPA fallback — React Router handles all paths on start.travismarziani.com
