@@ -71,5 +71,11 @@ https://travisfba.com/*                       https://start.travismarziani.com/ 
 https://www.travisfba.com/*                   https://start.travismarziani.com/                        301!
 # ─── END-CUTOVER ────────────────────────────────────────────────────
 
+# ─── travismarziani.com (apex) → start.travismarziani.com ───────────
+# Path-preserving: travismarziani.com/foo → start.travismarziani.com/foo
+# Unknown paths flow through the SPA fallback on start. and land on /.
+https://travismarziani.com/*                  https://start.travismarziani.com/:splat                  301!
+https://www.travismarziani.com/*              https://start.travismarziani.com/:splat                  301!
+
 # SPA fallback — React Router handles all paths on start.travismarziani.com
 /*  /index.html  200
