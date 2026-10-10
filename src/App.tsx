@@ -2,7 +2,12 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { DarkMode } from './pages/DarkMode';
 import { LightMode } from './pages/LightMode';
-import { HomeRedirect } from './pages/HomeRedirect';
+// HomeRedirect is intentionally no longer imported: once /newform
+// becomes the homepage (post start.travismarziani.com DNS cutover),
+// the "/" route renders NewForm directly instead of bouncing
+// visitors to a different domain. See public/_redirects for the
+// travisfba.com → start.travismarziani.com rules that take over
+// once the domain is live on this Netlify site.
 import { BookCall } from './pages/BookCall';
 import { DmBookCall } from './pages/DmBookCall';
 import { Training } from './pages/Training';
@@ -105,7 +110,7 @@ function AppWrapper() {
             <BrowserRouter>
               <RouteTracker />
               <Routes>
-                <Route path="/" element={<HomeRedirect />} />
+                <Route path="/" element={<NewForm />} />
                 <Route path="/old-home" element={<DarkMode />} />
                 <Route path="/getstarted" element={<LightMode />} />
                 <Route path="/bookacall" element={<BookCall />} />
