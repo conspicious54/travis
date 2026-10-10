@@ -253,6 +253,36 @@ export function NewForm() {
     return () => clearInterval(t);
   }, []);
 
+  /* Background prefetch for the two pages this form submits to.
+     Submission goes to /nextstep (target country) or /router
+     (non-target) via a full page navigation, so the next page's
+     JS chunk has to be downloaded from scratch unless it's already
+     in the HTTP cache. Triggering import() during idle time (not
+     on mount) warms the cache without competing with the critical
+     path. By the time the visitor fills the form and submits, the
+     next-step chunk is already cached and the full-page nav feels
+     ~instant.
+
+     requestIdleCallback runs when the main thread is quiet;
+     setTimeout fallback covers Safari which still doesn't ship it. */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const prefetch = () => {
+      void import('./NextStep');
+      void import('./Router');
+    };
+    const win = window as typeof window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    if (typeof win.requestIdleCallback === 'function') {
+      const handle = win.requestIdleCallback(prefetch, { timeout: 4000 });
+      return () => win.cancelIdleCallback?.(handle);
+    }
+    const t = setTimeout(prefetch, 2500);
+    return () => clearTimeout(t);
+  }, []);
+
   const ttl = formatCountdown(deadline);
 
   /* The previous newform-headline-test A/B experiment was paused as
