@@ -1,3 +1,22 @@
+# ─── Legacy ClickFunnels URL redirects ──────────────────────────────
+# These URLs used to serve VSL / landing pages on the old ClickFunnels
+# site (start.travismarziani.com was CF). Paid ad campaigns on
+# Google / Meta / TikTok still point at them. On the new React site
+# these paths don't exist, so React Router's catch-all was sending
+# everyone to NewForm — killing conversion on warmed-up ad traffic.
+#
+# Absolute targets (https://...) so travisfba.com + travismarziani.com
+# visitors land in one hop (no double-redirect through legacy hosts).
+# ────────────────────────────────────────────────────────────────────
+/apply-now                        https://start.travismarziani.com/applynow     301!
+/get-started                      https://start.travismarziani.com/getstarted   301!
+/passion-product-fasttrack        https://start.travismarziani.com/fasttrack    301!
+/schedule-introductory-call       https://start.travismarziani.com/bookacall    301!
+/helium10                         https://start.travismarziani.com/nextstep     301!
+/junglescout                      https://start.travismarziani.com/nextstep     301!
+/bqool                            https://start.travismarziani.com/nextstep     301!
+/shopify                          https://start.travismarziani.com/nextstep     301!
+
 # ─── travisfba.com → start.travismarziani.com legacy-domain redirects
 #
 # ACTIVATION STEP (do this AFTER you've pointed start.travismarziani.com
