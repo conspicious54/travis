@@ -45,6 +45,7 @@ const UNLOCK_STORAGE_KEY = 'pp_nextstep_unlock_started_at';
    crosses each one. Granular for the first 5 minutes (where most
    drop-off happens), then every 5 min after that out to one hour. */
 const VIDEO_MILESTONES_S = [
+   45,                                    // opener — bridges vid_start → first-min drop-off
    60,  120,  180,  240,  300,            // 1-5 min: every 1 min
   600,  900, 1200, 1500, 1800,            // 6-30 min: every 5 min
  2100, 2400, 2700, 3000, 3300, 3600,      // 31-60 min: every 5 min
