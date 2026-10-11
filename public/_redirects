@@ -1,21 +1,298 @@
-# ─── Legacy ClickFunnels URL redirects ──────────────────────────────
-# These URLs used to serve VSL / landing pages on the old ClickFunnels
-# site (start.travismarziani.com was CF). Paid ad campaigns on
-# Google / Meta / TikTok still point at them. On the new React site
-# these paths don't exist, so React Router's catch-all was sending
-# everyone to NewForm — killing conversion on warmed-up ad traffic.
-#
-# Absolute targets (https://...) so travisfba.com + travismarziani.com
-# visitors land in one hop (no double-redirect through legacy hosts).
+# ─── Legacy ClickFunnels funnel URL redirects ───────────────────────
+# These were real paid-ad landing-page URLs on the old ClickFunnels
+# site (CF era). They map to equivalents on the new React site so
+# existing paid campaigns keep landing on the right destination.
+# Absolute targets so travisfba.com + travismarziani.com visitors
+# land in one hop.
 # ────────────────────────────────────────────────────────────────────
-/apply-now                        https://start.travismarziani.com/applynow     301!
-/get-started                      https://start.travismarziani.com/getstarted   301!
-/passion-product-fasttrack        https://start.travismarziani.com/fasttrack    301!
-/schedule-introductory-call       https://start.travismarziani.com/bookacall    301!
-/helium10                         https://start.travismarziani.com/nextstep     301!
-/junglescout                      https://start.travismarziani.com/nextstep     301!
-/bqool                            https://start.travismarziani.com/nextstep     301!
-/shopify                          https://start.travismarziani.com/nextstep     301!
+/apply-now                    https://start.travismarziani.com/applynow     301!
+/get-started                  https://start.travismarziani.com/getstarted   301!
+/passion-product-fasttrack    https://start.travismarziani.com/fasttrack    301!
+/schedule-introductory-call   https://start.travismarziani.com/bookacall    301!
+
+# ─── Legacy travismarziani.com + effectiveecommerce.com shortcuts ───
+# Travis's long-standing /resource shortlinks (affiliate links,
+# book recs, product recs, course bookmarks). Preserved from the
+# original travismarziani.com site so inbound links from YouTube
+# descriptions, podcasts, old emails, etc. keep working.
+#
+# A subset of entries intentionally point back to the funnel homepage
+# with a utm_source + utm_campaign tag so we can track inbound traffic
+# by the specific /resource shortcut that referred them.
+# ────────────────────────────────────────────────────────────────────
+/shopify/*  https://www.shopify.com/?ref=howtoecom  301!
+/volusion  https://www.volusion.com/v1/login  301!
+/bigcommerce  http://bigcommerce.evyy.net/c/179399/185949/2941  301!
+/DontMakeMeThink  http://www.amazon.com/Dont-Make-Think-Revisited-Usability/dp/0321965515/ref=as_li_ss_tl?ie=UTF8&qid=1457194059&sr=8-1&keywords=Dont+Make+Me+Think&linkCode=ll1&tag=effectecomme-20&linkId=9496d56750a4ba003e40e7db51a1ba15  301!
+/successpack/  http://bit.ly/effecom  301!
+/FacebookVideo  https://EffectiveEcommerce.com/?utm_source=Facebook&utm_medium=FacebookVideo&utm_campaign=FacebookVideo  301!
+/Audible  http://www.amazon.com/Audible-Free-Trial-Digital-Membership/dp/B00NB86OYE/ref=as_li_ss_tl?ie=UTF8&qid=1457192691&sr=8-6&keywords=audible&linkCode=ll1&tag=effectecomme-20&linkId=50ed91efc23b6b32ec305b2ca47add17  301!
+/99Designs  http://ninetyninedesigns.7eer.net/c/179399/197066/3172  301!
+/Canon-T5i  http://www.amazon.com/gp/product/B00KXG0RCC/ref=as_li_ss_tl?keywords=canont5i&qid=1456001411&ref_=nav_signin&s=photo&sr=1-5&linkCode=ll1&tag=effectecomme-20&linkId=dbff4d3bfcf70280457bed0fbb4f8c61  301!
+/Zoom-H4N  http://www.amazon.com/Zoom-H4NSP-Handheld-Multitrack-Recorder/dp/B01BHDAZ6W/ref=as_li_ss_tl?s=photo&ie=UTF8&qid=1457190369&sr=1-1&keywords=Zoom+H4N&linkCode=ll1&tag=effectecomme-20&linkId=193d217c3839f83cca6578cd4a8a3b5b  301!
+/Audio-Technica-ATR-3350  http://www.amazon.com/ATR-3350-XLR-Omnidirectional-Condenser-Microphone-connector/dp/B010H0FP66/ref=as_li_ss_tl?s=photo&ie=UTF8&qid=1457190740&sr=1-1&keywords=Technica+ATR-3350&linkCode=ll1&tag=effectecomme-20&linkId=9e3000fc4d5765283becdc016870e205  301!
+/Muslin-Chromakey-Green-Screen  http://www.amazon.com/Chromakey-Background-Support-Lighting-H604SB-1020G/dp/B0081WSF9M/ref=as_li_ss_tl?s=photo&ie=UTF8&qid=1457191077&sr=1-1&keywords=ePhoto+10+x+20+Muslin+Chromakey+Green&linkCode=ll1&tag=effectecomme-20&linkId=86c5c381d7b19003ff6929c2a07ffe36  301!
+/SanDisk-32GB-Extreme  http://www.amazon.com/SanDisk-Extreme-microSDHC-Adapter-SDSQXNE-032G-GN6MA/dp/B013CP5HCK/ref=as_li_ss_tl?s=photo&ie=UTF8&qid=1457191439&sr=1-1&keywords=SanDisk+32GB+Extreme&linkCode=ll1&tag=effectecomme-20&linkId=4a2d8630bddc2ce7d7130c307ba4b410  301!
+/AmazonBasics-Wireless-Remote-Control  http://www.amazon.com/AmazonBasics-Wireless-Control-Digital-Cameras/dp/B00BCEJ0E0/ref=as_li_ss_tl?s=photo&ie=UTF8&qid=1457191599&sr=1-1&keywords=AmazonBasics+Wireless+Remote+Control+for+Canon+Digital+SLR+Cameras&linkCode=ll1&tag=effectecomme-20&linkId=25472ed17f83c52e0ec6cf098c52303a  301!
+/How-to-Win-Friends-and-Influence-People  http://www.amazon.com/How-Win-Friends-Influence-People/dp/0671027034/ref=as_li_ss_tl?ie=UTF8&qid=1457194317&sr=8-1&keywords=How+to+Win+Friends+and+Influence+People&linkCode=ll1&tag=effectecomme-20&linkId=a18638ca687516cb618186f985c3c218  301!
+/Think-and-Grow-Rich  http://www.amazon.com/Think-Grow-Rich-Landmark-Bestseller/dp/1585424331/ref=as_li_ss_tl?ie=UTF8&qid=1457194626&sr=8-1&keywords=Think+and+Grow+Rich&linkCode=ll1&tag=effectecomme-20&linkId=34bda446ac106f031e898c4ec3634067  301!
+/4-Hour-Work-Week  http://www.amazon.com/4-Hour-Workweek-Escape-Live-Anywhere/dp/0307465357/ref=as_li_ss_tl?ie=UTF8&qid=1457195543&sr=8-1&keywords=4+Hour+Work+Week&linkCode=ll1&tag=effectecomme-20&linkId=a518f5312abd1b9ea7987a76a2ced863  301!
+/E-Myth-Revisited  http://www.amazon.com/E-Myth-Revisited-Small-Businesses-About/dp/0887307280/ref=as_li_ss_tl?ie=UTF8&qid=1457195763&sr=8-1&keywords=E-Myth+Revisited&linkCode=ll1&tag=effectecomme-20&linkId=7787feadb90e85387094fcd161b19e58  301!
+/Audio-Technica-ATH-M30x  http://www.amazon.com/Audio-Technica-ATH-M30x-Professional-Monitor-Headphones/dp/B00HVLUQW8/ref=as_li_ss_tl?ie=UTF8&qid=1457199390&sr=8-1&keywords=Audio-Technica+ATH-M30x+Professional+Studio+Monitor+Headphones&linkCode=ll1&tag=effectecomme-20&linkId=1c7fbc79c67eadf36d8341a133d89293  301!
+/Asus-VS247H-P  http://www.amazon.com/VS247H-P-1920x1080-DVI-D-Back-lit-Monitor/dp/B005BZNDS0/ref=as_li_ss_tl?ie=UTF8&qid=1457199987&sr=8-1&keywords=Asus+VS247H-P+23.6-Inch+Full-HD+LED-Lit+LCD+Monitor&linkCode=ll1&tag=effectecomme-20&linkId=1721fb2bcaccf7f70f0b3a724bbf366e  301!
+/Programmable-Kettle  http://www.amazon.com/Hamilton-Beach-40996-Programmable-1-7-Liter/dp/B0083I7THI/ref=as_li_ss_tl?ie=UTF8&qid=1457200372&sr=8-1&keywords=Hamilton+Beach+40996+Programmable+Kettle+1.7-Liter&linkCode=ll1&tag=effectecomme-20&linkId=049e7303208dd3c48d74906395f7bed5  301!
+/Kenko-Green-Tea  http://www.amazon.com/Matcha-Tea-Organic-Premium-Ceremonial/dp/B00V9FJZMY/ref=as_li_ss_tl?ie=UTF8&qid=1457200742&sr=8-1&keywords=KENKO+Matcha+Green+Tea+Powder&linkCode=ll1&tag=effectecomme-20&linkId=a73c104a170f572896667406a426ae24  301!
+/xero  http://www.tkqlhce.com/click-7886890-12229930-1434659947000  301!
+/fiverr  https://www.fiverr.com/pe/Lxoj3A  301!
+/FacebookGroup  https://start.travismarziani.com/?utm_source=facebookgroup&utm_medium=funnel-redirect&utm_campaign=facebookgroup  301!
+/jab  http://amzn.to/2b2YkPM  301!
+/onlinejobs/*  https://store.onlinejobs.ph/?aid=21268  301!
+/leadpages  http://link.leadpages.net/aff_c?offer_id=6&aff_id=20672  301!
+/bluehost  http://www.bluehost.com/track/effectiveecommerce/  301!
+/free-success-pack  https://start.travismarziani.com/?utm_source=free-success-pack&utm_medium=funnel-redirect&utm_campaign=free-success-pack  301!
+/free-success-pack/  https://start.travismarziani.com/?utm_source=free-success-pack&utm_medium=funnel-redirect&utm_campaign=free-success-pack  301!
+/Facebook-Course-Signup  https://start.travismarziani.com/?utm_source=facebook-course-signup&utm_medium=funnel-redirect&utm_campaign=facebook-course-signup  301!
+/Shopify  https://www.shopify.com/?ref=howtoecom  301!
+/Shopify/*  https://www.shopify.com/?ref=howtoecom  301!
+/Wix  http://wixstats.com/?a=10719&c=2197&s1=  301!
+/Wix/*  http://wixstats.com/?a=10719&c=2197&s1=  301!
+/wix  http://wixstats.com/?a=10719&c=2197&s1=  301!
+/wix/*  http://wixstats.com/?a=10719&c=2197&s1=  301!
+/pnb/*  https://start.travismarziani.com/?utm_source=pnb&utm_medium=funnel-redirect&utm_campaign=pnb  301!
+/vapack/*  https://docs.google.com/document/d/1mYfzFiS7ENfwxU5aN91PCsWdHzr92pCzk-ZwAwmPY_Q/edit?usp=sharing  301!
+/airbnb/  https://www.airbnb.com/c/tmarziani  301!
+/PNB  https://start.travismarziani.com/?utm_source=pnb&utm_medium=funnel-redirect&utm_campaign=pnb  301!
+/PerformanceNutButter  https://start.travismarziani.com/?utm_source=performancenutbutter&utm_medium=funnel-redirect&utm_campaign=performancenutbutter  301!
+/mailchimp  http://eepurl.com/E5Olj  301!
+/MailChimp  http://eepurl.com/E5Olj  301!
+/live  https://youtu.be/mm8uO8kREOc  301!
+/live/*  https://youtu.be/mm8uO8kREOc  301!
+/Live  https://youtu.be/mm8uO8kREOc  301!
+/Live/*  https://youtu.be/mm8uO8kREOc  301!
+/es  /esstarting  301!
+/FacebookQuestions  https://docs.google.com/forms/d/e/1FAIpQLSdpfDaWY24cFkOm8gkRJrLXUBvitDcvfRngwGGNyCBDhdSIug/viewform?usp=sf_link  301!
+/SumoMe  https://sumo.com/  301!
+/Klaviyo  https://www.klaviyo.com/partner/signup?utm_source=001d0000024G2xv&utm_medium=partner  301!
+/klaviyo  https://www.klaviyo.com/partner/signup?utm_source=001d0000024G2xv&utm_medium=partner  301!
+/sumoee  https://sumo.com/  301!
+/facebookcourse  https://www.effectiveecommerce.com/product/beginners-facebook-ads-course/  301!
+/successpack  /ESOther  301!
+/successpackf  /ESFacebook  301!
+/dontmakemethink  https://amzn.to/2Hsrqcw  301!
+/facebookvideo  https://EffectiveEcommerce.com/?utm_source=Facebook&utm_medium=FacebookVideo&utm_campaign=FacebookVideo  301!
+/audible  http://www.amazon.com/Audible-Free-Trial-Digital-Membership/dp/B00NB86OYE/ref=as_li_ss_tl?ie=UTF8&qid=1457192691&sr=8-6&keywords=audible&linkCode=ll1&tag=effectecomme-20&linkId=50ed91efc23b6b32ec305b2ca47add17  301!
+/99designs  http://ninetyninedesigns.7eer.net/c/179399/197066/3172  301!
+/canon-t5i  http://www.amazon.com/gp/product/B00KXG0RCC/ref=as_li_ss_tl?keywords=canont5i&qid=1456001411&ref_=nav_signin&s=photo&sr=1-5&linkCode=ll1&tag=effectecomme-20&linkId=dbff4d3bfcf70280457bed0fbb4f8c61  301!
+/zoom-h4n  http://www.amazon.com/Zoom-H4NSP-Handheld-Multitrack-Recorder/dp/B01BHDAZ6W/ref=as_li_ss_tl?s=photo&ie=UTF8&qid=1457190369&sr=1-1&keywords=Zoom+H4N&linkCode=ll1&tag=effectecomme-20&linkId=193d217c3839f83cca6578cd4a8a3b5b  301!
+/audio-technica-atr-3350  http://www.amazon.com/ATR-3350-XLR-Omnidirectional-Condenser-Microphone-connector/dp/B010H0FP66/ref=as_li_ss_tl?s=photo&ie=UTF8&qid=1457190740&sr=1-1&keywords=Technica+ATR-3350&linkCode=ll1&tag=effectecomme-20&linkId=9e3000fc4d5765283becdc016870e205  301!
+/muslin-chromakey-green-screen  http://www.amazon.com/Chromakey-Background-Support-Lighting-H604SB-1020G/dp/B0081WSF9M/ref=as_li_ss_tl?s=photo&ie=UTF8&qid=1457191077&sr=1-1&keywords=ePhoto+10+x+20+Muslin+Chromakey+Green&linkCode=ll1&tag=effectecomme-20&linkId=86c5c381d7b19003ff6929c2a07ffe36  301!
+/sandisk-32gb-extreme  http://www.amazon.com/SanDisk-Extreme-microSDHC-Adapter-SDSQXNE-032G-GN6MA/dp/B013CP5HCK/ref=as_li_ss_tl?s=photo&ie=UTF8&qid=1457191439&sr=1-1&keywords=SanDisk+32GB+Extreme&linkCode=ll1&tag=effectecomme-20&linkId=4a2d8630bddc2ce7d7130c307ba4b410  301!
+/amazonbasics-wireless-remote-control  http://www.amazon.com/AmazonBasics-Wireless-Control-Digital-Cameras/dp/B00BCEJ0E0/ref=as_li_ss_tl?s=photo&ie=UTF8&qid=1457191599&sr=1-1&keywords=AmazonBasics+Wireless+Remote+Control+for+Canon+Digital+SLR+Cameras&linkCode=ll1&tag=effectecomme-20&linkId=25472ed17f83c52e0ec6cf098c52303a  301!
+/how-to-win-friends-and-influence-people  http://www.amazon.com/How-Win-Friends-Influence-People/dp/0671027034/ref=as_li_ss_tl?ie=UTF8&qid=1457194317&sr=8-1&keywords=How+to+Win+Friends+and+Influence+People&linkCode=ll1&tag=effectecomme-20&linkId=a18638ca687516cb618186f985c3c218  301!
+/think-and-grow-rich  http://www.amazon.com/Think-Grow-Rich-Landmark-Bestseller/dp/1585424331/ref=as_li_ss_tl?ie=UTF8&qid=1457194626&sr=8-1&keywords=Think+and+Grow+Rich&linkCode=ll1&tag=effectecomme-20&linkId=34bda446ac106f031e898c4ec3634067  301!
+/4-hour-work-week  http://www.amazon.com/4-Hour-Workweek-Escape-Live-Anywhere/dp/0307465357/ref=as_li_ss_tl?ie=UTF8&qid=1457195543&sr=8-1&keywords=4+Hour+Work+Week&linkCode=ll1&tag=effectecomme-20&linkId=a518f5312abd1b9ea7987a76a2ced863  301!
+/e-myth-revisited  http://www.amazon.com/E-Myth-Revisited-Small-Businesses-About/dp/0887307280/ref=as_li_ss_tl?ie=UTF8&qid=1457195763&sr=8-1&keywords=E-Myth+Revisited&linkCode=ll1&tag=effectecomme-20&linkId=7787feadb90e85387094fcd161b19e58  301!
+/audio-technica-ath-m30x  http://www.amazon.com/Audio-Technica-ATH-M30x-Professional-Monitor-Headphones/dp/B00HVLUQW8/ref=as_li_ss_tl?ie=UTF8&qid=1457199390&sr=8-1&keywords=Audio-Technica+ATH-M30x+Professional+Studio+Monitor+Headphones&linkCode=ll1&tag=effectecomme-20&linkId=1c7fbc79c67eadf36d8341a133d89293  301!
+/asus-vs247h-p  http://www.amazon.com/VS247H-P-1920x1080-DVI-D-Back-lit-Monitor/dp/B005BZNDS0/ref=as_li_ss_tl?ie=UTF8&qid=1457199987&sr=8-1&keywords=Asus+VS247H-P+23.6-Inch+Full-HD+LED-Lit+LCD+Monitor&linkCode=ll1&tag=effectecomme-20&linkId=1721fb2bcaccf7f70f0b3a724bbf366e  301!
+/programmable-kettle  http://www.amazon.com/Hamilton-Beach-40996-Programmable-1-7-Liter/dp/B0083I7THI/ref=as_li_ss_tl?ie=UTF8&qid=1457200372&sr=8-1&keywords=Hamilton+Beach+40996+Programmable+Kettle+1.7-Liter&linkCode=ll1&tag=effectecomme-20&linkId=049e7303208dd3c48d74906395f7bed5  301!
+/kenko-green-tea  http://www.amazon.com/Matcha-Tea-Organic-Premium-Ceremonial/dp/B00V9FJZMY/ref=as_li_ss_tl?ie=UTF8&qid=1457200742&sr=8-1&keywords=KENKO+Matcha+Green+Tea+Powder&linkCode=ll1&tag=effectecomme-20&linkId=a73c104a170f572896667406a426ae24  301!
+/facebookgroup  https://start.travismarziani.com/?utm_source=facebookgroup&utm_medium=funnel-redirect&utm_campaign=facebookgroup  301!
+/facebookgroup/*  https://start.travismarziani.com/?utm_source=facebookgroup&utm_medium=funnel-redirect&utm_campaign=facebookgroup  301!
+/facebook-course-signup  https://start.travismarziani.com/?utm_source=facebook-course-signup&utm_medium=funnel-redirect&utm_campaign=facebook-course-signup  301!
+/pnb  https://start.travismarziani.com/?utm_source=pnb&utm_medium=funnel-redirect&utm_campaign=pnb  301!
+/performancenutbutter  https://start.travismarziani.com/?utm_source=performancenutbutter&utm_medium=funnel-redirect&utm_campaign=performancenutbutter  301!
+/performancenutbutter/*  https://start.travismarziani.com/?utm_source=performancenutbutter&utm_medium=funnel-redirect&utm_campaign=performancenutbutter  301!
+/facebookquestions  https://docs.google.com/forms/d/e/1FAIpQLSdpfDaWY24cFkOm8gkRJrLXUBvitDcvfRngwGGNyCBDhdSIug/viewform?usp=sf_link  301!
+/sumome  https://sumo.com/  301!
+/az  https://www.effectiveecommerce.com/product/25k-ecommerce-profit-plan-course/  301!
+/az/*  https://www.effectiveecommerce.com/product/25k-ecommerce-profit-plan-course/  301!
+/AZ  https://www.effectiveecommerce.com/product/25k-ecommerce-profit-plan-course/  301!
+/AZ/*  https://www.effectiveecommerce.com/product/25k-ecommerce-profit-plan-course/  301!
+/Az  https://www.effectiveecommerce.com/product/25k-ecommerce-profit-plan-course/  301!
+/Az/*  https://www.effectiveecommerce.com/product/25k-ecommerce-profit-plan-course/  301!
+/itunes  https://itunes.apple.com/us/podcast/effective-ecommerce-podcast-how-to-start-fuel-build/id1282585420?mt=2  301!
+/OnlineStoreAZ  https://www.effectiveecommerce.com/product/25k-ecommerce-profit-plan-course/  301!
+/OnlineStoreAZ/*  https://www.effectiveecommerce.com/product/25k-ecommerce-profit-plan-course/  301!
+/personalcreditcard  https://www.referyourchasecard.com/6/RI2F9XMFZM  301!
+/businesscreditcard  https://applynow.chase.com/FlexAppWeb/renderApp.do?SPID=FP3F&CELL=63HB&MSC=1543730201  301!
+/amexgold  http://refer.amex.us/TRAVIMPp1d?xl=cp27  301!
+/sapphirereserve  https://www.referyourchasecard.com/19/WZNYLUYW7N  301!
+/currentcard  /my-current-credit-card/  301!
+/shippingeasy  http://shippingeasy.7eer.net/c/179399/206898/3495  301!
+/customerservicesystem  http://s.bl-1.com/h/RFwsLP1?url=https://selfstarterorg.teachable.com/p/serviceautopilot/?affcode=123434_j3-yjlnn  301!
+/pnbamazon  https://start.travismarziani.com/?utm_source=pnbamazon&utm_medium=funnel-redirect&utm_campaign=pnbamazon  301!
+/youtube  https://www.youtube.com/channel/UCxkIzPnPzWLz4IeuxIROflg  301!
+/onlinejobs  https://store.onlinejobs.ph/?aid=21268  301!
+/AdwordsCourse  https://www.effectiveecommerce.com/product/adwords-and-product-listing-ads-google-shopping-course/  301!
+/greenscreen  http://www.amazon.com/Chromakey-Background-Support-Lighting-H604SB-1020G/dp/B0081WSF9M/ref=as_li_ss_tl?s=photo&ie=UTF8&qid=1457191077&sr=1-1&keywords=ePhoto+10+x+20+Muslin+Chromakey+Green&linkCode=ll1&tag=effectecomme-20&linkId=86c5c381d7b19003ff6929c2a07ffe36  301!
+/product/online-store-a-z-course  https://www.effectiveecommerce.com/product/25k-ecommerce-profit-plan-course/  301!
+/product/online-store-a-z-course/*  https://www.effectiveecommerce.com/product/25k-ecommerce-profit-plan-course/  301!
+/product/online-store-a-z-course2  https://www.effectiveecommerce.com/product/25k-ecommerce-profit-plan-course/  301!
+/product/online-store-a-z-course2/*  https://www.effectiveecommerce.com/product/25k-ecommerce-profit-plan-course/  301!
+/adwordscourse1  /product/adwords-and-product-listing-ads-google-shopping-course/  301!
+/adwordscourse  /product/adwords-and-product-listing-ads-google-shopping-course/  301!
+/adwordscourse/*  /product/adwords-and-product-listing-ads-google-shopping-course/  301!
+/amazoncourse/*  https://start.travismarziani.com/?utm_source=amazoncourse&utm_medium=funnel-redirect&utm_campaign=amazoncourse  301!
+/woocommerce  https://www.siteground.com/go/travis  301!
+/omnistaraffiliate  http://omnistar.ositracker.com/85489/903  301!
+/theleanstartup  https://amzn.to/2I1JzPx  301!
+/howtowinfriends  https://amzn.to/2vJgvJO  301!
+/davidandgoliath  https://amzn.to/2qZTeOl  301!
+/thinkgrowrich  https://amzn.to/2I0C7UH  301!
+/emyth  https://amzn.to/2Fj1cXQ  301!
+/primalbranding  https://amzn.to/2vLpABU  301!
+/storybrand  https://amzn.to/3cKvfKw  301!
+/leadwithastory  https://amzn.to/2KeGX16  301!
+/jjjrh  https://amzn.to/2qZel3V  301!
+/trustme  https://amzn.to/2JpeHI7  301!
+/goodtogreat  https://amzn.to/2KdTGBv  301!
+/essentialism  https://www.amazon.com/gp/product/1984298704/ref=as_li_qf_asin_il_tl?ie=UTF8&tag=effectecomme-20&creative=9325&linkCode=as2&creativeASIN=1984298704&linkId=54639dea1a4968467c34ddf3859ea6f6  301!
+/stevejobs  https://amzn.to/2KfzjDH  301!
+/elonmusk  https://amzn.to/2Ht3WYO  301!
+/samwalton  https://amzn.to/2KfA4N3  301!
+/carnagie  https://amzn.to/2r2nJDl  301!
+/jefflaunch  https://amzn.to/2HscyPt  301!
+/4hour  https://amzn.to/2r0uYM8  301!
+/kumare  https://amzn.to/2Illwu9  301!
+/vinocards/*  https://www.amazon.com/gp/product/B07KT6VL8S/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=B07KT6VL8S&linkCode=as2&tag=effectecomme-20&linkId=e8ccaae564a8875a102360d28029c87d  301!
+/autoimmunitea  https://www.kickstarter.com/projects/1429739129/autoimmuni-tea-tea-blends-for-autoimmune-symptoms  301!
+/siteground  https://www.siteground.com/go/travis  301!
+/travisfbgroup  https://www.facebook.com/groups/EffectiveEcommerce/  301!
+/feedbackgenius  https://www.sellerlabs.com/feedback-genius/  301!
+/virallaunch  https://viral-launch.com/aff/idevaffiliate.php?id=1804  301!
+/junglescout  https://junglescout.grsm.io/travismarziani127  301!
+/hostgator  http://partners.hostgator.com/Yoz5R  301!
+/upwork  https://www.upwork.com/?gclid=CjwKCAjwmJbeBRBCEiwAAY4VVcu4hqD0gdSqjRRotWCBKjnuMrV6aTGvoIWANWci6tlZhAl_c1oDLRoC1f4QAvD_BwE  301!
+/beta  https://bdancewear.lpages.co/effective-ecommerce-passion-product-formula-is-live/  301!
+/beta/*  https://bdancewear.lpages.co/effective-ecommerce-passion-product-formula-is-live/  301!
+/bluehostc  http://www.bluehost.com/track/effectiveecommerce/  301!
+/winfriends  https://amzn.to/2TcK11U  301!
+/theroad  https://amzn.to/2TaqC1B  301!
+/wpengine  https://shareasale.com/r.cfm?b=1255604&u=2027776&m=41388&urllink=&afftrack=  301!
+/hostinger  https://www.hostg.xyz/aff_c?offer_id=394&aff_id=13695  301!
+/a2hosting  http://www.a2hosting.com?aid=effectiveecommerce  301!
+/dreamhost  http://mbsy.co/dreamhost/37090468  301!
+/expertsecrets  https://expertsecrets.com/?cf_affiliate_id=1647108&affiliate_id=1647108&aff_sub=&aff_sub2=&nopopup=false&noautoplay=false&cookiepreview=false  301!
+/clickfunnels  https://clickfunnels.com/?cf_affiliate_id=1647108&affiliate_id=1647108  301!
+/ideagenerator  https://docs.google.com/spreadsheets/d/1bGZY-rtMQ32e8WvdEgu445bXJmZtVoM2O9_vaYQGd7I/edit?usp=sharing  301!
+/tubebuddy  https://www.tubebuddy.com/travismarziani  301!
+/siteground1  https://www.siteground.com/go/wordpressvs2019  301!
+/wootutorial2019  https://www.siteground.com/index.htm?afcode=dbc9ac2cb4979da9b9e3d87ce944cd34&campaign=wootutorial2019  301!
+/bestecomplatform2019  https://www.siteground.com/go/bestecomplatform2019  301!
+/ppfswitch/*  https://start.travismarziani.com/?utm_source=ppfswitch&utm_medium=funnel-redirect&utm_campaign=ppfswitch  301!
+/shopifybest  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifybest  301!
+/whatshopify  https://www.shopify.com/?ref=howtoecom&utm_campaign=whatshopify  301!
+/4minshopify  https://www.shopify.com/?ref=howtoecom&utm_campaign=4minshopify  301!
+/seoshopify  https://www.shopify.com/?ref=howtoecom&utm_campaign=seoshopify  301!
+/15minshopify  https://www.shopify.com/?ref=howtoecom&utm_campaign=15minshopify  301!
+/shopifyvsw  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyvsw  301!
+/shopifyvsb  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyvsb  301!
+/rightshopify  https://www.shopify.com/?ref=howtoecom&utm_campaign=rightshopify  301!
+/shopifyvv  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyvv  301!
+/shopifyvsm  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyvsm  301!
+/shopifyvsw2  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyvsw2  301!
+/shopifyvswo  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyvswo  301!
+/shopifyvse  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyvse  301!
+/shopifyvsb2  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyvsb2  301!
+/shopifyvsbig  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyvsbig  301!
+/shopifyvsama  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyvsama  301!
+/shopifyvssq  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyvssq  301!
+/5shopifysteps  https://www.shopify.com/?ref=howtoecom&utm_campaign=5shopifysteps  301!
+/shopifyx1  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyx1  301!
+/shopifyx2  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyx2  301!
+/shopifyx3  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyx3  301!
+/shopifyx  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyx  301!
+/shopifymis  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifymis  301!
+/shopifyf  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyf  301!
+/shopifynot  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifynot  301!
+/shopifywatch  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifywatch  301!
+/sitegroundnot  https://www.siteground.com/index.htm?afcode=dbc9ac2cb4979da9b9e3d87ce944cd34&campaign=sitegroundnot  301!
+/sitegroundwalk  https://www.siteground.com/index.htm?afcode=dbc9ac2cb4979da9b9e3d87ce944cd34&campaign=sitegroundwalk  301!
+/sitegroundwoo  https://www.siteground.com/index.htm?afcode=dbc9ac2cb4979da9b9e3d87ce944cd34&campaign=sitegroundwoo  301!
+/sitegroundsteps  https://www.siteground.com/index.htm?afcode=dbc9ac2cb4979da9b9e3d87ce944cd34&campaign=sitegroundsteps  301!
+/sitegroundpc  https://www.siteground.com/index.htm?afcode=dbc9ac2cb4979da9b9e3d87ce944cd34&campaign=sitegroundpc  301!
+/sitegroundbest  https://www.siteground.com/index.htm?afcode=dbc9ac2cb4979da9b9e3d87ce944cd34&campaign=sitegroundbest  301!
+/sitegroundword  https://www.siteground.com/index.htm?afcode=dbc9ac2cb4979da9b9e3d87ce944cd34&campaign=sitegroundword  301!
+/shopifyvswoo2020  https://www.shopify.com/?ref=howtoecom&utm_campaign=shopifyvswoo2020  301!
+/woovsshopify2020  https://www.siteground.com/index.htm?afcode=dbc9ac2cb4979da9b9e3d87ce944cd34&campaign=woovsshopify2020  301!
+/essentialismgreg  https://www.amazon.com/Essentialism-Disciplined-Pursuit-Greg-McKeown/dp/0804137382  301!
+/currentppf  https://tny.sh/Tm33FPJ  301!
+/currentppf/*  https://tny.sh/Tm33FPJ  301!
+/hubstaff  http://ssqt.co/m5c6uS5  301!
+/hubstaff/*  http://ssqt.co/m5c6uS5  301!
+/besthosting2020  https://www.siteground.com/index.htm?afcode=dbc9ac2cb4979da9b9e3d87ce944cd34  301!
+/helium10  https://crushtrk.com/?a=1854&c=188&p=r&s1=  301!
+/jsvsh10  https://junglescout.grsm.io/jsvsh10  301!
+/h10vsjs  https://crushtrk.com/?a=1854&c=188&p=r&s1=&s2=h10vsjs  301!
+/h10top10  https://crushtrk.com/?a=1854&c=188&p=r&s1=&s2=h10top10  301!
+/top10shopify  https://www.shopify.com/?ref=howtoecom&utm_campaign=top10shopify  301!
+/wootop10  https://www.siteground.com/go/wootop10  301!
+/proresearch1  https://crushtrk.com/?a=1854&c=188&p=r&s1=&s2=proresearch1  301!
+/onlinestore2020  https://www.shopify.com/?ref=howtoecom&utm_campaign=howtoonlinestore2020  301!
+/sgonlinestore2020  https://www.siteground.com/go/sgonlinestore2020  301!
+/ppf  https://tny.sh/Tm33FPJ  301!
+/ppcuniversity  https://airtable.com/shrwkJMM9OWFJTVqY  301!
+/ecomplatformshopify  https://www.shopify.com/?ref=howtoecom&utm_campaign=ecomplatformshopify  301!
+/ecomplatformsiteground  https://www.siteground.com/go/z5bl8043jc  301!
+/vaguide  https://bdancewear.lpages.co/6-week-va-intensive-program-with-va-guide/  301!
+/freecacao  http://performancenutbutter.com/cacao  301!
+/pnbcacao  https://www.amazon.com/Performance-Nut-Butter-Cacao-Box/dp/B07W465XDL/ref=sr_1_1  301!
+/passionformulacourse  https://www.passionproductformula.com/  301!
+/passionproductshow  http://passionproductshow.com/  301!
+/blueoceanstrat  https://amzn.to/2SdElpJ  301!
+/influence  https://amzn.to/33hB0fs  301!
+/onething  https://amzn.to/3l6Y0nM  301!
+/ytwaitlist  https://start.travismarziani.com/?utm_source=ytwaitlist&utm_medium=funnel-redirect&utm_campaign=ytwaitlist  301!
+/sony6600  https://amzn.to/3O6GH4j  301!
+/h4nrecorder  https://amzn.to/3o3bR1C  301!
+/rodemicpro  https://amzn.to/3yAWgeQ  301!
+/tascam  https://amzn.to/3O7xFnv  301!
+/godoxled  https://amzn.to/3z1HfnI  301!
+/glowezsoftbox  https://amzn.to/3AKguVV  301!
+/neewerled  https://amzn.to/3c8ytLA  301!
+/sonye10  https://amzn.to/3yI4Us1  301!
+/samyang24mm  https://amzn.to/3ICS6HQ  301!
+/COMPLETE_Amazon_FBA_Tutorial_In_2023_(Step_By_Step)  https://bdancewear.lpages.co/ppf-live-email-capture-green/  301!
+/ppfswitch  https://start.travismarziani.com/?utm_source=ppfswitch&utm_medium=funnel-redirect&utm_campaign=ppfswitch  301!
+/h10-amzexposed  https://crushtrk.com/?a=1854&c=188&p=r&s1=  301!
+/amazoncourse  https://start.travismarziani.com/?utm_source=amazoncourse&utm_medium=funnel-redirect&utm_campaign=amazoncourse  301!
+/carnivoreelectrolytes  https://www.amazon.com/dp/B0CP4GLMH4  301!
+/isoldfree  https://start.travismarziani.com/?utm_source=isoldfree&utm_medium=funnel-redirect&utm_campaign=isoldfree  301!
+/getfreecourse  https://start.travismarziani.com/?utm_source=getfreecourse&utm_medium=funnel-redirect&utm_campaign=getfreecourse  301!
+/shopify  https://shopify.pxf.io/za1EDm  301!
+/partner  https://docs.google.com/forms/d/e/1FAIpQLSfL4AqXjrt2jVLld50KftlAWsEdFopGNqod2cQnLsJtS5zRWA/viewform  301!
+/walmarthelp  https://bdancewear.lpages.co/get-help-selling-on-walmartcom/  301!
+/rocket_tea  https://www.amazon.com/High-Caffeine-Tea-Caffeinated-Biodegradable/dp/B0B5FCJ91Y  301!
+/1dollarprc  https://bdancewear.lpages.co/5-day-amazon-fba-product-research-challenge/  301!
+/hubstaff-21vasteps  https://bdancewear.lpages.co/6-week-va-intensive-program-with-va-guide/  301!
+/walmartcourse  https://bdancewear.lpages.co/walmart-course-updates/  301!
+/LiveAmazonEvent-Signup  https://bdancewear.lpages.co/passion-product-live-2023/  301!
+/freegoogleadstrain  https://bdancewear.lpages.co/free-1hr-google-ads-training/  301!
+/5dayprchallenge  https://start.travismarziani.com/?utm_source=5dayprchallenge&utm_medium=funnel-redirect&utm_campaign=5dayprchallenge  301!
+/stubgroup  https://bdancewear.lpages.co/free-1hr-google-ads-training/  301!
+/rebaid  https://start.travismarziani.com/?utm_source=rebaid&utm_medium=funnel-redirect&utm_campaign=rebaid  301!
+/vinocards  https://www.amazon.com/Vino-Cards-Complete-Beginners-Flashcards/dp/B07KT6VL8S  301!
+/6-week-va-program  https://bdancewear.lpages.co/6-week-va-intensive-program-with-va-guide/  301!
+/vapack  https://bdancewear.lpages.co/6-week-va-intensive-program-with-va-guide/  301!
+/amazonppccourse  https://start.travismarziani.com/?utm_source=amazonppccourse&utm_medium=funnel-redirect&utm_campaign=amazonppccourse  301!
+/smoothiecards  https://www.amazon.com/Smoothie-Cards-40-Recipes-Professional/dp/B09QYXZH2T  301!
+/bigtalkcards  https://www.amazon.com/BIG-TALK-Question-Card-Game/dp/B06Y2423YH  301!
+/searpro  https://www.amazon.com/POWERFUL-SearPro-Cooking-Torch-Charcoal/dp/B08NWM3ZKB  301!
+/gacourse  https://start.travismarziani.com/?utm_source=gacourse&utm_medium=funnel-redirect&utm_campaign=gacourse  301!
+/toolorganizer  https://www.amazon.com/Tool-Wrangler-Organization-Dewalt-Batteries/dp/B09HGYP8CM/  301!
+/winbathrobecurls3m  https://bdancewear.lpages.co/bathrobe-curls/  301!
+/cocktailcards-amazon  https://www.amazon.com/Cocktail-Cards-Cocktails-Bartender-Instructions/dp/B08R7T566B  301!
+/cocktailcards  https://www.amazon.com/Cocktail-Cards-Cocktails-Bartender-Instructions/dp/B08R7T566B  301!
+/freeamazoncourse-spanish  https://bdancewear.lpages.co/free-course-st-original-design-spanish/  301!
+/smartscout  https://smartscout.com/?fpr=travis  301!
+/nolimitcreatives  https://bdancewear.lpages.co/fba-creatives-email-capture/  301!
+/bobskeywords  https://www.bobskeywords.com/  301!
+/prosper  https://bdancewear.lpages.co/prosper/  301!
+/mindset  https://start.travismarziani.com/?utm_source=mindset&utm_medium=funnel-redirect&utm_campaign=mindset  301!
+/carnivore  https://bdancewear.lpages.co/carnivore-electrolytes/  301!
+/freecall  https://start.travismarziani.com/?utm_source=freecall&utm_medium=funnel-redirect&utm_campaign=freecall  301!
+/heliumten  https://crushtrk.com/?a=1854&c=188&p=r&s4=TRAVIS10&s5=PURL-026489  301!
+/buycarnivore  https://www.amazon.com/dp/B0CP4GLMH4  301!
 
 # ─── travisfba.com → start.travismarziani.com legacy-domain redirects
 #
