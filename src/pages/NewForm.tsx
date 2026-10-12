@@ -221,6 +221,22 @@ export function NewForm() {
      target visitors are the common case. */
   const showPhoneField = country === null || country.audience === 'target';
 
+  /* Attribution snapshot for native form POST hidden inputs. Merges
+     URL params + sessionStorage so UTMs/click-IDs survive a page
+     refresh. Recomputed on every render so the DOM always reflects
+     the latest sessionStorage state at submit time. */
+  const hiddenAttribution = useMemo(() => {
+    if (typeof window === 'undefined') return {} as Record<string, string>;
+    const out: Record<string, string> = {};
+    try {
+      for (const [k, v] of Object.entries(readAttribution())) {
+        if (v) out[k] = String(v);
+      }
+    } catch { /* no-op */ }
+    return out;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [country, seed]);
+
   useEffect(() => {
     document.title = 'Passion Product Formula - Free Training';
     // Capture utm_* into sessionStorage so they survive the form
@@ -292,159 +308,78 @@ export function NewForm() {
      Per-campaign headline overrides via UTM (see loadCampaignVariant
      above) still work and take precedence. */
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  /* ─── NATIVE FORM POST + SERVER-SIDE 302 ──────────────────────
+     The form POSTs natively to /.netlify/functions/newform-post,
+     which fires Zapier server-side then returns a 302 to /nextstep
+     or /router. Browser handles the submit atomically — no way
+     for a JS exception, iOS tab-backgrounding, or extension to
+     kill the redirect.
 
-    // Honeypot trip - silently drop the submission. Show a success-
-    // looking message so the bot's success-detection scrapers don't
-    // immediately flag this form. We never set submitting=true so
-    // the user doesn't see anything spin if a human happened to
-    // accidentally tab into the hidden field.
+     This handler fires client-side analytics BEFORE the browser's
+     native form POST takes over. We do NOT preventDefault (except
+     on honeypot trip). We do NOT call window.location.href. The
+     browser does the navigation itself. ───────────────────────── */
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    // Honeypot trip — silently drop. preventDefault stops the
+    // native submit so the bot never reaches the Netlify function.
     if (honeypot.trim()) {
-      trackEvent('newform_honeypot_tripped', {
-        honeypot_value_length: honeypot.length,
-      });
+      e.preventDefault();
+      try { trackEvent('newform_honeypot_tripped', { honeypot_value_length: honeypot.length }); } catch { /* no-op */ }
       return;
     }
+
+    // Rely on native HTML5 validation (required + type="email") to
+    // block empty / malformed submissions. The browser shows its
+    // own UI for those and prevents the submit from firing at all.
+    // We don't need state-based error messages anymore.
 
     const cleanFirst = firstname.trim();
     const cleanLast  = lastname.trim();
     const cleanEmail = email.trim().toLowerCase();
     const cleanPhone = phone.trim();
 
-    if (!cleanFirst) { setError('Please enter your first name.'); return; }
-    if (!cleanLast)  { setError('Please enter your last name.'); return; }
-    if (!cleanEmail || !cleanEmail.includes('@')) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-    // Phone required for target-market visitors only. Non-target
-    // audiences never get a sales call anyway (Mailchimp routing,
-    // email-only funnel), so collecting a phone just adds friction
-    // for leads that don't need one.
-    if (showPhoneField && !cleanPhone) {
-      setError('Please enter your phone number so we can text you a reminder.');
-      return;
-    }
-
-    setSubmitting(true);
-
-    // Phone is composed from the visitor's selected dial country +
-    // the local-format number they typed.
     const fullPhone = composePhone(cleanPhone, dialCountry.dial);
+    const audience = country?.audience ?? 'non_target';
 
-    /* ─── NUCLEAR BULLETPROOF: try/finally wraps EVERYTHING ───────
-       Previous iterations had await outside try/catch, and had
-       trackEvent calls inside catch handlers that could themselves
-       throw — both failure modes let an exception escape and kill
-       the redirect. This version wraps the entire submit body in
-       try/finally with window.location.href in finally, so the
-       browser navigates no matter what throws, where, or when.
-       Default redirect is set before any async work so the finally
-       block always has a valid URL even if we never resolve
-       audience. ───────────────────────────────────────────────── */
+    // Fire client-side analytics BEFORE the browser's native form
+    // POST takes over. Each call is isolated — any throw stays
+    // contained and does NOT block the native submit (we never
+    // called preventDefault). Browser POSTs the form to the
+    // Netlify function the instant this handler returns.
+    try { identifyUser(cleanEmail, {
+      first_name: cleanFirst, last_name: cleanLast, phone: fullPhone,
+      country_code: country?.code, country_name: country?.name,
+      audience, newform_dial_country: dialCountry.code, newform_dial_touched: dialTouched,
+    }); } catch { /* no-op */ }
 
-    let redirectUrl: string = REDIRECT_NON_TARGET;
-    let nextPage: string = REDIRECT_NON_TARGET;
+    try { trackEvent('newform_submitted', {
+      audience, country_code: country?.code || 'unknown',
+      country_name: country?.name || 'unknown', dial_country: dialCountry.code,
+      dial_touched: dialTouched, campaign_variant_id: variant?.id ?? null,
+      lead_magnet_id: leadMagnet?.id ?? null,
+    }); } catch { /* no-op */ }
+
+    try { trackConversionLead({
+      email: cleanEmail, first_name: cleanFirst, last_name: cleanLast,
+      phone: fullPhone, audience, country_code: country?.code,
+    }); } catch { /* no-op */ }
+
+    try { persistIdentity({
+      firstname: cleanFirst, lastname: cleanLast,
+      email: cleanEmail, phone: fullPhone,
+    }); } catch { /* no-op */ }
 
     try {
-      // Geo race, defanged. If `country` state is already set we skip
-      // the await entirely. Otherwise bound at 1.5s with a null
-      // fallback — Promise.race can't reject because both inputs
-      // resolve.
-      let countryInfo: CountryInfo | null = country;
-      if (!countryInfo) {
-        try {
-          countryInfo = await Promise.race([
-            getCountry().catch(() => null),
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
-          ]);
-        } catch { countryInfo = null; }
-      }
-      const audience = countryInfo?.audience ?? 'non_target';
-      nextPage = audience === 'target' ? REDIRECT_TARGET : REDIRECT_NON_TARGET;
-      redirectUrl = nextPage;
+      syncContactTimezone(cleanEmail, 'newform_submit');
+      syncContactUtms(cleanEmail, 'newform_submit');
+    } catch { /* no-op */ }
 
-      // Build redirect URL with query params.
-      try {
-        const fwd = new URLSearchParams();
-        fwd.set('email', cleanEmail);
-        if (cleanFirst) fwd.set('firstname', cleanFirst);
-        if (cleanLast)  fwd.set('lastname',  cleanLast);
-        if (fullPhone)  fwd.set('phone',     fullPhone);
-        const attribution = readAttribution();
-        for (const [k, v] of Object.entries(attribution)) {
-          if (v) fwd.set(k, v);
-        }
-        if (variant?.id) fwd.set('campaign_variant_id', variant.id);
-        if (leadMagnet?.id) fwd.set('lead_magnet_id', leadMagnet.id);
-        redirectUrl = `${nextPage}?${fwd.toString()}`;
-      } catch { /* fall back to nextPage without params */ }
-
-      // Tracking: each call isolated, catches are EMPTY so nothing
-      // in a catch can re-throw and escape.
-      try { identifyUser(cleanEmail, {
-        first_name: cleanFirst, last_name: cleanLast, phone: fullPhone,
-        country_code: countryInfo?.code, country_name: countryInfo?.name,
-        audience, newform_dial_country: dialCountry.code, newform_dial_touched: dialTouched,
-      }); } catch { /* no-op */ }
-
-      try { trackEvent('newform_submitted', {
-        audience, country_code: countryInfo?.code || 'unknown',
-        country_name: countryInfo?.name || 'unknown', dial_country: dialCountry.code,
-        dial_touched: dialTouched, campaign_variant_id: variant?.id ?? null,
-        lead_magnet_id: leadMagnet?.id ?? null,
-      }); } catch { /* no-op */ }
-
-      try { trackConversionLead({
-        email: cleanEmail, first_name: cleanFirst, last_name: cleanLast,
-        phone: fullPhone, audience, country_code: countryInfo?.code,
-      }); } catch { /* no-op */ }
-
-      try { persistIdentity({
-        firstname: cleanFirst, lastname: cleanLast,
-        email: cleanEmail, phone: fullPhone,
-      }); } catch { /* no-op */ }
-
-      // Fire-and-forget Zapier webhook. keepalive keeps the request
-      // alive past the navigation below.
-      try {
-        const attributionForZap = readAttribution();
-        fetch('/.netlify/functions/register-webinar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          keepalive: true,
-          body: JSON.stringify({
-            email: cleanEmail, phone: fullPhone, firstname: cleanFirst, lastname: cleanLast,
-            stage: STAGE_TAG, country_code: countryInfo?.code || '',
-            country_name: countryInfo?.name || '', audience,
-            campaign_variant_id: variant?.id || '', lead_magnet_id: leadMagnet?.id || '',
-            lead_magnet_delivery: leadMagnet?.delivery_reference || '',
-            dial_country: dialCountry.code, dial_code: dialCountry.dial, dial_touched: dialTouched,
-            page_path: typeof window !== 'undefined'
-              ? window.location.pathname + window.location.search : '',
-            ...attributionForZap,
-          }),
-        }).catch(() => { /* no-op */ });
-      } catch { /* no-op */ }
-
-      try {
-        syncContactTimezone(cleanEmail, 'newform_submit');
-        syncContactUtms(cleanEmail, 'newform_submit');
-      } catch { /* no-op */ }
-
-      // Diagnostic event — if THIS doesn't fire in PostHog, the
-      // outer catch below caught something.
-      try { trackEvent('newform_about_to_redirect', { nextPage }); } catch { /* no-op */ }
-    } catch {
-      // Any throw that escaped all inner catches lands here.
-      // redirectUrl is still a valid default.
-    } finally {
-      // GUARANTEED to run even if the outer catch itself throws
-      // or if the function was interrupted. Browser navigates.
-      window.location.href = redirectUrl;
-    }
+    // No preventDefault, no window.location.href. Return.
+    // Browser now takes over: POSTs form to
+    // /.netlify/functions/newform-post → function fires Zapier
+    // server-side → returns 302 → browser navigates to /nextstep
+    // or /router. All atomic, no JS required to complete the
+    // submit, no way for an exception or extension to interrupt.
   };
 
   // Default hero copy — matches the ClickFunnels lead page verbatim.
@@ -556,7 +491,32 @@ export function NewForm() {
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
-            <form onSubmit={handleSubmit} className="p-5 md:p-7 space-y-4">
+            <form
+              method="POST"
+              action="/.netlify/functions/newform-post"
+              onSubmit={handleSubmit}
+              className="p-5 md:p-7 space-y-4"
+            >
+              {/* Hidden fields — browser form POST includes every
+                  input with a name attribute. These carry the geo
+                  classification + attribution + campaign metadata
+                  to the Netlify function, which then forwards to
+                  Zapier and 302s to /nextstep or /router. All
+                  derived from state so React keeps them current. */}
+              <input type="hidden" name="stage" value={STAGE_TAG} />
+              <input type="hidden" name="audience" value={country?.audience ?? 'non_target'} />
+              <input type="hidden" name="country_code" value={country?.code ?? ''} />
+              <input type="hidden" name="country_name" value={country?.name ?? ''} />
+              <input type="hidden" name="dial_country" value={dialCountry.code} />
+              <input type="hidden" name="dial_code" value={dialCountry.dial} />
+              <input type="hidden" name="dial_touched" value={dialTouched ? 'true' : 'false'} />
+              <input type="hidden" name="page_path" value={typeof window !== 'undefined' ? window.location.pathname + window.location.search : ''} />
+              <input type="hidden" name="campaign_variant_id" value={variant?.id ?? ''} />
+              <input type="hidden" name="lead_magnet_id" value={leadMagnet?.id ?? ''} />
+              <input type="hidden" name="lead_magnet_delivery" value={leadMagnet?.delivery_reference ?? ''} />
+              {Object.entries(hiddenAttribution).map(([name, value]) => (
+                <input key={name} type="hidden" name={name} value={value} />
+              ))}
               {/* Honeypot - invisible to humans, irresistible to
                   bots. Named generically (`website`) because spam
                   scripts tend to fill any URL-like field. Real
@@ -593,6 +553,7 @@ export function NewForm() {
                   <label htmlFor="firstname" className="sr-only">First Name</label>
                   <input
                     id="firstname"
+                    name="firstname"
                     type="text"
                     autoComplete="given-name"
                     inputMode="text"
@@ -610,6 +571,7 @@ export function NewForm() {
                   <label htmlFor="lastname" className="sr-only">Last Name</label>
                   <input
                     id="lastname"
+                    name="lastname"
                     type="text"
                     autoComplete="family-name"
                     inputMode="text"
@@ -629,6 +591,7 @@ export function NewForm() {
                 <label htmlFor="email" className="sr-only">Email</label>
                 <input
                   id="email"
+                  name="email"
                   type="email"
                   autoComplete="email"
                   inputMode="email"
@@ -674,6 +637,7 @@ export function NewForm() {
                   </button>
                   <input
                     id="phone"
+                    name="phone"
                     type="tel"
                     autoComplete="tel"
                     inputMode="tel"
