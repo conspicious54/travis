@@ -84,7 +84,7 @@ function buildRedirectUrl(audience: 'target' | 'non_target', body: Record<string
   const path = audience === 'target' ? REDIRECT_TARGET : REDIRECT_NON_TARGET;
   const fwd = new URLSearchParams();
   const forwardFields = [
-    'email', 'firstname', 'lastname', 'phone',
+    'email', 'first_name', 'last_name', 'phone',
     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_ad_group',
     'gclid', 'fbclid', 'ttclid', 'gbraid', 'wbraid', 'li_fat_id',
     '_fbp', '_fbc',

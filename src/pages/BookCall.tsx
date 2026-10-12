@@ -205,7 +205,7 @@ export function BookCall() {
       syncContactUtms(finalEmail, 'bookacall_redirect');
 
       const redirectParams = new URLSearchParams();
-      if (finalFirst) redirectParams.set('firstname', finalFirst);
+      if (finalFirst) redirectParams.set('first_name', finalFirst);
       if (finalEmail) redirectParams.set('email',     finalEmail);
       // Forward the Typeform score so /trainingnew/setter and any
       // post-booking logic can read it from URL params.

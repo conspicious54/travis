@@ -283,8 +283,8 @@ export function buildCanonicalIdentityForward(
 ): URLSearchParams {
   const id = getCleanIdentity(params);
   const out = new URLSearchParams();
-  if (id.firstname) out.set('firstname', id.firstname);
-  if (id.lastname)  out.set('lastname',  id.lastname);
+  if (id.firstname) out.set('first_name', id.firstname);
+  if (id.lastname)  out.set('last_name', id.lastname);
   if (id.phone)     out.set('phone',     id.phone);
   if (id.email)     out.set('email',     id.email);
   return out;

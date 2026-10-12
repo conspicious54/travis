@@ -200,7 +200,7 @@ export function DmBookCall() {
       syncContactUtms(finalEmail, 'bookacall_redirect');
 
       const redirectParams = new URLSearchParams();
-      if (finalFirst) redirectParams.set('firstname', finalFirst);
+      if (finalFirst) redirectParams.set('first_name', finalFirst);
       if (finalEmail) redirectParams.set('email',     finalEmail);
       if (leadScoreRaw) redirectParams.set('leadscore', leadScoreRaw);
 

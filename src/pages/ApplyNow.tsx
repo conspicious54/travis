@@ -233,10 +233,21 @@ export function ApplyNow() {
     if (typeof window === 'undefined') return '';
     const incoming = new URLSearchParams(window.location.search);
     const parts: string[] = [];
-    for (const k of ['email', 'firstname', 'lastname', 'phone']) {
-      const v = incoming.get(k);
-      if (v) parts.push(`${k}=${encodeURIComponent(v)}`);
+    // Identity via getCleanIdentity so both naming conventions
+    // (firstname + first_name) resolve. Then write BOTH to the
+    // Typeform hidden string — Typeform admin can have either
+    // declared as a hidden field and will pick up whichever matches.
+    const id = getCleanIdentity(incoming);
+    if (id.email)     parts.push(`email=${encodeURIComponent(id.email)}`);
+    if (id.firstname) {
+      parts.push(`firstname=${encodeURIComponent(id.firstname)}`);
+      parts.push(`first_name=${encodeURIComponent(id.firstname)}`);
     }
+    if (id.lastname) {
+      parts.push(`lastname=${encodeURIComponent(id.lastname)}`);
+      parts.push(`last_name=${encodeURIComponent(id.lastname)}`);
+    }
+    if (id.phone)     parts.push(`phone=${encodeURIComponent(id.phone)}`);
     // readAttribution merges URL + sessionStorage so Typeform's
     // hidden fields get the attribution even if the URL chain
     // dropped them somewhere upstream (the booking pages already

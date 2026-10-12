@@ -24,7 +24,9 @@ const REDIRECT_TO = '/trainingnew/closer';
 
 const TYPEFORM_FIELDS = [
   'firstname',
+  'first_name',
   'lastname',
+  'last_name',
   'phone',
   'email',
   'location',
@@ -274,8 +276,8 @@ export function WebinarBook() {
 
       const redirectParams = new URLSearchParams();
       if (finalEmail)   redirectParams.set('email',     finalEmail);
-      if (finalFirst)   redirectParams.set('firstname', finalFirst);
-      if (finalLast)    redirectParams.set('lastname',  finalLast);
+      if (finalFirst)   redirectParams.set('first_name', finalFirst);
+      if (finalLast)    redirectParams.set('last_name',  finalLast);
       if (finalPhone)   redirectParams.set('phone',     finalPhone);
       if (meetingStart) redirectParams.set('start',     meetingStart);
       if (meetingEnd)   redirectParams.set('end',       meetingEnd);

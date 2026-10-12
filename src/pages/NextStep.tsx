@@ -534,10 +534,14 @@ export function NextStep() {
     if (typeof window === 'undefined') return PRIMARY_CTA_DESTINATION;
     const incoming = new URLSearchParams(window.location.search);
     const out = new URLSearchParams();
-    for (const k of ['email', 'firstname', 'lastname', 'phone']) {
-      const v = incoming.get(k);
-      if (v) out.set(k, v);
-    }
+    // Identity via getCleanIdentity resolves both naming conventions
+    // (firstname + first_name). Forward both to /applynow so whichever
+    // the Typeform hidden fields are declared under, they pick up.
+    const id = getCleanIdentity(incoming);
+    if (id.email)     out.set('email', id.email);
+    if (id.firstname) { out.set('first_name', id.firstname); out.set('firstname', id.firstname); }
+    if (id.lastname)  { out.set('last_name',  id.lastname);  out.set('lastname',  id.lastname); }
+    if (id.phone)     out.set('phone', id.phone);
     // Pull full attribution (UTMs + ad-platform click IDs + Meta
     // cookies) from URL OR sessionStorage so /applynow's Typeform
     // gets everything as hidden fields - even if the URL got

@@ -553,7 +553,7 @@ export function NewForm() {
                   <label htmlFor="firstname" className="sr-only">First Name</label>
                   <input
                     id="firstname"
-                    name="firstname"
+                    name="first_name"
                     type="text"
                     autoComplete="given-name"
                     inputMode="text"
@@ -571,7 +571,7 @@ export function NewForm() {
                   <label htmlFor="lastname" className="sr-only">Last Name</label>
                   <input
                     id="lastname"
-                    name="lastname"
+                    name="last_name"
                     type="text"
                     autoComplete="family-name"
                     inputMode="text"
