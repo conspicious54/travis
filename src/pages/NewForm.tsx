@@ -334,144 +334,117 @@ export function NewForm() {
     // the local-format number they typed.
     const fullPhone = composePhone(cleanPhone, dialCountry.dial);
 
-    /* ─── BULLETPROOF REDIRECT PATTERN ─────────────────────────────
-       PostHog traces showed users firing newform_submitted and then
-       NEVER reaching /nextstep — one or more of the tracking /
-       sync / persist calls below was throwing an uncaught error
-       mid-flow and killing the entire function before the redirect
-       at the bottom could fire. Users were left stuck on /, often
-       re-submitting 2-3 times from the same session.
+    /* ─── NUCLEAR BULLETPROOF: try/finally wraps EVERYTHING ───────
+       Previous iterations had await outside try/catch, and had
+       trackEvent calls inside catch handlers that could themselves
+       throw — both failure modes let an exception escape and kill
+       the redirect. This version wraps the entire submit body in
+       try/finally with window.location.href in finally, so the
+       browser navigates no matter what throws, where, or when.
+       Default redirect is set before any async work so the finally
+       block always has a valid URL even if we never resolve
+       audience. ───────────────────────────────────────────────── */
 
-       Fix: compute the redirect URL FIRST, do everything else inside
-       a single try/catch (so any throw is swallowed and logged),
-       then always fire window.location.href. The redirect is now
-       guaranteed to execute even if PostHog's inline queue, GTM's
-       dataLayer, or any sync helper happens to blow up on this
-       specific visitor. ──────────────────────────────────────── */
+    let redirectUrl: string = REDIRECT_NON_TARGET;
+    let nextPage: string = REDIRECT_NON_TARGET;
 
-    // Compute geo/audience with hard timeout — this is the ONLY
-    // await we need before the redirect. On timeout we default to
-    // 'non_target' (safer to run /router's gate than to hang).
-    const countryInfo = country ?? (await Promise.race([
-      getCountry().catch(() => null),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
-    ]));
-    const audience = countryInfo?.audience ?? 'non_target';
-    const nextPage = audience === 'target' ? REDIRECT_TARGET : REDIRECT_NON_TARGET;
-
-    // Build redirect URL now so we have it ready regardless of what
-    // any tracking call does.
-    let redirectUrl = nextPage;
     try {
-      const fwd = new URLSearchParams();
-      fwd.set('email', cleanEmail);
-      if (cleanFirst) fwd.set('firstname', cleanFirst);
-      if (cleanLast)  fwd.set('lastname',  cleanLast);
-      if (fullPhone)  fwd.set('phone',     fullPhone);
-      const attribution = readAttribution();
-      for (const [k, v] of Object.entries(attribution)) {
-        if (v) fwd.set(k, v);
+      // Geo race, defanged. If `country` state is already set we skip
+      // the await entirely. Otherwise bound at 1.5s with a null
+      // fallback — Promise.race can't reject because both inputs
+      // resolve.
+      let countryInfo: CountryInfo | null = country;
+      if (!countryInfo) {
+        try {
+          countryInfo = await Promise.race([
+            getCountry().catch(() => null),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+          ]);
+        } catch { countryInfo = null; }
       }
-      if (variant?.id) fwd.set('campaign_variant_id', variant.id);
-      if (leadMagnet?.id) fwd.set('lead_magnet_id', leadMagnet.id);
-      redirectUrl = `${nextPage}?${fwd.toString()}`;
-    } catch { /* fall back to nextPage without params */ }
+      const audience = countryInfo?.audience ?? 'non_target';
+      nextPage = audience === 'target' ? REDIRECT_TARGET : REDIRECT_NON_TARGET;
+      redirectUrl = nextPage;
 
-    // Fire all tracking / sync / webhook in one giant try. If ANY
-    // of these throw, the redirect at the end still fires.
-    try {
-      identifyUser(cleanEmail, {
-        first_name: cleanFirst,
-        last_name: cleanLast,
-        phone: fullPhone,
-        country_code: countryInfo?.code,
-        country_name: countryInfo?.name,
-        audience,
-        newform_dial_country: dialCountry.code,
-        newform_dial_touched: dialTouched,
-      });
-    } catch (e) {
-      trackEvent('newform_submit_step_failed', { step: 'identify', err: String(e).slice(0, 100) });
-    }
+      // Build redirect URL with query params.
+      try {
+        const fwd = new URLSearchParams();
+        fwd.set('email', cleanEmail);
+        if (cleanFirst) fwd.set('firstname', cleanFirst);
+        if (cleanLast)  fwd.set('lastname',  cleanLast);
+        if (fullPhone)  fwd.set('phone',     fullPhone);
+        const attribution = readAttribution();
+        for (const [k, v] of Object.entries(attribution)) {
+          if (v) fwd.set(k, v);
+        }
+        if (variant?.id) fwd.set('campaign_variant_id', variant.id);
+        if (leadMagnet?.id) fwd.set('lead_magnet_id', leadMagnet.id);
+        redirectUrl = `${nextPage}?${fwd.toString()}`;
+      } catch { /* fall back to nextPage without params */ }
 
-    try {
-      trackEvent('newform_submitted', {
-        audience,
-        country_code: countryInfo?.code || 'unknown',
-        country_name: countryInfo?.name || 'unknown',
-        dial_country: dialCountry.code,
-        dial_touched: dialTouched,
-        campaign_variant_id: variant?.id ?? null,
+      // Tracking: each call isolated, catches are EMPTY so nothing
+      // in a catch can re-throw and escape.
+      try { identifyUser(cleanEmail, {
+        first_name: cleanFirst, last_name: cleanLast, phone: fullPhone,
+        country_code: countryInfo?.code, country_name: countryInfo?.name,
+        audience, newform_dial_country: dialCountry.code, newform_dial_touched: dialTouched,
+      }); } catch { /* no-op */ }
+
+      try { trackEvent('newform_submitted', {
+        audience, country_code: countryInfo?.code || 'unknown',
+        country_name: countryInfo?.name || 'unknown', dial_country: dialCountry.code,
+        dial_touched: dialTouched, campaign_variant_id: variant?.id ?? null,
         lead_magnet_id: leadMagnet?.id ?? null,
-      });
-    } catch { /* no-op */ }
+      }); } catch { /* no-op */ }
 
-    try {
-      trackConversionLead({
-        email: cleanEmail,
-        first_name: cleanFirst,
-        last_name: cleanLast,
-        phone: fullPhone,
-        audience,
-        country_code: countryInfo?.code,
-      });
-    } catch (e) {
-      trackEvent('newform_submit_step_failed', { step: 'conversion', err: String(e).slice(0, 100) });
+      try { trackConversionLead({
+        email: cleanEmail, first_name: cleanFirst, last_name: cleanLast,
+        phone: fullPhone, audience, country_code: countryInfo?.code,
+      }); } catch { /* no-op */ }
+
+      try { persistIdentity({
+        firstname: cleanFirst, lastname: cleanLast,
+        email: cleanEmail, phone: fullPhone,
+      }); } catch { /* no-op */ }
+
+      // Fire-and-forget Zapier webhook. keepalive keeps the request
+      // alive past the navigation below.
+      try {
+        const attributionForZap = readAttribution();
+        fetch('/.netlify/functions/register-webinar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          keepalive: true,
+          body: JSON.stringify({
+            email: cleanEmail, phone: fullPhone, firstname: cleanFirst, lastname: cleanLast,
+            stage: STAGE_TAG, country_code: countryInfo?.code || '',
+            country_name: countryInfo?.name || '', audience,
+            campaign_variant_id: variant?.id || '', lead_magnet_id: leadMagnet?.id || '',
+            lead_magnet_delivery: leadMagnet?.delivery_reference || '',
+            dial_country: dialCountry.code, dial_code: dialCountry.dial, dial_touched: dialTouched,
+            page_path: typeof window !== 'undefined'
+              ? window.location.pathname + window.location.search : '',
+            ...attributionForZap,
+          }),
+        }).catch(() => { /* no-op */ });
+      } catch { /* no-op */ }
+
+      try {
+        syncContactTimezone(cleanEmail, 'newform_submit');
+        syncContactUtms(cleanEmail, 'newform_submit');
+      } catch { /* no-op */ }
+
+      // Diagnostic event — if THIS doesn't fire in PostHog, the
+      // outer catch below caught something.
+      try { trackEvent('newform_about_to_redirect', { nextPage }); } catch { /* no-op */ }
+    } catch {
+      // Any throw that escaped all inner catches lands here.
+      // redirectUrl is still a valid default.
+    } finally {
+      // GUARANTEED to run even if the outer catch itself throws
+      // or if the function was interrupted. Browser navigates.
+      window.location.href = redirectUrl;
     }
-
-    try {
-      persistIdentity({
-        firstname: cleanFirst,
-        lastname: cleanLast,
-        email: cleanEmail,
-        phone: fullPhone,
-      });
-    } catch { /* no-op */ }
-
-    // Fire-and-forget Zapier webhook (keepalive keeps it alive past
-    // the navigation below).
-    try {
-      const attributionForZap = readAttribution();
-      fetch('/.netlify/functions/register-webinar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        keepalive: true,
-        body: JSON.stringify({
-          email: cleanEmail,
-          phone: fullPhone,
-          firstname: cleanFirst,
-          lastname: cleanLast,
-          stage: STAGE_TAG,
-          country_code: countryInfo?.code || '',
-          country_name: countryInfo?.name || '',
-          audience,
-          campaign_variant_id: variant?.id || '',
-          lead_magnet_id: leadMagnet?.id || '',
-          lead_magnet_delivery: leadMagnet?.delivery_reference || '',
-          dial_country: dialCountry.code,
-          dial_code: dialCountry.dial,
-          dial_touched: dialTouched,
-          page_path: typeof window !== 'undefined'
-            ? window.location.pathname + window.location.search
-            : '',
-          ...attributionForZap,
-        }),
-      }).catch(() => {
-        try { trackEvent('newform_register_warning', { reason: 'fetch_failed' }); } catch { /* no-op */ }
-      });
-    } catch { /* no-op */ }
-
-    try {
-      syncContactTimezone(cleanEmail, 'newform_submit');
-      syncContactUtms(cleanEmail, 'newform_submit');
-    } catch { /* no-op */ }
-
-    // ALWAYS fires. If something above throws it's caught; this
-    // line is reached no matter what. Diagnostic event is fired
-    // right before so PostHog shows we got here even if the
-    // navigation itself drops the next pageview.
-    try { trackEvent('newform_about_to_redirect', { nextPage }); } catch { /* no-op */ }
-    window.location.href = redirectUrl;
   };
 
   // Default hero copy — matches the ClickFunnels lead page verbatim.
