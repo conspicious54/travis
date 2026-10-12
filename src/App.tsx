@@ -110,7 +110,7 @@ function AppWrapper() {
                 <Routes>
                   <Route path="/" element={<NewForm />} />
                   <Route path="/old-home" element={<DarkMode />} />
-                  <Route path="/getstarted" element={<LightMode />} />
+                  <Route path="/getstarted" element={<Navigate to="/" replace />} />
                   <Route path="/bookacall" element={<BookCall />} />
                   <Route path="/dmbookacall" element={<DmBookCall />} />
                   <Route path="/training" element={<Training />} />
