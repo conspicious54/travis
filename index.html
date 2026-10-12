@@ -53,6 +53,13 @@
       posthog.init('phc_C7Tc95XjM4s2ZEMBQ9WALFQegjGZSUpmd27gE76CFtoV', {
         api_host: 'https://us.i.posthog.com',
         person_profiles: 'always',
+        // Capture uncaught JS errors + unhandled promise rejections
+        // as $exception events in PostHog. Fires with stack trace,
+        // $exception_type, $exception_message, $pathname, $device_type,
+        // $browser, so we can see cross-browser regressions (e.g. the
+        // Desktop Chrome CTA drop) with real stack traces instead of
+        // reverse-engineering from pageview drop-off patterns.
+        capture_exceptions: true,
       })
     </script>
     <!-- End PostHog -->
