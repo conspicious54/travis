@@ -43,13 +43,19 @@ function fireTracking(extraParams?: Record<string, string>): Promise<void> {
     utm_medium: p.get('utm_medium') || '',
   };
 
-  return fetch(TRACKING_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-    .then(() => {})
-    .catch(() => {});
+  // Fire-and-forget with keepalive so the request survives the
+  // window.location.replace below. Previous version awaited this
+  // fetch, which held the loading screen hostage if the dashboardpp
+  // function was cold-starting (300ms-2s latency on Vercel free tier).
+  try {
+    fetch(TRACKING_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+      body: JSON.stringify(data),
+    }).catch(() => {});
+  } catch { /* no-op */ }
+  return Promise.resolve();
 }
 
 function buildRedirectUrl(baseUrl: string, extraParams: Record<string, string>): string {
@@ -258,8 +264,15 @@ export function Router() {
     }, 150);
 
     const redirect = async () => {
+      // Hard 2.5s timeout on ipapi.co — free tier regularly hangs for
+      // 2-10s or outright times out. Previous code had no bound here,
+      // so the router loading screen could sit indefinitely and visitors
+      // would bounce. On timeout we fall through to the qualified
+      // fallback (same behavior as a network error).
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
       try {
-        const response = await fetch("https://ipapi.co/json/");
+        const response = await fetch("https://ipapi.co/json/", { signal: controller.signal });
         const data = await response.json();
         const country = data.country;
         setDetectedCountry(country);
@@ -280,6 +293,8 @@ export function Router() {
       } catch (error) {
         trackEvent('router_geoip_failed', { error: String(error).slice(0, 100) });
         doRedirect(GROUP_A_URL, { result: 'qualified' });
+      } finally {
+        clearTimeout(timeoutId);
       }
     };
 

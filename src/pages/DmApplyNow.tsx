@@ -207,12 +207,12 @@ export function DmApplyNow() {
             <div
               data-tf-live={TYPEFORM_LIVE_ID}
               data-tf-hidden={hiddenFields}
-              style={{ height: TYPEFORM_HEIGHT_PX }}
+              style={{ height: `min(${TYPEFORM_HEIGHT_PX}px, calc(100vh - 120px))` }}
               className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
             />
           ) : (
             <div
-              style={{ height: TYPEFORM_HEIGHT_PX }}
+              style={{ height: `min(${TYPEFORM_HEIGHT_PX}px, calc(100vh - 120px))` }}
               className="bg-gray-50 rounded-xl border border-dashed border-gray-300 flex items-center justify-center text-center px-6"
             >
               <div className="max-w-sm">

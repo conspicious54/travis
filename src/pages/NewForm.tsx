@@ -339,7 +339,17 @@ export function NewForm() {
     // an empty string, which downstream code already handles.
     const fullPhone = composePhone(cleanPhone, dialCountry.dial);
 
-    const countryInfo = country ?? (await getCountry().catch(() => null));
+    // Hard 1.5s timeout on the submit-time geo re-fetch. If country
+    // detection hangs here the entire redirect to /nextstep is
+    // blocked, which was a major contributor to "submit fired but no
+    // /nextstep pageview" on iOS Safari (tab backgrounded during
+    // await, redirect never fires). On timeout we fall back to the
+    // existing 'non_target' default — safer to run /router's full
+    // gate than to hang the user.
+    const countryInfo = country ?? (await Promise.race([
+      getCountry().catch(() => null),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+    ]));
     const audience = countryInfo?.audience ?? 'non_target';
 
     identifyUser(cleanEmail, {

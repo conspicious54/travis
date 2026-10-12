@@ -407,7 +407,7 @@ export function Book() {
             <div
               ref={containerRef}
               data-oh-booking-calendar-id={ONCEHUB_CALENDAR_ID}
-              style={{ minWidth: 320, height: 700 }}
+              style={{ minWidth: 320, height: 'min(700px, calc(100vh - 120px))' }}
             />
           </div>
         </div>
