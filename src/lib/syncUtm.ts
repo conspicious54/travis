@@ -265,7 +265,7 @@ export function syncContactUtms(
     trackEvent('contact_utm_synced', {
       source,
       via: 'beacon',
-      utm_fields: Object.keys(utms),
+      utm_fields: Object.keys(attribution),
     });
   }
 }
