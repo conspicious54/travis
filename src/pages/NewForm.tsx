@@ -331,95 +331,107 @@ export function NewForm() {
     setSubmitting(true);
 
     // Phone is composed from the visitor's selected dial country +
-    // the local-format number they typed. composePhone normalizes to
-    // a clean E.164-ish string (strips spaces/dashes, drops leading
-    // 0s, prepends dial code) unless the visitor typed their own '+'
-    // prefix, in which case we trust it. Non-target visitors never
-    // saw the field, so cleanPhone is empty and composePhone returns
-    // an empty string, which downstream code already handles.
+    // the local-format number they typed.
     const fullPhone = composePhone(cleanPhone, dialCountry.dial);
 
-    // Hard 1.5s timeout on the submit-time geo re-fetch. If country
-    // detection hangs here the entire redirect to /nextstep is
-    // blocked, which was a major contributor to "submit fired but no
-    // /nextstep pageview" on iOS Safari (tab backgrounded during
-    // await, redirect never fires). On timeout we fall back to the
-    // existing 'non_target' default — safer to run /router's full
-    // gate than to hang the user.
+    /* ─── BULLETPROOF REDIRECT PATTERN ─────────────────────────────
+       PostHog traces showed users firing newform_submitted and then
+       NEVER reaching /nextstep — one or more of the tracking /
+       sync / persist calls below was throwing an uncaught error
+       mid-flow and killing the entire function before the redirect
+       at the bottom could fire. Users were left stuck on /, often
+       re-submitting 2-3 times from the same session.
+
+       Fix: compute the redirect URL FIRST, do everything else inside
+       a single try/catch (so any throw is swallowed and logged),
+       then always fire window.location.href. The redirect is now
+       guaranteed to execute even if PostHog's inline queue, GTM's
+       dataLayer, or any sync helper happens to blow up on this
+       specific visitor. ──────────────────────────────────────── */
+
+    // Compute geo/audience with hard timeout — this is the ONLY
+    // await we need before the redirect. On timeout we default to
+    // 'non_target' (safer to run /router's gate than to hang).
     const countryInfo = country ?? (await Promise.race([
       getCountry().catch(() => null),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
     ]));
     const audience = countryInfo?.audience ?? 'non_target';
+    const nextPage = audience === 'target' ? REDIRECT_TARGET : REDIRECT_NON_TARGET;
 
-    identifyUser(cleanEmail, {
-      first_name: cleanFirst,
-      last_name: cleanLast,
-      phone: fullPhone,
-      country_code: countryInfo?.code,
-      country_name: countryInfo?.name,
-      audience,
-      newform_dial_country: dialCountry.code,
-      newform_dial_touched: dialTouched,
-    });
-    trackEvent('newform_submitted', {
-      audience,
-      country_code: countryInfo?.code || 'unknown',
-      country_name: countryInfo?.name || 'unknown',
-      // Dial-country lets us see when the IP-detected country and the
-      // visitor's self-selected dial differ (often means they're
-      // travelling, on a VPN, or have a foreign SIM in their home
-      // country). Also flags visitors who manually picked vs took
-      // the IP default - 'touched' means they tapped the selector.
-      dial_country: dialCountry.code,
-      dial_touched: dialTouched,
-      // Campaign attribution — non-null when the visitor arrived
-      // with a matching utm_source + utm_campaign. Lets us measure
-      // per-video / per-source conversion rate and reconstruct the
-      // exact resource each lead was promised.
-      campaign_variant_id: variant?.id ?? null,
-      lead_magnet_id: leadMagnet?.id ?? null,
-    });
-    // Top-of-funnel conversion - GTM tags can fan this out to
-    // Google Ads "Form Submission" conversion, Meta Pixel "Lead",
-    // etc. identifyUser already pushed lead_identified above
-    // (which carries gclid/fbclid), so this is the conversion
-    // event that maps to the lead-capture moment.
-    trackConversionLead({
-      email: cleanEmail,
-      first_name: cleanFirst,
-      last_name: cleanLast,
-      phone: fullPhone,
-      audience,
-      country_code: countryInfo?.code,
-    });
-
-    // Persist identity to localStorage so downstream pages
-    // (/nextstep, /applynow, exit popups) can personalize even when
-    // URL params get lost (browser refresh, cross-tab landing,
-    // sticky-state shenanigans, etc).
-    persistIdentity({
-      firstname: cleanFirst,
-      lastname: cleanLast,
-      email: cleanEmail,
-      phone: fullPhone,
-    });
-
-    // Fire the Zapier webhook as a fire-and-forget request with
-    // keepalive:true so the browser keeps the request alive even
-    // after window.location.href navigates away. Must NOT be awaited:
-    // CF's old form POSTed server-side and 302'd; our JS redirect was
-    // waiting on this fetch (up to ~2s with retries) before firing,
-    // and iOS Safari was backgrounding tabs mid-wait on mobile submit
-    // → form felt frozen → users bounced → "lead_submitted fired but
-    // no $pageview on /nextstep" pattern seen in PostHog.
-    //
-    // Trade-off: we lose the retry-on-5xx logic from retryFetch. In
-    // exchange we unblock the user's navigation. If the webhook fails
-    // the lead is still captured client-side (identifyUser above) and
-    // can be reconciled later from PostHog + HubSpot.
-    const attributionForZap = readAttribution();
+    // Build redirect URL now so we have it ready regardless of what
+    // any tracking call does.
+    let redirectUrl = nextPage;
     try {
+      const fwd = new URLSearchParams();
+      fwd.set('email', cleanEmail);
+      if (cleanFirst) fwd.set('firstname', cleanFirst);
+      if (cleanLast)  fwd.set('lastname',  cleanLast);
+      if (fullPhone)  fwd.set('phone',     fullPhone);
+      const attribution = readAttribution();
+      for (const [k, v] of Object.entries(attribution)) {
+        if (v) fwd.set(k, v);
+      }
+      if (variant?.id) fwd.set('campaign_variant_id', variant.id);
+      if (leadMagnet?.id) fwd.set('lead_magnet_id', leadMagnet.id);
+      redirectUrl = `${nextPage}?${fwd.toString()}`;
+    } catch { /* fall back to nextPage without params */ }
+
+    // Fire all tracking / sync / webhook in one giant try. If ANY
+    // of these throw, the redirect at the end still fires.
+    try {
+      identifyUser(cleanEmail, {
+        first_name: cleanFirst,
+        last_name: cleanLast,
+        phone: fullPhone,
+        country_code: countryInfo?.code,
+        country_name: countryInfo?.name,
+        audience,
+        newform_dial_country: dialCountry.code,
+        newform_dial_touched: dialTouched,
+      });
+    } catch (e) {
+      trackEvent('newform_submit_step_failed', { step: 'identify', err: String(e).slice(0, 100) });
+    }
+
+    try {
+      trackEvent('newform_submitted', {
+        audience,
+        country_code: countryInfo?.code || 'unknown',
+        country_name: countryInfo?.name || 'unknown',
+        dial_country: dialCountry.code,
+        dial_touched: dialTouched,
+        campaign_variant_id: variant?.id ?? null,
+        lead_magnet_id: leadMagnet?.id ?? null,
+      });
+    } catch { /* no-op */ }
+
+    try {
+      trackConversionLead({
+        email: cleanEmail,
+        first_name: cleanFirst,
+        last_name: cleanLast,
+        phone: fullPhone,
+        audience,
+        country_code: countryInfo?.code,
+      });
+    } catch (e) {
+      trackEvent('newform_submit_step_failed', { step: 'conversion', err: String(e).slice(0, 100) });
+    }
+
+    try {
+      persistIdentity({
+        firstname: cleanFirst,
+        lastname: cleanLast,
+        email: cleanEmail,
+        phone: fullPhone,
+      });
+    } catch { /* no-op */ }
+
+    // Fire-and-forget Zapier webhook (keepalive keeps it alive past
+    // the navigation below).
+    try {
+      const attributionForZap = readAttribution();
       fetch('/.netlify/functions/register-webinar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -445,54 +457,21 @@ export function NewForm() {
           ...attributionForZap,
         }),
       }).catch(() => {
-        trackEvent('newform_register_warning', { reason: 'fetch_failed' });
+        try { trackEvent('newform_register_warning', { reason: 'fetch_failed' }); } catch { /* no-op */ }
       });
-    } catch {
-      trackEvent('newform_register_warning', { reason: 'fetch_threw_sync' });
-    }
+    } catch { /* no-op */ }
 
-    // /newform is the EARLIEST point in the funnel where we have a
-    // confirmed email. Push timezone + first-touch UTMs to HubSpot
-    // here so attribution is locked in before any downstream step
-    // (the server only writes UTM properties that are currently
-    // empty, so first-touch survives later syncs from /book etc).
-    // sendBeacon survives the redirect.
-    syncContactTimezone(cleanEmail, 'newform_submit');
-    syncContactUtms(cleanEmail, 'newform_submit');
+    try {
+      syncContactTimezone(cleanEmail, 'newform_submit');
+      syncContactUtms(cleanEmail, 'newform_submit');
+    } catch { /* no-op */ }
 
-    // Forward identity + ALL attribution (utm_* + ad-platform
-    // click IDs like gclid, fbclid, gbraid, wbraid, li_fat_id,
-    // ttclid, _fbp, _fbc) to /router so the funnel keeps
-    // attribution end-to-end. Router's buildRedirectUrl passes
-    // the full query string through to /nextstep, which passes
-    // through to /applynow, which puts them in the Typeform as
-    // hidden fields.
-    //
-    // readAttribution() merges URL + sessionStorage so if any
-    // page in the chain stripped the URL, we still carry the
-    // attribution forward from storage.
-    const fwd = new URLSearchParams();
-    fwd.set('email', cleanEmail);
-    if (cleanFirst) fwd.set('firstname', cleanFirst);
-    if (cleanLast)  fwd.set('lastname',  cleanLast);
-    if (fullPhone)  fwd.set('phone',     fullPhone);
-    const attribution = readAttribution();
-    for (const [k, v] of Object.entries(attribution)) {
-      if (v) fwd.set(k, v);
-    }
-    // Forward matched campaign attribution downstream so the next pages
-    // (/loading or /router → /nextstep → /applynow → Typeform) preserve
-    // which resource / variant this lead came in on. Both /loading and
-    // /router pass the full query string through on their own redirect.
-    if (variant?.id) fwd.set('campaign_variant_id', variant.id);
-    if (leadMagnet?.id) fwd.set('lead_magnet_id', leadMagnet.id);
-    // Target vs non-target branch: target goes to the fast /loading
-    // path (same visual, no redundant geo re-check); non-target stays
-    // on /router so the DQ capital question still fires. Unknown
-    // audience (geo lookup failed) falls back to /router — safer to
-    // run the full gate than skip it.
-    const nextPage = audience === 'target' ? REDIRECT_TARGET : REDIRECT_NON_TARGET;
-    window.location.href = `${nextPage}?${fwd.toString()}`;
+    // ALWAYS fires. If something above throws it's caught; this
+    // line is reached no matter what. Diagnostic event is fired
+    // right before so PostHog shows we got here even if the
+    // navigation itself drops the next pageview.
+    try { trackEvent('newform_about_to_redirect', { nextPage }); } catch { /* no-op */ }
+    window.location.href = redirectUrl;
   };
 
   // Default hero copy — matches the ClickFunnels lead page verbatim.
