@@ -395,19 +395,25 @@ export function NewForm() {
       phone: fullPhone,
     });
 
+    // Fire the Zapier webhook as a fire-and-forget request with
+    // keepalive:true so the browser keeps the request alive even
+    // after window.location.href navigates away. Must NOT be awaited:
+    // CF's old form POSTed server-side and 302'd; our JS redirect was
+    // waiting on this fetch (up to ~2s with retries) before firing,
+    // and iOS Safari was backgrounding tabs mid-wait on mobile submit
+    // → form felt frozen → users bounced → "lead_submitted fired but
+    // no $pageview on /nextstep" pattern seen in PostHog.
+    //
+    // Trade-off: we lose the retry-on-5xx logic from retryFetch. In
+    // exchange we unblock the user's navigation. If the webhook fails
+    // the lead is still captured client-side (identifyUser above) and
+    // can be reconciled later from PostHog + HubSpot.
+    const attributionForZap = readAttribution();
     try {
-      // retryFetch absorbs transient network errors + 429/5xx so a
-      // flaky mobile connection doesn't burn the lead. Max 3 attempts
-      // with 0/500/1500ms backoff (~2s worst case).
-      // Attribution envelope — URL + sessionStorage merge. Carries
-      // utm_* + ad-platform click IDs + Meta first-party cookies.
-      // Spread into the Zapier payload below so the full source
-      // picture arrives downstream for ActiveCampaign / Mailchimp /
-      // Meta CAPI routing.
-      const attributionForZap = readAttribution();
-      const res = await retryFetch('/.netlify/functions/register-webinar', {
+      fetch('/.netlify/functions/register-webinar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
         body: JSON.stringify({
           email: cleanEmail,
           phone: fullPhone,
@@ -417,43 +423,22 @@ export function NewForm() {
           country_code: countryInfo?.code || '',
           country_name: countryInfo?.name || '',
           audience,
-          // Campaign attribution — Zapier / email automation reads
-          // lead_magnet_delivery to fulfill the exact resource.
           campaign_variant_id: variant?.id || '',
           lead_magnet_id: leadMagnet?.id || '',
           lead_magnet_delivery: leadMagnet?.delivery_reference || '',
-          // Phone-field metadata — dial_country is the ISO alpha-2
-          // for the selector choice; dial_code is the "+X" prefix
-          // prepended to the phone; dial_touched flags whether the
-          // visitor manually overrode the IP default (useful for
-          // VPN / traveller detection).
           dial_country: dialCountry.code,
           dial_code: dialCountry.dial,
           dial_touched: dialTouched,
-          // Exact page path (incl. query string) where the submit
-          // happened. Lets downstream see which campaign variant
-          // URL produced the lead without having to reconstruct it
-          // from the UTMs. IP address is attached server-side in the
-          // Netlify function from the x-forwarded-for header.
           page_path: typeof window !== 'undefined'
             ? window.location.pathname + window.location.search
             : '',
-          // Full source picture
           ...attributionForZap,
         }),
-        tag: 'newform_register',
+      }).catch(() => {
+        trackEvent('newform_register_warning', { reason: 'fetch_failed' });
       });
-      const data = await res.json().catch(() => ({}));
-      if (!data?.ok) {
-        trackEvent('newform_register_warning', { reason: data?.reason || 'unknown' });
-      }
     } catch {
-      // After retryFetch exhausts attempts, swallow the error so the
-      // user still moves forward in the funnel. Lead is already
-      // captured client-side via identifyUser; the Zapier sync just
-      // didn't make it. PostHog will show the warning event for
-      // investigation.
-      trackEvent('newform_register_warning', { reason: 'network_error_after_retries' });
+      trackEvent('newform_register_warning', { reason: 'fetch_threw_sync' });
     }
 
     // /newform is the EARLIEST point in the funnel where we have a
