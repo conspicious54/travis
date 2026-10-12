@@ -237,24 +237,32 @@ export function ApplyNow() {
     // (firstname + first_name) resolve. Then write BOTH to the
     // Typeform hidden string — Typeform admin can have either
     // declared as a hidden field and will pick up whichever matches.
+    //
+    // IMPORTANT: do NOT URL-encode values here. Typeform's
+    // data-tf-hidden attribute does NOT URL-decode the values it
+    // reads — it uses them raw. Encoding would land `info%40` in
+    // the Typeform email field instead of `info@`, breaking the
+    // autofill. Only strip commas (the pair separator) and equals
+    // (the key/value separator) from values to keep parsing safe.
+    const safe = (v: string) => v.replace(/[,=]/g, '');
     const id = getCleanIdentity(incoming);
-    if (id.email)     parts.push(`email=${encodeURIComponent(id.email)}`);
+    if (id.email)     parts.push(`email=${safe(id.email)}`);
     if (id.firstname) {
-      parts.push(`firstname=${encodeURIComponent(id.firstname)}`);
-      parts.push(`first_name=${encodeURIComponent(id.firstname)}`);
+      parts.push(`firstname=${safe(id.firstname)}`);
+      parts.push(`first_name=${safe(id.firstname)}`);
     }
     if (id.lastname) {
-      parts.push(`lastname=${encodeURIComponent(id.lastname)}`);
-      parts.push(`last_name=${encodeURIComponent(id.lastname)}`);
+      parts.push(`lastname=${safe(id.lastname)}`);
+      parts.push(`last_name=${safe(id.lastname)}`);
     }
-    if (id.phone)     parts.push(`phone=${encodeURIComponent(id.phone)}`);
+    if (id.phone)     parts.push(`phone=${safe(id.phone)}`);
     // readAttribution merges URL + sessionStorage so Typeform's
     // hidden fields get the attribution even if the URL chain
     // dropped them somewhere upstream (the booking pages already
     // populate sessionStorage via persistUtmsFromUrl).
     const attribution = readAttribution();
     for (const [k, v] of Object.entries(attribution)) {
-      if (v) parts.push(`${k}=${encodeURIComponent(v)}`);
+      if (v) parts.push(`${k}=${safe(String(v))}`);
     }
     return parts.join(',');
   }, []);
