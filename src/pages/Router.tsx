@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Rocket, DollarSign } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanParam } from '../lib/urlParams';
+import { getCountry, readCachedCountryCode } from '../lib/detectCountry';
 
 type RouterState = 'loading' | 'dq-question' | 'redirecting';
 
@@ -291,24 +292,27 @@ export function Router() {
         return;
       }
 
-      // Hard 2.5s timeout on ipapi.co — free tier regularly hangs for
-      // 2-10s or outright times out. On timeout OR network error we
-      // check if the URL carries any audience hint; if not, we fall
-      // through to qualified (safer to let a legitimate target slip
-      // through than block them).
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      // No country_code in URL (direct hit, bookmark, old link, etc.)
+      // → fall back to our own geo service (country.is via
+      // detectCountry.ts). country.is has a smaller tracker-blocklist
+      // footprint than ipapi.co (which was blocked ~15% of the time
+      // by ad blockers) AND the helper has sessionStorage caching so
+      // repeat visitors are instant. ipapi.co removed entirely.
       try {
-        const response = await fetch("https://ipapi.co/json/", { signal: controller.signal });
-        const data = await response.json();
-        const country = data.country;
+        const cached = readCachedCountryCode();
+        let country = cached ? cached.toUpperCase() : '';
+        if (!country) {
+          const info = await getCountry();
+          country = (info.code || '').toUpperCase();
+        }
+        if (!country) throw new Error('empty_country');
         setDetectedCountry(country);
 
         const allowed = ALLOWED_COUNTRIES.includes(country);
         trackEvent('router_country_detected', {
           country,
           allowed,
-          source: 'ipapi',
+          source: cached ? 'country_is_cache' : 'country_is_fetch',
         });
 
         if (allowed) {
@@ -319,13 +323,11 @@ export function Router() {
         }
       } catch (error) {
         trackEvent('router_geoip_failed', { error: String(error).slice(0, 100) });
-        // No incoming country_code (the early-return branch would have
-        // handled it); ipapi.co also failed. Default to qualified —
+        // country.is also failed somehow. Default to qualified —
         // safer to let a legitimate target slip through than block
-        // them. Preserves prior ad-blocker-friendly behavior.
+        // them. Rare now that we have NewForm's country_code as the
+        // primary signal + country.is as fallback.
         doRedirect(GROUP_A_URL, { result: 'qualified' });
-      } finally {
-        clearTimeout(timeoutId);
       }
     };
 
