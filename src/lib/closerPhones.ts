@@ -63,6 +63,11 @@ const CLOSER_PHONES: Record<string, CloserPhoneMap> = {
     eu:   { display: '+44 7915 921445',  raw: '+447915921445', label: 'Ty - UK' },
     aunz: { display: '+61 468 081 873',  raw: '+61468081873',  label: 'Ty - AU' },
   },
+  'finn faubion': {
+    us:   { display: '(978) 213-1660',   raw: '+19782131660',  label: 'Finn - US' },
+    eu:   { display: '+44 7886 082565',  raw: '+447886082565', label: 'Finn - UK' },
+    aunz: { display: '+61 468 014 516',  raw: '+61468014516',  label: 'Finn - AU' },
+  },
 };
 
 /**

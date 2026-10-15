@@ -107,8 +107,42 @@ export const COACHES: Record<string, Coach> = {
       "Ty is one of my newest in-house Amazon coaches at Passion Product. Sharp, focused, and the kind of coach who'll cut straight to what actually matters for your situation.",
     bio: "He's been trained directly on the Passion Product method and is working with our students through every stage of their launch. On your call he'll help you get clear on the exact next steps for where you're at right now.",
   },
+  'finn faubion': {
+    id: 'finn',
+    firstName: 'Finn',
+    fullName: 'Finn Faubion',
+    role: 'Passion Product Lead Amazon Coach',
+    tenure: 'On the Passion Product team',
+    photoUrl: '',
+    travisIntro:
+      "Finn is one of my newest in-house Amazon coaches at Passion Product. Direct, serious about the work, and the kind of coach who'll help you get clear on exactly what your next step should be.",
+    bio: "He's been trained directly on the Passion Product method and is working with our students through every stage of their launch. On your call he'll cut through the noise and give you the straight read on your situation.",
+  },
   // Setters below - kept here so getCoachByOwnerName resolves them when a
-  // HubSpot owner's name matches. Setter SMS/vCard default is now Ibrahim.
+  // HubSpot owner's name matches. Setter rotation is Robin + Caeden
+  // (Ibrahim is still here for historical matching on past bookings).
+  'robin bauer': {
+    id: 'robin',
+    firstName: 'Robin',
+    fullName: 'Robin Bauer',
+    role: 'Passion Product Setter',
+    tenure: 'On the Passion Product team',
+    photoUrl: '',
+    travisIntro:
+      "Robin is on our team at Passion Product. He's the first person you'll talk to before your strategy call.",
+    bio: "He'll get you set up with the right next steps and make sure you're matched with the right coach for your situation.",
+  },
+  'caeden hooks': {
+    id: 'caeden',
+    firstName: 'Caeden',
+    fullName: 'Caeden Hooks',
+    role: 'Passion Product Setter',
+    tenure: 'On the Passion Product team',
+    photoUrl: '',
+    travisIntro:
+      "Caeden is on our team at Passion Product. He's the first person you'll talk to before your strategy call.",
+    bio: "He'll get you set up with the right next steps and make sure you're matched with the right coach for your situation.",
+  },
   'ibrahim cisse': {
     id: 'ibrahim',
     firstName: 'Ibrahim',

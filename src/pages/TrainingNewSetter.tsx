@@ -45,6 +45,8 @@ import { markConfirmClicked } from '../lib/confirmFlow';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { syncContactUtms } from '../lib/syncUtm';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { getSetterPhone } from '../lib/setterPhones';
+import { getCoachByOwnerName } from '../lib/coaches';
 
 /* ─────────────────── region & platform detection ─────────────────── */
 
@@ -96,13 +98,17 @@ function needsQrFallback(platform: Platform): boolean {
    We put "(Travis' coach)" in the surname slot so iOS's
    sort-by-last-name groups the coach near Travis-related contacts,
    while the FN drives the actual displayed contact card label.
-   Curly apostrophe (U+2019) used to match the brand styling.  */
-function generateVCard(phone: string): string {
+   Curly apostrophe (U+2019) used to match the brand styling.
+   firstName parameter lets the vCard reflect the actual setter who
+   owns the booking (Robin / Caeden / etc.) rather than hard-coding
+   one name across the whole setter rotation. */
+function generateVCard(phone: string, firstName: string): string {
+  const safeName = (firstName || 'Coach').replace(/[;,\n]/g, '');
   return [
     'BEGIN:VCARD',
     'VERSION:3.0',
-    "N:(Travis’ coach);Ibrahim;;;",
-    "FN:Ibrahim (Travis’ coach)",
+    `N:(Travis’ coach);${safeName};;;`,
+    `FN:${safeName} (Travis’ coach)`,
     `TEL;TYPE=CELL:${phone}`,
     'EMAIL:travis@travismarziani.com',
     'NOTE:Save this contact so you recognize the number when we call.',
@@ -110,13 +116,14 @@ function generateVCard(phone: string): string {
   ].join('\n');
 }
 
-function downloadVCard(phone: string) {
-  const vcf = generateVCard(phone);
+function downloadVCard(phone: string, firstName: string) {
+  const vcf = generateVCard(phone, firstName);
   const blob = new Blob([vcf], { type: 'text/vcard;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Ibrahim-Travis-Coach.vcf';
+  const safeName = (firstName || 'Coach').replace(/[^A-Za-z0-9]/g, '');
+  a.download = `${safeName}-Travis-Coach.vcf`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -175,6 +182,16 @@ function SetterConfirmationBanner({
   const vKnown24h    = useExperiment('setter-known-within-24h');
   const vHighMutual  = useExperiment('setter-high-capital-mutual-fit');
 
+  // Setter identity comes from the ?owner= URL param that
+  // /bookacall sets after the OnceHub booking (host_name from the
+  // booking.scheduled payload). Falls back to a generic default so
+  // old links / direct hits still work.
+  const ownerName = React.useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    try { return new URLSearchParams(window.location.search).get('owner') || ''; }
+    catch { return ''; }
+  }, []);
+
   useEffect(() => {
     setRegion(detectRegion());
     setPlatform(detectPlatform());
@@ -192,19 +209,19 @@ function SetterConfirmationBanner({
     return () => clearTimeout(t);
   }, [compact]);
 
-  const phone = PHONE_NUMBERS[region];
+  // Phone + coach now resolved from the booking owner. Falls back
+  // to regional default (regionPhone.ts PHONE_NUMBERS) when the
+  // owner isn't mapped or has no entry for this region.
+  const phone = getSetterPhone(ownerName, region);
+  const resolvedSetter = getCoachByOwnerName(ownerName);
+  const coachFirstName = resolvedSetter?.firstName || 'Coach';
   const isMobile = platform === 'ios' || platform === 'android';
-
-  // Setter flow has no booked meeting yet, so we can't know which
-  // coach will end up taking the call. Default to Ibrahim - he's
-  // currently the active setter doing the first outreach.
-  const coachFirstName = 'Ibrahim';
 
   usePhoneCopyTracking(phone.display, 'setter', region);
   const armAppSwitch = useConfirmAppSwitch('setter');
 
   const handleSave = () => {
-    downloadVCard(phone.raw);
+    downloadVCard(phone.raw, coachFirstName);
     trackContactSaved(region, platform);
     setSaved(true);
     onSaved();
@@ -446,6 +463,16 @@ export function TrainingNewSetter() {
   const [p, setP] = useState<Personalization | null>(null);
   const [popupRegion, setPopupRegion] = useState<Region>('us');
 
+  // Resolve the setter from the ?owner= URL param that /bookacall
+  // forwards after the OnceHub booking. Falls back to generic
+  // 'Coach' when the owner isn't mapped so direct hits still work.
+  const ownerName = React.useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    try { return new URLSearchParams(window.location.search).get('owner') || ''; }
+    catch { return ''; }
+  }, []);
+  const resolvedSetter = getCoachByOwnerName(ownerName);
+
   useScrollDepth('setter');
   useDwellHeartbeat('setter');
   useSproutvideoTracking('setter');
@@ -488,7 +515,8 @@ export function TrainingNewSetter() {
     });
   }, []);
 
-  const popupCoach = 'Ibrahim';
+  const popupCoach = resolvedSetter?.firstName || 'Coach';
+  const popupPhoneRaw = getSetterPhone(ownerName, popupRegion).raw;
   const popupSmsBody = encodeURIComponent(
     `Hi Coach ${popupCoach}, YES, confirming my call${p?.firstName ? ` - ${p.firstName}` : ''}`
   );
@@ -499,6 +527,7 @@ export function TrainingNewSetter() {
         p={p}
         popupRegion={popupRegion}
         popupCoach={popupCoach}
+        popupPhoneRaw={popupPhoneRaw}
         popupSmsBody={popupSmsBody}
       />
     </PrepChecklistProvider>
@@ -512,10 +541,11 @@ interface SetterPageBodyProps {
   p: Personalization | null;
   popupRegion: Region;
   popupCoach: string;
+  popupPhoneRaw: string;
   popupSmsBody: string;
 }
 
-function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPageBodyProps) {
+function SetterPageBody({ p, popupRegion: _popupRegion, popupCoach, popupPhoneRaw, popupSmsBody }: SetterPageBodyProps) {
   const isMobile = useIsMobileViewport();
   const { completed } = usePrepChecklist();
 
@@ -571,7 +601,7 @@ function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPage
         <ConfirmationExitPopup
           location="setter"
           coachFirstName={popupCoach}
-          phoneRaw={PHONE_NUMBERS[popupRegion].raw}
+          phoneRaw={popupPhoneRaw}
           smsBody={popupSmsBody}
           travisHistory={p?.travisHistory}
         />
@@ -599,14 +629,14 @@ function SetterPageBody({ p, popupRegion, popupCoach, popupSmsBody }: SetterPage
       <ConfirmationExitPopup
         location="setter"
         coachFirstName={popupCoach}
-        phoneRaw={PHONE_NUMBERS[popupRegion].raw}
+        phoneRaw={popupPhoneRaw}
         smsBody={popupSmsBody}
         travisHistory={p?.travisHistory}
       />
       <MobileConfirmStickyBar
         location="setter"
         coachFirstName={popupCoach}
-        phoneRaw={PHONE_NUMBERS[popupRegion].raw}
+        phoneRaw={popupPhoneRaw}
         smsBody={popupSmsBody}
       />
       <ScrollToNextButton location="setter" />

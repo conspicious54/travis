@@ -185,6 +185,14 @@ export function BookCall() {
       const payloadFirst = pickStr('customer_first_name', 'attendee_first_name') || pickNested(['customer', 'first_name']);
       const payloadName  = pickStr('customer_name', 'attendee_name')              || pickNested(['customer', 'name']);
       const payloadPhone = pickStr('customer_phone', 'attendee_phone', 'phone')   || pickNested(['customer', 'phone']);
+      // OnceHub booking.scheduled payload includes the host (the
+      // setter who owns the booking). Forwarding this to
+      // /trainingnew/setter lets getSetterPhone pick the right
+      // Robin/Caeden line instead of a static default.
+      const ownerName =
+        pickStr('host_name', 'owner_name', 'organizer_name', 'organizer') ||
+        pickNested(['host', 'name']) ||
+        pickNested(['owner', 'name']);
 
       let splitFirst = '';
       if (payloadName && !payloadFirst) {
@@ -207,6 +215,7 @@ export function BookCall() {
       const redirectParams = new URLSearchParams();
       if (finalFirst) redirectParams.set('first_name', finalFirst);
       if (finalEmail) redirectParams.set('email',     finalEmail);
+      if (ownerName)  redirectParams.set('owner',     ownerName);
       // Forward the Typeform score so /trainingnew/setter and any
       // post-booking logic can read it from URL params.
       if (leadScoreRaw) redirectParams.set('leadscore', leadScoreRaw);
