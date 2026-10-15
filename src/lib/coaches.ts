@@ -113,7 +113,7 @@ export const COACHES: Record<string, Coach> = {
     fullName: 'Finn Faubion',
     role: 'Passion Product Lead Amazon Coach',
     tenure: 'On the Passion Product team',
-    photoUrl: '',
+    photoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Finn.png',
     travisIntro:
       "Finn is one of my newest in-house Amazon coaches at Passion Product. Direct, serious about the work, and the kind of coach who'll help you get clear on exactly what your next step should be.",
     bio: "He's been trained directly on the Passion Product method and is working with our students through every stage of their launch. On your call he'll cut through the noise and give you the straight read on your situation.",
@@ -127,7 +127,7 @@ export const COACHES: Record<string, Coach> = {
     fullName: 'Robin Bauer',
     role: 'Passion Product Setter',
     tenure: 'On the Passion Product team',
-    photoUrl: '',
+    photoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Robin.png',
     travisIntro:
       "Robin is on our team at Passion Product. He's the first person you'll talk to before your strategy call.",
     bio: "He'll get you set up with the right next steps and make sure you're matched with the right coach for your situation.",
