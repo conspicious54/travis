@@ -264,26 +264,30 @@ export function Router() {
     }, 150);
 
     const redirect = async () => {
-      // NewForm already geo-classified via country.is and set
-      // audience + country_code on the form POST. newform-post then
-      // forwards these as URL params. Trust them as ground truth —
-      // ipapi.co is just a corroborating signal and gets blocked by
-      // ad blockers ~15% of the time. Without this check, BD/IN/PK
-      // (and other non-target) leads were slipping through to the
-      // qualified /nextstep flow whenever ipapi.co was blocked
-      // (observed 10/10 BD leads landing on /nextstep, 2 booked
-      // closer calls as of the 2026-10-15 audit).
-      const incomingAudience = params.get('audience') || '';
-      const incomingCountry  = (params.get('country_code') || '').toUpperCase();
-      if (incomingAudience === 'non_target' || (incomingCountry && !ALLOWED_COUNTRIES.includes(incomingCountry))) {
-        if (incomingCountry) setDetectedCountry(incomingCountry);
+      // Trust NewForm's country_code (from country.is) as ground
+      // truth when present. ipapi.co is a corroborating signal that
+      // gets blocked by ad blockers ~15% of the time, and when it
+      // succeeded we were also missing countries NewForm classified
+      // differently (e.g. DE is in Router's ALLOWED_COUNTRIES as
+      // Europe, so this honors that: country_code decides, not
+      // NewForm's narrower audience split). Observed on
+      // 2026-10-15: 52/100 non-target submits leaked through to
+      // /nextstep; 4 booked closer calls.
+      const incomingCountry = (params.get('country_code') || '').toUpperCase();
+      if (incomingCountry) {
+        setDetectedCountry(incomingCountry);
+        const allowed = ALLOWED_COUNTRIES.includes(incomingCountry);
         trackEvent('router_country_detected', {
-          country: incomingCountry || 'unknown',
-          allowed: false,
+          country: incomingCountry,
+          allowed,
           source: 'url_param',
         });
-        trackEvent('router_dq_question_shown', { country: incomingCountry || 'unknown', source: 'url_param' });
-        setState('dq-question');
+        if (allowed) {
+          doRedirect(GROUP_A_URL, { result: 'qualified', country: incomingCountry });
+        } else {
+          trackEvent('router_dq_question_shown', { country: incomingCountry, source: 'url_param' });
+          setState('dq-question');
+        }
         return;
       }
 
@@ -315,14 +319,11 @@ export function Router() {
         }
       } catch (error) {
         trackEvent('router_geoip_failed', { error: String(error).slice(0, 100) });
-        // Second-chance fallback: if URL carries audience=target or
-        // an allowed country_code, honor it; otherwise default to
-        // qualified (preserves prior ad-blocker-friendly behavior).
-        if (incomingAudience === 'target' || (incomingCountry && ALLOWED_COUNTRIES.includes(incomingCountry))) {
-          doRedirect(GROUP_A_URL, { result: 'qualified', country: incomingCountry });
-        } else {
-          doRedirect(GROUP_A_URL, { result: 'qualified' });
-        }
+        // No incoming country_code (the early-return branch would have
+        // handled it); ipapi.co also failed. Default to qualified —
+        // safer to let a legitimate target slip through than block
+        // them. Preserves prior ad-blocker-friendly behavior.
+        doRedirect(GROUP_A_URL, { result: 'qualified' });
       } finally {
         clearTimeout(timeoutId);
       }
