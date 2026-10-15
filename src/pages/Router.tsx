@@ -264,11 +264,34 @@ export function Router() {
     }, 150);
 
     const redirect = async () => {
+      // NewForm already geo-classified via country.is and set
+      // audience + country_code on the form POST. newform-post then
+      // forwards these as URL params. Trust them as ground truth —
+      // ipapi.co is just a corroborating signal and gets blocked by
+      // ad blockers ~15% of the time. Without this check, BD/IN/PK
+      // (and other non-target) leads were slipping through to the
+      // qualified /nextstep flow whenever ipapi.co was blocked
+      // (observed 10/10 BD leads landing on /nextstep, 2 booked
+      // closer calls as of the 2026-10-15 audit).
+      const incomingAudience = params.get('audience') || '';
+      const incomingCountry  = (params.get('country_code') || '').toUpperCase();
+      if (incomingAudience === 'non_target' || (incomingCountry && !ALLOWED_COUNTRIES.includes(incomingCountry))) {
+        if (incomingCountry) setDetectedCountry(incomingCountry);
+        trackEvent('router_country_detected', {
+          country: incomingCountry || 'unknown',
+          allowed: false,
+          source: 'url_param',
+        });
+        trackEvent('router_dq_question_shown', { country: incomingCountry || 'unknown', source: 'url_param' });
+        setState('dq-question');
+        return;
+      }
+
       // Hard 2.5s timeout on ipapi.co — free tier regularly hangs for
-      // 2-10s or outright times out. Previous code had no bound here,
-      // so the router loading screen could sit indefinitely and visitors
-      // would bounce. On timeout we fall through to the qualified
-      // fallback (same behavior as a network error).
+      // 2-10s or outright times out. On timeout OR network error we
+      // check if the URL carries any audience hint; if not, we fall
+      // through to qualified (safer to let a legitimate target slip
+      // through than block them).
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2500);
       try {
@@ -281,18 +304,25 @@ export function Router() {
         trackEvent('router_country_detected', {
           country,
           allowed,
+          source: 'ipapi',
         });
 
         if (allowed) {
           doRedirect(GROUP_A_URL, { result: 'qualified', country });
         } else {
-          // DQ country - ask the capital question first
           trackEvent('router_dq_question_shown', { country });
           setState('dq-question');
         }
       } catch (error) {
         trackEvent('router_geoip_failed', { error: String(error).slice(0, 100) });
-        doRedirect(GROUP_A_URL, { result: 'qualified' });
+        // Second-chance fallback: if URL carries audience=target or
+        // an allowed country_code, honor it; otherwise default to
+        // qualified (preserves prior ad-blocker-friendly behavior).
+        if (incomingAudience === 'target' || (incomingCountry && ALLOWED_COUNTRIES.includes(incomingCountry))) {
+          doRedirect(GROUP_A_URL, { result: 'qualified', country: incomingCountry });
+        } else {
+          doRedirect(GROUP_A_URL, { result: 'qualified' });
+        }
       } finally {
         clearTimeout(timeoutId);
       }

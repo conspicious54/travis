@@ -85,6 +85,13 @@ function buildRedirectUrl(audience: 'target' | 'non_target', body: Record<string
   const fwd = new URLSearchParams();
   const forwardFields = [
     'email', 'first_name', 'last_name', 'phone',
+    // Geo + audience come from NewForm's client-side detection
+    // (country.is). /router uses these as the ground truth when its
+    // own ipapi.co lookup is blocked by ad blockers / privacy
+    // extensions — otherwise router falls back to 'qualified' and
+    // sends non-target leads (BD, IN, PK, etc.) straight to the
+    // closer VSL.
+    'country_code', 'country_name', 'audience',
     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_ad_group',
     'gclid', 'fbclid', 'ttclid', 'gbraid', 'wbraid', 'li_fat_id',
     '_fbp', '_fbc',
