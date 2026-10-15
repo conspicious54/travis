@@ -1,53 +1,91 @@
 import type { Handler, HandlerEvent } from '@netlify/functions';
 
 /* ───── /.netlify/functions/newform-post ──────────────────────────
-   Server-side form POST + 302 fallback for the NewForm leadpage.
-   NOT WIRED TO THE FORM BY DEFAULT. Standby implementation in case
-   the client-side JS redirect in src/pages/NewForm.tsx continues to
-   lose visitors between submit and /nextstep arrival.
-
-   This replicates what ClickFunnels did pre-cutover: a native HTML
-   form POST handled server-side, with a 302 redirect returned to
-   the browser. Zero JavaScript required. No way for an uncaught
-   exception, iOS Safari backgrounding, or browser extension to kill
-   the redirect — the browser follows the Location header natively.
-
-   To activate:
-     1. In src/pages/NewForm.tsx, change the <form> element to:
-          <form onSubmit={undefined}
-                method="POST"
-                action="/.netlify/functions/newform-post">
-        (keep onSubmit for client-side analytics firing, but let the
-        form POST through natively — the submit event handler can
-        return without preventDefault)
-     2. Change each <input name="..."> to the correct names below
-        (email, firstname, lastname, phone, dial_country, dial_code,
-        audience, country_code, country_name, variant_id, lead_magnet_id)
-     3. Deploy and watch bookings recover.
+   Server-side form POST + 302 for the NewForm leadpage. This is the
+   LIVE handler for the NewForm submit — src/pages/NewForm.tsx
+   natively POSTs here (method=POST, action=/.netlify/functions/
+   newform-post) and the browser follows the 302 we return. Zero
+   client-side JS required for the navigation. This replicates what
+   ClickFunnels did pre-cutover.
 
    Behavior:
-     - Accepts both form-urlencoded (native form POST) and JSON
-       (programmatic). Parses accordingly.
-     - Fires the Zapier webhook server-side. Awaited — the user is
-       waiting on the 302 anyway, so a 500ms Zapier POST is fine.
-     - Normalizes audience from country_code if the client didn't
-       send one (same TARGET_COUNTRIES set as register-webinar.ts).
-     - Returns 302 with Location: /nextstep?email=X&... or /router?...
-       The browser treats this as a native navigation.
-     - If the Zapier POST fails, we STILL return the 302. Lead is
-       logged in the function logs for reconciliation.
+     - Accepts form-urlencoded (native form POST) and JSON.
+     - Resolves country from Netlify's edge `x-nf-geo` header
+       (server-side, un-blockable) and falls back to the client's
+       `country_code` field only when the edge header is absent.
+     - Classifies audience against ALLOWED_COUNTRIES (same list as
+       src/pages/Router.tsx — US/CA/AU/NZ + all Europe) and 302s to
+       /nextstep (target) or /router (non_target).
+     - Overwrites body.country_code / body.country_name / body.audience
+       with the server-resolved values so downstream (/router,
+       /nextstep, Zapier) all see the same truth.
+     - Fires the Zapier webhook server-side, awaited. Even if Zapier
+       fails, the user still gets their 302 — lead is in the function
+       log for reconciliation.
 
    Env vars:
      WEBINAR_ZAPIER_WEBHOOK_URL   (same as register-webinar.ts)
 ──────────────────────────────────────────────────────────────────── */
 
-const TARGET_COUNTRIES = new Set(['US', 'CA', 'GB', 'AU', 'NZ', 'IE']);
+/* ───── allowed-country list ────────────────────────────────────────
+   Mirrors the ALLOWED_COUNTRIES list in src/pages/Router.tsx so
+   client + server agree on who's qualified. US/CA/AU/NZ + all of
+   Europe. Non-target → /router for the DQ question UX. Target →
+   straight to /nextstep. ──────────────────────────────────────── */
+
+const EUROPE_COUNTRIES = new Set([
+  'AL','AD','AT','BY','BE','BA','BG','HR','CY','CZ','DK','EE','FI','FR',
+  'DE','GR','HU','IS','IE','IT','XK','LV','LI','LT','LU','MT','MD','MC',
+  'ME','NL','MK','NO','PL','PT','RO','RU','SM','RS','SK','SI','ES','SE',
+  'CH','UA','GB','VA',
+]);
+const ALLOWED_COUNTRIES = new Set(['US', 'CA', 'AU', 'NZ', ...EUROPE_COUNTRIES]);
 const REDIRECT_TARGET = '/nextstep';
 const REDIRECT_NON_TARGET = '/router';
 
 function classifyAudience(code: string): 'target' | 'non_target' {
   if (!code) return 'non_target';
-  return TARGET_COUNTRIES.has(code.toUpperCase()) ? 'target' : 'non_target';
+  return ALLOWED_COUNTRIES.has(code.toUpperCase()) ? 'target' : 'non_target';
+}
+
+/* ───── Netlify edge geo ─────────────────────────────────────────────
+   Netlify's CDN detects the visitor's country from their IP and
+   exposes it on every function invocation as the `x-nf-geo` header.
+   This is server-side truth: it fires BEFORE any client-side JS,
+   can't be blocked by ad blockers, and is identical to what Netlify
+   uses for its own geo-based asset routing. This replaces the
+   previous dependency on NewForm's client-side country.is call,
+   which was blocked by ad blockers ~3-5% of the time.
+
+   The header value is base64-encoded JSON of the shape
+   `{"country":{"code":"US","name":"United States"}, ...}`. Fall
+   back to a parsed-string decode if base64 fails (some older
+   Netlify runtimes emit it as a plain JSON string). ──────────── */
+
+function readNetlifyGeo(
+  headers: Record<string, string | undefined>,
+): { code: string; name: string } {
+  const raw = headers['x-nf-geo'] || headers['X-Nf-Geo'] || '';
+  if (!raw) return { code: '', name: '' };
+  const tryParse = (s: string): { code: string; name: string } | null => {
+    try {
+      const obj = JSON.parse(s) as { country?: { code?: string; name?: string } };
+      const code = (obj?.country?.code || '').toUpperCase();
+      const name = obj?.country?.name || '';
+      if (code) return { code, name };
+    } catch { /* no-op */ }
+    return null;
+  };
+  // Try base64 first (current Netlify runtime behaviour)
+  try {
+    const decoded = Buffer.from(raw, 'base64').toString('utf-8');
+    const parsed = tryParse(decoded);
+    if (parsed) return parsed;
+  } catch { /* no-op */ }
+  // Fall back to raw JSON string
+  const parsed = tryParse(raw);
+  if (parsed) return parsed;
+  return { code: '', name: '' };
 }
 
 /** Parse request body as either form-urlencoded or JSON. */
@@ -85,12 +123,12 @@ function buildRedirectUrl(audience: 'target' | 'non_target', body: Record<string
   const fwd = new URLSearchParams();
   const forwardFields = [
     'email', 'first_name', 'last_name', 'phone',
-    // Geo + audience come from NewForm's client-side detection
-    // (country.is). /router uses these as the ground truth when its
-    // own ipapi.co lookup is blocked by ad blockers / privacy
-    // extensions — otherwise router falls back to 'qualified' and
-    // sends non-target leads (BD, IN, PK, etc.) straight to the
-    // closer VSL.
+    // Geo + audience are set by this function from Netlify's edge
+    // `x-nf-geo` header, overriding whatever the client posted.
+    // /router reads country_code from the URL as its ground truth,
+    // so forwarding the server-resolved values closes the ad-blocker
+    // leak that was sending DQ-country leads (BD, IN, PK, etc.) to
+    // the closer VSL.
     'country_code', 'country_name', 'audience',
     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_ad_group',
     'gclid', 'fbclid', 'ttclid', 'gbraid', 'wbraid', 'li_fat_id',
@@ -186,15 +224,33 @@ export const handler: Handler = async (event: HandlerEvent) => {
   const firstname = s(body.firstname);
   const lastname = s(body.lastname);
   const phone = s(body.phone);
-  const countryCode = s(body.country_code).toUpperCase();
-  const countryName = s(body.country_name);
+  const bodyCountryCode = s(body.country_code).toUpperCase();
+  const bodyCountryName = s(body.country_name);
 
-  // Server-side audience classification. Trust client if sent, else
-  // derive from country_code.
+  // Netlify edge geo = server-side truth. Prefer it over whatever
+  // the client reported (which can be '' when ad blockers kill the
+  // country.is call in NewForm). This is the fix for DQ-country
+  // leads slipping through to /nextstep.
+  const edgeGeo = readNetlifyGeo(event.headers as Record<string, string | undefined>);
+  const countryCode = edgeGeo.code || bodyCountryCode;
+  const countryName = edgeGeo.name || bodyCountryName;
+  const geoSource = edgeGeo.code
+    ? 'edge'
+    : bodyCountryCode
+      ? 'body'
+      : 'none';
+
+  // Server-side audience classification. Edge geo is authoritative:
+  // if Netlify's CDN placed the visitor in a DQ country, we ignore
+  // whatever `audience` the client posted. Only fall back to the
+  // client-reported audience when the edge header is absent AND the
+  // client sent an explicit audience value.
   const audience: 'target' | 'non_target' =
-    body.audience === 'target' || body.audience === 'non_target'
-      ? body.audience
-      : classifyAudience(countryCode);
+    countryCode
+      ? classifyAudience(countryCode)
+      : body.audience === 'target' || body.audience === 'non_target'
+        ? body.audience
+        : 'non_target';
 
   // Even if email is missing, we still redirect — the user already
   // interacted. Zapier won't get a usable lead but the user doesn't
@@ -216,6 +272,15 @@ export const handler: Handler = async (event: HandlerEvent) => {
   // downstream so Zapier routing can short-circuit on one marker.
   const outCountryCode = audience === 'target' ? countryCode : 'DQ';
   const outCountryName = audience === 'target' ? countryName : 'DQ';
+
+  // Overwrite body with the resolved values so buildRedirectUrl and
+  // any downstream handler sees the server-side truth, not whatever
+  // the client posted. The /router page reads country_code from the
+  // URL as its ground truth, so this closes the ad-blocker gap end
+  // to end.
+  body.country_code = outCountryCode;
+  body.country_name = outCountryName;
+  body.audience = audience;
 
   // Fire Zapier webhook. Awaited here because the user is waiting on
   // the 302 anyway — a 500ms Zapier roundtrip is still faster than
@@ -257,7 +322,8 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
   console.log(
     `[newform-post] email=${email} name="${firstname} ${lastname}" ` +
-    `audience=${audience} country=${outCountryCode || '?'} ` +
+    `audience=${audience} country=${outCountryCode || '?'} geo_src=${geoSource} ` +
+    `edge=${edgeGeo.code || '-'} body=${bodyCountryCode || '-'} ` +
     `zap_ok=${zapResult.ok} reason=${zapResult.reason || ''}`
   );
 
