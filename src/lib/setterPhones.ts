@@ -26,11 +26,10 @@ const SETTER_PHONES: Record<string, SetterPhoneMap> = {
   },
   'caeden hooks': {
     us:   { display: '(762) 701-6062',   raw: '+17627016062',  label: 'Caeden - US' },
-    // Caeden AU: Aloware entry #58629 lists two lines (0468 080 264
-    // + 0489 089 374). Using the first one. UK still pending —
-    // Aloware shows "2 Numbers" with no visible digits, falls
-    // through to Robin's UK line until confirmed.
-    eu:   { display: '+44 7723 573445',  raw: '+447723573445', label: 'Caeden - UK' },
+    // Caeden UK: Aloware entry #58628 holds two lines (07463 587844
+    // + 07853 306509). Using the first. Caeden AU: entry #58629
+    // holds two lines (0468 080 264 + 0489 089 374). Using the first.
+    eu:   { display: '+44 7463 587844',  raw: '+447463587844', label: 'Caeden - UK' },
     aunz: { display: '+61 468 080 264',  raw: '+61468080264',  label: 'Caeden - AU' },
   },
 };
