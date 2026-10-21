@@ -5,9 +5,10 @@
    confirmation goes to the specific setter who owns the booking,
    not a generic team number.
 
-   Current setter rotation: Robin + Caeden. Ibrahim/Santiago kept
-   as historical fallbacks so past bookings assigned to them still
-   match the right phone if the user is routed through this page.
+   Current setter rotation: Robin + Caeden + Temi. Ibrahim/Santiago
+   kept as historical fallbacks so past bookings assigned to them
+   still match the right phone if the user is routed through this
+   page.
 ──────────────────────────────────────────────────────────────────── */
 
 import { PHONE_NUMBERS, type Region } from './regionPhone';
@@ -31,6 +32,11 @@ const SETTER_PHONES: Record<string, SetterPhoneMap> = {
     // holds two lines (0468 080 264 + 0489 089 374). Using the first.
     eu:   { display: '+44 7463 587844',  raw: '+447463587844', label: 'Caeden - UK' },
     aunz: { display: '+61 468 080 264',  raw: '+61468080264',  label: 'Caeden - AU' },
+  },
+  'temi fatusin': {
+    us:   { display: '(509) 740-0380',   raw: '+15097400380',  label: 'Temi - US' },
+    eu:   { display: '+44 7361 590144',  raw: '+447361590144', label: 'Temi - UK' },
+    aunz: { display: '+61 485 038 611',  raw: '+61485038611',  label: 'Temi - AU' },
   },
 };
 

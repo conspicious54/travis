@@ -143,6 +143,17 @@ export const COACHES: Record<string, Coach> = {
       "Caeden is on our team at Passion Product. He's the first person you'll talk to before your strategy call.",
     bio: "He'll get you set up with the right next steps and make sure you're matched with the right coach for your situation.",
   },
+  'temi fatusin': {
+    id: 'temi',
+    firstName: 'Temi',
+    fullName: 'Temi Fatusin',
+    role: 'Passion Product Setter',
+    tenure: 'On the Passion Product team',
+    photoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Temi.png',
+    travisIntro:
+      "Temi is on our team at Passion Product. She's the first person you'll talk to before your strategy call.",
+    bio: "She'll get you set up with the right next steps and make sure you're matched with the right coach for your situation.",
+  },
   'ibrahim cisse': {
     id: 'ibrahim',
     firstName: 'Ibrahim',
