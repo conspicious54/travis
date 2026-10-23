@@ -385,8 +385,8 @@ export function ScalersLanding() {
   // Default hero copy — matches the ClickFunnels lead page verbatim.
   // Variant.headline / supporting_copy override these when a UTM
   // campaign matches an active row in campaignVariants.ts.
-  const DEFAULT_EYEBROW = 'Last Year, First Time Amazon Sellers Made Over $140 Billion In Sales';
-  const DEFAULT_HEADLINE = 'Learn the Exact Process I Use to Help Sellers Reach $100K on Amazon in 2026';
+  const DEFAULT_EYEBROW = 'For Amazon Sellers Who Want To Grow To The Next Level';
+  const DEFAULT_HEADLINE = 'The Exact Process I Use to Help Amazon Sellers Scale In 2026';
   const eyebrowText = variant ? variant.supporting_copy : DEFAULT_EYEBROW;
   const headlineText = (variant?.headline) || DEFAULT_HEADLINE;
 
@@ -426,8 +426,8 @@ export function ScalersLanding() {
             <p className="text-[17px] md:text-[30px] font-normal text-black leading-[1.4] md:leading-none tracking-[0.48px] mb-3 md:mb-1">
               {eyebrowText === DEFAULT_EYEBROW ? (
                 <>
-                  Last Year, First Time Amazon Sellers Made Over{' '}
-                  <span className="font-black">$140 Billion</span> In Sales
+                  For Amazon Sellers Who Want To Grow To The{' '}
+                  <span className="font-black">Next Level</span>
                 </>
               ) : (
                 eyebrowText

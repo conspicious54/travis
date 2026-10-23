@@ -285,7 +285,7 @@ export function ScalersApply() {
       <div className="bg-green-500 text-white">
         <div className="max-w-4xl mx-auto px-5 py-3 text-center">
           <p className="text-base md:text-xl font-bold tracking-tight">
-            Step 1 Of 2: Apply Now For Your 1-On-1 Amazon Strategy Call
+            Step 1 Of 2: Apply Now For Your 1-On-1 Seller Growth Call
           </p>
         </div>
       </div>
@@ -301,7 +301,7 @@ export function ScalersApply() {
         <div ref={formRef} className="max-w-3xl mx-auto">
           <div className="text-center mb-3">
             <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-              The Passion Product Strategy Session
+              The Passion Product Seller Growth Session
             </h2>
             <p className="text-gray-600 text-sm md:text-base mt-1">
               Take This Self Assessment To See If You're A Fit

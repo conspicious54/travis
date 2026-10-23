@@ -265,7 +265,7 @@ async function hydrateFromHubSpot(
     const merged: MeetingInfo = {
       start: safeStart,
       end,
-      title: urlMeeting?.title || data.title || 'Amazon Strategy Call with Passion Product',
+      title: urlMeeting?.title || data.title || 'Seller Growth Call with Passion Product',
       joinUrl: urlMeeting?.joinUrl || data.joinUrl || '',
       organizer: urlMeeting?.organizer || data.ownerName || 'Passion Product Team',
       firstName: urlMeeting?.firstName || data.firstName || '',
@@ -365,7 +365,7 @@ function buildICS(m: MeetingInfo): string {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Passion Product//Strategy Call//EN',
+    'PRODID:-//Passion Product//Seller Growth Call//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
@@ -772,7 +772,7 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false, travisH
         <p className={`text-gray-700 max-w-2xl mx-auto mb-3 leading-snug ${compact ? 'text-base animate-banner-rise-2' : 'text-lg md:text-2xl'}`}>
           {meeting ? (
             <>
-              Your strategy call
+              Your Seller Growth Call
               {meeting.organizer && meeting.organizer !== 'Passion Product Team' ? (
                 <> with <span className="font-bold text-gray-900">{meeting.organizer}</span></>
               ) : null}
@@ -782,7 +782,7 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false, travisH
               <span className="font-bold text-gray-900">{formatHumanTime(meeting.start)}</span>.
             </>
           ) : (
-            'Your strategy call with Travis or one of his top coaches is scheduled.'
+            'Your Seller Growth Call with Travis or one of his top coaches is scheduled.'
           )}
         </p>
         {/* Email reminder is desktop-only - on mobile it's redundant noise above the action */}
@@ -818,7 +818,7 @@ function CloserConfirmationBanner({ meeting, firstName, compact = false, travisH
             {vKnownATC?.id === 'atc' && meeting?.start && !meeting.startUnknown && (
               <AddToCalendarButton
                 startISO={meeting.start}
-                title={`Call with ${coachFirstName} — Passion Product strategy call`}
+                title={`Call with ${coachFirstName} - Passion Product Seller Growth Call`}
                 description={`See you ${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}. We'll text you the dial-in details.`}
                 location="closer"
               />
@@ -927,7 +927,7 @@ function CloserFinalCTA({ meeting, firstName }: { meeting: MeetingInfo | null; f
                 Check your email
               </p>
               <p className="text-white font-bold text-base md:text-lg leading-snug mb-2">
-                Look for an email titled <span className="text-orange-300">"Please confirm: your Amazon strategy call"</span>
+                Look for an email titled <span className="text-orange-300">"Please confirm: your Seller Growth Call"</span>
               </p>
               <p className="text-slate-400 text-sm leading-relaxed">
                 It has important info for your call. Open it, read it, and you'll be ready to go.
