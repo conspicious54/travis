@@ -124,7 +124,7 @@ export const COACHES: Record<string, Coach> = {
     fullName: 'Adam Chohan',
     role: 'Passion Product Lead Amazon Coach',
     tenure: 'On the Passion Product team',
-    photoUrl: '',
+    photoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Adam.png',
     travisIntro:
       "Adam is one of my in-house Amazon coaches at Passion Product. Direct, serious about the work, and the kind of coach who'll help you get clear on exactly what your next step should be.",
     bio: "He's been trained directly on the Passion Product method and is working with our students through every stage of their launch. On your call he'll cut through the noise and give you the straight read on your situation.",
@@ -135,7 +135,7 @@ export const COACHES: Record<string, Coach> = {
     fullName: 'Kamil Stachura',
     role: 'Passion Product Lead Amazon Coach',
     tenure: 'On the Passion Product team',
-    photoUrl: '',
+    photoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/KamilNew.png',
     travisIntro:
       "Kamil is one of my in-house Amazon coaches at Passion Product. Direct, serious about the work, and the kind of coach who'll help you get clear on exactly what your next step should be.",
     bio: "He's been trained directly on the Passion Product method and is working with our students through every stage of their launch. On your call he'll cut through the noise and give you the straight read on your situation.",
