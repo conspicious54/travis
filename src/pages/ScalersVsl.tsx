@@ -581,7 +581,7 @@ export function ScalersVsl() {
             Free Training
           </div>
           <h1 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] mb-2 text-slate-900">
-            How We Help Amazon Sellers <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">Scale To The Next Level</span>
+            How We Help Ambitious Amazon Sellers <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">Hit Their Next Big Milestone</span>
           </h1>
           {/* Subtle bounce on the "Hit Play" prompt until the visitor
               starts the video. nextstep-bounce keyframe defined inline
