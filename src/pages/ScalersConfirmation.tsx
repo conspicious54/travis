@@ -1,44 +1,1167 @@
-import { useEffect } from 'react';
-import { trackEvent, trackConfirmationPageViewed } from '../lib/posthog';
-import { SCALERS_TRACK, SCALERS_LOGO_URL } from '../lib/scalers';
+import React, { useEffect, useState } from 'react';
+import {
+  ResearchVideo,
+  TestimonialHighlights,
+  SharedFooter,
+  LowCapitalStrategies,
+  CreditCardQuiz,
+  ConfirmationExitPopup,
+  WindowsConfirmBlock,
+  WarmCohortNudge,
+  MeetYourCoach,
+  NextStepsList,
+  ConfirmationFAQ,
+  MobileConfirmStickyBar,
+  ScrollToNextButton,
+  PassionProductMethodSection,
+  AcceleratorSection,
+} from '../components/TrainingNewSections';
+import { MobileWalkthrough, useIsMobileViewport, type WalkthroughStep } from '../components/MobileWalkthrough';
+import { CheckCircle, Calendar, Phone, Star, Shield, ChevronDown, MessageSquare, AlertTriangle, ArrowDown, Check } from 'lucide-react';
+import { getPersonalization, type Personalization } from '../lib/personalization';
+import { useExperimentInit, useExperiment } from '../experiments/useExperiment';
+import {
+  AddToCalendarButton,
+  MutualFitMicroCopy,
+  LowCapitalLaunchStatChip,
+  AndroidCallFallback,
+} from '../experiments/variants';
+import {
+  identifyUser,
+  setPersonProperties,
+  trackConfirmationPageViewed,
+  trackCalendarAdded,
+  trackEvent,
+} from '../lib/posthog';
+import { detectRegion, PHONE_NUMBERS, type Region } from '../lib/regionPhone';
+import { getCloserPhone } from '../lib/closerPhones';
+import { PrepChecklistProvider, usePrepChecklist } from '../context/PrepChecklistContext';
+import {
+  useScrollDepth,
+  useDwellHeartbeat,
+  usePhoneCopyTracking,
+  useConfirmAppSwitch,
+  useSproutvideoTracking,
+} from '../lib/confirmationTracking';
+import { markConfirmClicked } from '../lib/confirmFlow';
+import { syncContactTimezone } from '../lib/syncTimezone';
+import { syncContactUtms } from '../lib/syncUtm';
+import { getCoachByOwnerName } from '../lib/coaches';
+import { celebrateConfirm, celebrateArrival } from '../lib/celebrate';
+import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
-/* ───── /scalers/confirmation — Seller Growth Call confirmation ────
-   Minimal thank-you page for the Scalers track. If you want this
-   to render the full /trainingnew/closer treatment (coach bio,
-   phone, calendar add, text/WhatsApp CTA), swap the body below
-   for the TrainingNewCloser page component — but note that page
-   requires an `owner` URL param to resolve a closer. Until Scalers
-   has a defined closer rotation, this standalone page is cleaner.
+// Module-level flag so we only fire the arrival celebration once
+// per page session (not every time the banner remounts when the
+// user navigates back to step 1 of the walkthrough).
+let arrivalCelebrated = false;
 
-   PLACEHOLDER: swap body copy, add resource links, etc.
-──────────────────────────────────────────────────────────────────── */
+type Platform = 'ios' | 'android' | 'windows' | 'mac' | 'desktop';
+function detectPlatform(): Platform {
+  if (typeof navigator === 'undefined') return 'desktop';
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
+  if (/Android/.test(ua)) return 'android';
+  if (/Windows NT/i.test(ua)) return 'windows';
+  // Mac handles sms:// natively via Messages; everything else (Linux,
+  // ChromeOS, unknown) can't open sms:// at all and needs the QR
+  // fallback. 'desktop' here means "non-Mac desktop that needs QR."
+  if (/Mac OS X|Macintosh/.test(ua)) return 'mac';
+  return 'desktop';
+}
 
-export function ScalersConfirmation() {
+// Needs the QR / self-report block (sms:// won't work in-browser).
+function needsQrFallback(platform: Platform): boolean {
+  return platform === 'windows' || platform === 'desktop';
+}
+
+/* ───────────────────── closer-specific sections ──────────────────── */
+
+function StepProgressBar() {
+  return (
+    <div className="bg-white border-b border-gray-100">
+      <div className="max-w-4xl mx-auto px-4 py-3">
+        <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+              <CheckCircle className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Booked</span>
+          </div>
+          <div className="w-12 h-0.5 bg-gradient-to-r from-green-500 to-orange-500" />
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold ring-4 ring-orange-100">
+              2
+            </div>
+            <span className="text-xs font-bold text-orange-600 uppercase tracking-wider">Prepare</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───── HubSpot meeting parsing + ICS generation ──────────────────── */
+
+interface MeetingInfo {
+  start: Date;
+  end: Date;
+  title: string;
+  joinUrl: string;
+  organizer: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  /** true if we couldn't verify the start time (partial hydration) */
+  startUnknown?: boolean;
+}
+
+function parseDate(val: string | null): Date | null {
+  if (!val) return null;
+  if (/^\d+$/.test(val)) {
+    const num = parseInt(val, 10);
+    const ms = num < 1e12 ? num * 1000 : num;
+    const d = new Date(ms);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/* Meeting info comes from URL params set by /book AFTER HubSpot's
+   postMessage fires. That redirect is our only trusted source of truth.
+
+   We refuse a bare date string like "2026-04-23" - JavaScript parses
+   that as midnight UTC which displays wrong in local time. Only a full
+   ISO timestamp (with a T and a time component) is acceptable. */
+function parseMeetingInfo(): MeetingInfo | null {
+  if (typeof window === 'undefined') return null;
+  const p = new URLSearchParams(window.location.search);
+
+  const rawStart = p.get('start');
+  if (!rawStart || !isFullTimestamp(rawStart)) {
+    // eslint-disable-next-line no-console
+    console.log('[confirmation] Rejected meeting time. start param =', rawStart, '- not a full timestamp. Showing generic fallback.');
+    return null;
+  }
+
+  const start = parseDate(rawStart);
+  if (!start) return null;
+
+  const rawEnd = p.get('end');
+  const end =
+    rawEnd && isFullTimestamp(rawEnd)
+      ? parseDate(rawEnd) || new Date(start.getTime() + 30 * 60 * 1000)
+      : new Date(start.getTime() + 30 * 60 * 1000);
+
+  // Identity fields use the canonical/clean lookup so any "_____Team"
+  // glue from a Typeform-style concatenated merge tag gets stripped
+  // before display on the confirmation page.
+  //
+  // Note: title / organizer return EMPTY STRINGS when not in the URL
+  // (rather than the human defaults). The defaults only kick in at
+  // the END of the merge chain in hydrateFromHubSpot, so HubSpot data
+  // wins over the URL when the URL only had defaults. Otherwise the
+  // truthy default string would beat data.ownerName in the merge.
+  const id = getCleanIdentity(p);
+  return {
+    start,
+    end,
+    title: getCleanParam(p, 'title') || '',
+    joinUrl: p.get('join') || '',
+    organizer: getCleanParam(p, 'owner') || getCleanParam(p, 'organizer') || '',
+    firstName: id.firstname || '',
+    lastName: id.lastname || '',
+    email: id.email || '',
+  };
+}
+
+function isFullTimestamp(v: string): boolean {
+  if (!v) return false;
+  // Must have "T" AND either ":" for time or a Z/timezone offset
+  return v.includes('T') && (v.includes(':') || /[Z+-]\d{2}/.test(v));
+}
+
+function getEmailFromUrl(): string {
+  if (typeof window === 'undefined') return '';
+  return getCleanIdentity(new URLSearchParams(window.location.search)).email || '';
+}
+
+/* Ask the HubSpot-backed lookup function for anything missing - most
+   importantly the Zoom join URL, but also confirmed start/end time
+   and owner name if they weren't in the URL. URL params always win
+   over the lookup so we never overwrite verified data. */
+interface LookupResponse {
+  found?: boolean;
+  startIso?: string;
+  endIso?: string;
+  title?: string;
+  joinUrl?: string;
+  ownerName?: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+async function hydrateFromHubSpot(
+  email: string,
+  urlMeeting: MeetingInfo | null
+): Promise<MeetingInfo | null> {
+  // Retry loop. HubSpot-native scheduler bookings appear within 1-2s
+  // (covered by the first few retries). OnceHub bookings sync as DEALS
+  // (not meetings) with a typical 2-4 minute lag, so we keep polling
+  // out to ~4 minutes total to catch those before giving up.
+  const attemptDelaysMs = [0, 2000, 5000, 15000, 30000, 60000, 90000, 90000];
+
+  // When the user arrived from the webinar booking flow we set
+  // ?source=webinar on the redirect. That tells the meeting-lookup
+  // function to try the OnceHub deal path FIRST instead of the
+  // contact-meeting path, so stale legacy meetings from past tests
+  // don't preempt the actual webinar booking.
+  const isWebinarSource =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('source') === 'webinar';
+  const lookupUrl =
+    `/.netlify/functions/meeting-lookup?email=${encodeURIComponent(email)}` +
+    (isWebinarSource ? '&source=webinar' : '');
+
+  for (const delay of attemptDelaysMs) {
+    if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+
+    let data: LookupResponse | null = null;
+    try {
+      const res = await fetch(lookupUrl, { headers: { Accept: 'application/json' } });
+      if (!res.ok) continue;
+      data = (await res.json()) as LookupResponse;
+      // eslint-disable-next-line no-console
+      console.log('[confirmation] hubspot lookup response', data);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.log('[confirmation] hubspot lookup error', err);
+      continue;
+    }
+
+    if (!data?.found) continue;
+
+    // Merge: URL params win for every field they already have a value
+    // for. Lookup only supplies what's missing.
+    const start =
+      urlMeeting?.start ||
+      (data.startIso ? parseDate(data.startIso) : null);
+
+    // If we got a joinUrl or ownerName but no start time, still return
+    // a partial MeetingInfo using "now" as a placeholder so the banner
+    // can render the Zoom button. The banner uses startUnknown flag to
+    // avoid displaying a fake time.
+    if (!start && !data.joinUrl && !data.ownerName) {
+      continue; // nothing useful - try next retry
+    }
+
+    const safeStart = start || new Date();
+    const end =
+      urlMeeting?.end ||
+      (data.endIso ? parseDate(data.endIso) : null) ||
+      new Date(safeStart.getTime() + 30 * 60 * 1000);
+
+    const merged: MeetingInfo = {
+      start: safeStart,
+      end,
+      title: urlMeeting?.title || data.title || 'Amazon Strategy Call with Passion Product',
+      joinUrl: urlMeeting?.joinUrl || data.joinUrl || '',
+      organizer: urlMeeting?.organizer || data.ownerName || 'Passion Product Team',
+      firstName: urlMeeting?.firstName || data.firstName || '',
+      lastName: urlMeeting?.lastName || data.lastName || '',
+      email: urlMeeting?.email || email,
+      startUnknown: !start,
+    };
+    return merged;
+  }
+  return null;
+}
+
+/* localStorage data persisted by the booking-relay page before HubSpot */
+interface BookingRelayData {
+  firstname?: string;
+  lastname?: string;
+  phone?: string;
+  email?: string;
+  location?: string;
+  reason?: string;
+  tried?: string;
+  travis?: string;
+  value?: string;
+  money?: string;
+  _captured_at?: string;
+}
+
+function getRelayData(): BookingRelayData {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem('pp_booking_data');
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+/* Meeting time display is DISABLED until we verify HubSpot's actual
+   payload shape. Showing a wrong time is worse than showing no time.
+
+   To turn back on:
+   1. Do a test booking on /book with DevTools Console open
+   2. Copy the object logged as "[HubSpot meetingBookSucceeded payload]"
+   3. Map those real fields into the parser below
+   4. Re-enable by returning the parsed MeetingInfo
+
+   Until then, we always return null so the banner falls back to the
+   generic "Check your email for the calendar invite" message. */
+function getMeetingFromStorage(): MeetingInfo | null {
+  // Wipe any stale meeting data on every confirmation page load so old
+  // bookings can never leak into the UI.
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('pp_meeting_data');
+    } catch {
+      /* no-op */
+    }
+  }
+  return null;
+}
+
+function getFirstName(): string {
+  if (typeof window === 'undefined') return '';
+  const id = getCleanIdentity(new URLSearchParams(window.location.search));
+  return id.firstname || getRelayData().firstname || '';
+}
+
+function formatForICS(d: Date): string {
+  return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+// Escape text for RFC 5545 ICS property values
+function escapeIcsText(s: string): string {
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n');
+}
+
+function buildICS(m: MeetingInfo): string {
+  const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}@passionproduct.com`;
+  const now = formatForICS(new Date());
+
+  const descriptionParts = [
+    'Your personalized Amazon FBA strategy session with the Passion Product team.',
+    '',
+    m.joinUrl ? `Join link: ${m.joinUrl}` : '',
+    '',
+    'Come ready with your goals, budget, and any questions about your Amazon journey.',
+  ].filter(Boolean);
+  const description = escapeIcsText(descriptionParts.join('\n'));
+
+  const location = m.joinUrl || 'Video Call';
+
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Passion Product//Strategy Call//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${now}`,
+    `DTSTART:${formatForICS(m.start)}`,
+    `DTEND:${formatForICS(m.end)}`,
+    `SUMMARY:${escapeIcsText(m.title)}`,
+    `DESCRIPTION:${description}`,
+    `LOCATION:${escapeIcsText(location)}`,
+    // URL property makes many calendar apps render the join link as a clickable button
+    m.joinUrl ? `URL:${m.joinUrl}` : '',
+    `ORGANIZER;CN=${escapeIcsText(m.organizer)}:MAILTO:team@passionproduct.com`,
+    m.email ? `ATTENDEE;CN=${escapeIcsText(`${m.firstName} ${m.lastName}`.trim())};RSVP=TRUE:MAILTO:${m.email}` : '',
+    'STATUS:CONFIRMED',
+    // Multiple reminder alarms - calendar apps honor these automatically
+    // Google Calendar's URL params don't support reminders, but an ICS
+    // file with VALARM blocks does. Apple Calendar, Outlook, and Google
+    // (when importing an ICS) all respect these triggers.
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Strategy call in 1 day',
+    'TRIGGER:-P1D',
+    'END:VALARM',
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Strategy call in 1 hour',
+    'TRIGGER:-PT1H',
+    'END:VALARM',
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Strategy call in 15 minutes',
+    'TRIGGER:-PT15M',
+    'END:VALARM',
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Strategy call starting now',
+    'TRIGGER:PT0M',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].filter(Boolean);
+
+  return lines.join('\r\n');
+}
+
+function downloadICS(m: MeetingInfo) {
+  const ics = buildICS(m);
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'passion-product-strategy-call.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ───── calendar provider URL builders ──────────────────────────── */
+
+function formatForGoogle(d: Date): string {
+  return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+function buildGoogleUrl(m: MeetingInfo): string {
+  const description = [
+    'Your personalized Amazon FBA strategy session with the Passion Product team.',
+    '',
+    m.joinUrl ? `Join link: ${m.joinUrl}` : '',
+  ].filter(Boolean).join('\n');
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: m.title,
+    dates: `${formatForGoogle(m.start)}/${formatForGoogle(m.end)}`,
+    details: description,
+    location: m.joinUrl || 'Video Call',
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function buildOutlookWebUrl(m: MeetingInfo): string {
+  const description = [
+    'Your personalized Amazon FBA strategy session with the Passion Product team.',
+    m.joinUrl ? `Join link: ${m.joinUrl}` : '',
+  ].filter(Boolean).join('\n');
+
+  const params = new URLSearchParams({
+    path: '/calendar/action/compose',
+    rru: 'addevent',
+    subject: m.title,
+    body: description,
+    startdt: m.start.toISOString(),
+    enddt: m.end.toISOString(),
+    location: m.joinUrl || 'Video Call',
+  });
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
+
+function buildYahooUrl(m: MeetingInfo): string {
+  const params = new URLSearchParams({
+    v: '60',
+    title: m.title,
+    st: formatForGoogle(m.start),
+    et: formatForGoogle(m.end),
+    desc: m.joinUrl ? `Join link: ${m.joinUrl}` : '',
+    in_loc: m.joinUrl || 'Video Call',
+  });
+  return `https://calendar.yahoo.com/?${params.toString()}`;
+}
+
+/* ───── CalendarButton: smart-default by OS + email domain ──────
+
+   Cascade for picking which calendar to push to:
+
+   1. OS (highest priority — overrides email)
+        Android  → single "Add to Google Calendar" button
+        iOS      → single "Add to Apple Calendar" button
+
+   2. Email domain (only if OS was Desktop / unknown)
+        @gmail.com / @googlemail.com   → Google Calendar
+        @icloud.com / @me.com / @mac.com → Apple Calendar
+        @hotmail.com / @outlook.com /
+        @live.com / @msn.com /
+        any *.outlook.com               → Outlook Calendar
+
+   3. None of the above → existing 6-option dropdown
+─────────────────────────────────────────────────────────────────── */
+
+type CalendarPreference = 'google' | 'apple' | 'outlook' | 'dropdown';
+
+/* Brand logo URLs (provided by user for Google + Apple). Outlook
+   uses a Microsoft-hosted PNG. All three are stable CDN sources. */
+const CAL_LOGO_GOOGLE  = 'https://fonts.gstatic.com/s/i/productlogos/calendar_2020q4/v13/192px.svg';
+const CAL_LOGO_APPLE   = 'https://help.apple.com/assets/67DB4AD617009A1F970697F4/67DB4AD747D53316F70BB655/en_US/9c6fd1cb730164c989d1b3afab213fad.png';
+const CAL_LOGO_OUTLOOK = 'https://img.icons8.com/color/96/microsoft-outlook-2019.png';
+
+function detectCalendarPreference(email: string): CalendarPreference {
+  // 1. OS overrides everything
+  if (typeof navigator !== 'undefined') {
+    const ua = navigator.userAgent || '';
+    if (/Android/i.test(ua)) return 'google';
+    if (/iPhone|iPad|iPod/i.test(ua)) return 'apple';
+  }
+
+  // 2. Email domain
+  const domain = (email || '').toLowerCase().trim().split('@')[1] || '';
+  if (!domain) return 'dropdown';
+  if (domain === 'gmail.com' || domain === 'googlemail.com') return 'google';
+  if (domain === 'icloud.com' || domain === 'me.com' || domain === 'mac.com') return 'apple';
+  if (
+    domain === 'hotmail.com' || domain === 'outlook.com' ||
+    domain === 'live.com'    || domain === 'msn.com'     ||
+    domain.endsWith('.outlook.com') || domain.endsWith('.onmicrosoft.com')
+  ) return 'outlook';
+
+  // 3. No clear preference - fall back to dropdown
+  return 'dropdown';
+}
+
+function CalendarButton({ meeting, variant = 'primary' }: { meeting: MeetingInfo; variant?: 'primary' | 'cta' }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   useEffect(() => {
-    document.title = 'Seller Growth Call Confirmed';
-    trackConfirmationPageViewed('generic', { funnel_track: SCALERS_TRACK });
-    trackEvent('scalers_confirmation_viewed', { funnel_track: SCALERS_TRACK });
-  }, []);
+    if (!isOpen) return;
+    const close = () => setIsOpen(false);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [isOpen]);
+
+  const buttonClasses = variant === 'cta'
+    ? 'inline-flex items-center gap-2 px-8 py-3.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-orange-500/30 cursor-pointer text-sm'
+    : 'inline-flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors shadow-md text-sm cursor-pointer';
+
+  // Smart-default native button (variant for single calendar match).
+  // White background + brand logo + brand text reads as "native"
+  // instead of generic — exactly the click pattern visitors expect.
+  const nativeButtonClasses =
+    'inline-flex items-center gap-2.5 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 font-bold rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition-all text-sm cursor-pointer';
+
+  const preference = detectCalendarPreference(meeting.email);
+
+  const handleSingle = (provider: 'google' | 'apple' | 'outlook') => {
+    if (provider === 'google') {
+      window.open(buildGoogleUrl(meeting), '_blank', 'noopener,noreferrer');
+    } else if (provider === 'outlook') {
+      window.open(buildOutlookWebUrl(meeting), '_blank', 'noopener,noreferrer');
+    } else {
+      // apple → .ics download (iOS Safari opens it in Calendar.app,
+      // macOS opens in Calendar.app, both flows are 1-tap)
+      downloadICS(meeting);
+    }
+    trackCalendarAdded(`smart_default:${provider}`);
+  };
+
+  // Render a single smart-default button when we can confidently
+  // pick one. Skips the dropdown entirely.
+  if (preference === 'google') {
+    return (
+      <button onClick={() => handleSingle('google')} className={nativeButtonClasses}>
+        <img src={CAL_LOGO_GOOGLE} alt="" className="w-5 h-5" loading="lazy" />
+        Add to Google Calendar
+      </button>
+    );
+  }
+  if (preference === 'apple') {
+    return (
+      <button onClick={() => handleSingle('apple')} className={nativeButtonClasses}>
+        <img src={CAL_LOGO_APPLE} alt="" className="w-5 h-5" loading="lazy" />
+        Add to Apple Calendar
+      </button>
+    );
+  }
+  if (preference === 'outlook') {
+    return (
+      <button onClick={() => handleSingle('outlook')} className={nativeButtonClasses}>
+        <img src={CAL_LOGO_OUTLOOK} alt="" className="w-5 h-5" loading="lazy" />
+        Add to Outlook Calendar
+      </button>
+    );
+  }
+
+  // Fallback: original 6-option dropdown
+  const options = [
+    { label: 'Google Calendar', action: () => window.open(buildGoogleUrl(meeting), '_blank', 'noopener,noreferrer') },
+    { label: 'Apple Calendar', action: () => downloadICS(meeting) },
+    { label: 'Outlook (Web)', action: () => window.open(buildOutlookWebUrl(meeting), '_blank', 'noopener,noreferrer') },
+    { label: 'Outlook (Desktop)', action: () => downloadICS(meeting) },
+    { label: 'Yahoo Calendar', action: () => window.open(buildYahooUrl(meeting), '_blank', 'noopener,noreferrer') },
+    { label: 'Other (.ics file)', action: () => downloadICS(meeting) },
+  ];
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <main className="mx-auto max-w-xl px-5 pt-14 pb-16 text-center">
-        <img
-          src={SCALERS_LOGO_URL}
-          alt="FBA Scalers"
-          className="mx-auto mb-8 h-12 w-auto"
-          loading="eager"
-        />
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          You're booked.
+    <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={buttonClasses}
+      >
+        <Calendar className="w-4 h-4" />
+        Add to My Calendar
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+          {options.map((opt) => (
+            <button
+              key={opt.label}
+              onClick={() => {
+                opt.action();
+                trackCalendarAdded(opt.label);
+                setIsOpen(false);
+              }}
+              className="w-full text-left px-4 py-3 text-sm text-gray-700 font-medium hover:bg-orange-50 hover:text-orange-700 transition-colors cursor-pointer border-b border-gray-100 last:border-b-0"
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatHumanDate(d: Date): string {
+  return d.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function formatHumanTime(d: Date): string {
+  return d.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  });
+}
+
+function CloserConfirmationBanner({ meeting, firstName, compact = false, travisHistory }: { meeting: MeetingInfo | null; firstName: string; compact?: boolean; travisHistory?: import('../lib/personalization').TravisHistory }) {
+  const [region, setRegion] = useState<Region>('us');
+  const [platform, setPlatform] = useState<Platform>('desktop');
+  const { markDone, completed } = usePrepChecklist();
+
+  // Cycle-1 experiment variants for inside-banner inserts
+  const vIosCtaCoachName = useExperiment('closer-ios-cta-coach-name');
+  const vAndroidFallback = useExperiment('closer-android-call-fallback');
+  const vKnownATC        = useExperiment('closer-known-add-to-calendar');
+  const vHighMutual      = useExperiment('closer-high-capital-mutual-fit');
+
+  useEffect(() => {
+    setRegion(detectRegion());
+    setPlatform(detectPlatform());
+  }, []);
+
+  // First-load celebration in walkthrough mode: a small confetti
+  // sprinkle ~300ms after the check badge has animated in, so the
+  // user gets a satisfying "boom, you're booked" arrival moment.
+  useEffect(() => {
+    if (!compact) return;
+    if (arrivalCelebrated) return;
+    arrivalCelebrated = true;
+    const t = setTimeout(() => celebrateArrival(), 320);
+    return () => clearTimeout(t);
+  }, [compact]);
+
+  // Look up the specific Kixie line for this meeting's owner and the
+  // visitor's region. Falls back to the default regional number if the
+  // owner isn't mapped or has no number for this region.
+  const phone = getCloserPhone(meeting?.organizer, region);
+
+  // Build a confirmation message body that includes the exact booked
+  // time (if we have a verified meeting time) and the person's full
+  // name. Falls back to a simple message when those aren't available.
+  const fullName = [
+    meeting?.firstName || firstName,
+    meeting?.lastName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
+  // Resolve the booked coach's first name so the confirmation text opens
+  // with "Hi Coach <Name>" - lets the coach auto-identify who's texting.
+  // Falls back to Ibrahim when HubSpot hasn't returned an owner or the
+  // owner is still the generic "Passion Product Team" placeholder.
+  const coachFirstName = (() => {
+    const organizer = meeting?.organizer?.trim();
+    if (!organizer || organizer === 'Passion Product Team') return 'Ibrahim';
+    return organizer.split(/\s+/)[0] || 'Ibrahim';
+  })();
+
+  const confirmationBody = (() => {
+    const hasRealTime = meeting && !meeting.startUnknown;
+    const namePart = fullName ? ` - ${fullName}` : '';
+    if (hasRealTime) {
+      const when = `${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}`;
+      return `Hi Coach ${coachFirstName}, YES, I'm confirming my call on ${when}${namePart}`;
+    }
+    return `Hi Coach ${coachFirstName}, YES, I'm confirming my call${namePart}`;
+  })();
+
+  const smsBody = encodeURIComponent(confirmationBody);
+
+  usePhoneCopyTracking(phone.display, 'closer', region);
+  const armAppSwitch = useConfirmAppSwitch('closer');
+
+  const handleConfirmText = () => {
+    trackEvent('closer_confirm_text_clicked', {
+      region,
+      platform,
+      owner: meeting?.organizer || null,
+      coach_first_name: coachFirstName,
+      phone: phone.raw,
+    });
+    setPersonProperties({
+      coach_first_name: coachFirstName,
+      coach_full_name: meeting?.organizer || null,
+      confirmed_via: 'sms',
+      last_platform: platform,
+    });
+    armAppSwitch('sms', coachFirstName);
+    markConfirmClicked();
+    markDone('microAsk');
+    celebrateConfirm();
+  };
+
+  const handleRegionOverride = (r: Region) => {
+    setRegion(r);
+    trackEvent('wrong_region_clicked', { faq_location: 'closer', from: region, to: r });
+  };
+
+  // Walkthrough success morph swaps in after the user has tapped a
+  // confirm button, replacing the buttons + 12-hour warning + region
+  // selector with a clear "now tap Next" call to action.
+  const showSuccessMorph = compact && completed.microAsk;
+
+  return (
+    <div className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-white border-b border-orange-100/60">
+      <div className={`max-w-3xl mx-auto px-4 text-center ${compact ? 'pt-6 pb-6' : 'pt-10 pb-10 md:pt-14 md:pb-14'}`}>
+        {/* Compact "BOOKED" stamp pill - sets the tone right at the top */}
+        {compact && (
+          <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-800 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full mb-3 border border-green-300 animate-booked-stamp-in shadow-sm">
+            <Check className="w-3 h-3" strokeWidth={3} />
+            Booking Confirmed
+          </div>
+        )}
+
+        {/* Checkmark badge - pops in on mount with a single ring ripple */}
+        <div className={`relative inline-flex items-center justify-center ${compact ? 'mb-4' : 'mb-6'}`}>
+          <span className="absolute inset-0 rounded-full animate-confirm-check-ring" aria-hidden="true" />
+          <div className={`relative inline-flex items-center justify-center rounded-full bg-green-100 border-2 border-green-300 animate-confirm-check-in ${compact ? 'w-14 h-14' : 'w-16 h-16 md:w-20 md:h-20'}`}>
+            <CheckCircle className={`text-green-600 ${compact ? 'w-7 h-7' : 'w-8 h-8 md:w-10 md:h-10'}`} strokeWidth={2.5} />
+          </div>
+        </div>
+
+        <h1 className={`font-black text-gray-900 tracking-tight leading-[1] ${compact ? 'text-3xl mb-3 animate-banner-rise-1' : 'text-4xl md:text-6xl lg:text-7xl mb-4'}`}>
+          {firstName ? `You're Booked, ${firstName}.` : "You're Booked."}
         </h1>
-        <p className="mt-4 text-lg text-slate-700">
-          Check your email for the calendar invite. Your coach will review your answers before the call.
+
+        <p className={`text-gray-700 max-w-2xl mx-auto mb-3 leading-snug ${compact ? 'text-base animate-banner-rise-2' : 'text-lg md:text-2xl'}`}>
+          {meeting ? (
+            <>
+              Your strategy call
+              {meeting.organizer && meeting.organizer !== 'Passion Product Team' ? (
+                <> with <span className="font-bold text-gray-900">{meeting.organizer}</span></>
+              ) : null}
+              {' '}is on{' '}
+              <span className="font-bold text-gray-900">{formatHumanDate(meeting.start)}</span>
+              {' at '}
+              <span className="font-bold text-gray-900">{formatHumanTime(meeting.start)}</span>.
+            </>
+          ) : (
+            'Your strategy call with Travis or one of his top coaches is scheduled.'
+          )}
         </p>
-        <p className="mt-6 text-sm text-slate-500">
-          Results not typical.
+        {/* Email reminder is desktop-only - on mobile it's redundant noise above the action */}
+        {!compact && (
+          <p className="text-sm md:text-base text-gray-500 mb-10">
+            Check your email for the calendar invite. It has your exact date, time, and Zoom link.
+          </p>
+        )}
+
+        {showSuccessMorph ? (
+          /* Success morph - shown after the user has tapped Confirm */
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-6 shadow-sm animate-confirm-check-in">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-500 mb-3 shadow-md shadow-green-500/30">
+              <Check className="w-8 h-8 text-white" strokeWidth={3} />
+            </div>
+            <p className="text-2xl font-black text-green-900 mb-2 leading-tight">
+              You're Confirmed!
+            </p>
+            <p className="text-sm text-green-800 leading-relaxed mb-5 max-w-xs mx-auto">
+              We got it. Now tap <span className="font-black text-orange-600">Next</span> below to start your prep walkthrough.
+            </p>
+            <div className="flex justify-center">
+              <div className="inline-flex flex-col items-center gap-0.5 text-orange-500">
+                <ArrowDown className="w-6 h-6 animate-point-down" strokeWidth={3} />
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Micro-ask: confirm via text */
+          <div className={`bg-white border-2 border-gray-200 rounded-2xl shadow-sm ${compact ? 'p-5 animate-banner-rise-3' : 'p-6 md:p-7'}`}>
+            <WarmCohortNudge travisHistory={travisHistory} location="closer" />
+            {/* Cycle-1 inserts above the CTA */}
+            {vKnownATC?.id === 'atc' && meeting?.start && !meeting.startUnknown && (
+              <AddToCalendarButton
+                startISO={meeting.start}
+                title={`Call with ${coachFirstName} — Passion Product strategy call`}
+                description={`See you ${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}. We'll text you the dial-in details.`}
+                location="closer"
+              />
+            )}
+            <p className="text-base md:text-lg font-bold text-gray-900 mb-4 max-w-lg mx-auto">
+              {needsQrFallback(platform)
+                ? "To confirm you'll attend:"
+                : "To confirm you'll attend, tap the button below and hit send:"}
+            </p>
+            {vHighMutual?.id === 'mutual-fit' && <MutualFitMicroCopy location="closer" />}
+
+            {needsQrFallback(platform) ? (
+              <WindowsConfirmBlock
+                phoneDisplay={phone.display}
+                phoneRaw={phone.raw}
+                smsBody={smsBody}
+                region={region}
+                location="closer"
+              />
+            ) : (
+              <div className="flex flex-col items-center max-w-lg mx-auto">
+                <div className="flex items-stretch justify-center w-full">
+                  <a
+                    href={`sms:${phone.raw}?&body=${smsBody}`}
+                    onClick={handleConfirmText}
+                    className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer active:scale-[0.98] ${completed.microAsk ? '' : 'animate-confirm-pulse-blue'}`}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    {vIosCtaCoachName?.id === 'coach-name' && platform === 'ios'
+                      ? `Confirm with Coach ${coachFirstName}`
+                      : 'Confirm via Text'}
+                  </a>
+                </div>
+                {vAndroidFallback?.id === 'with-call-fallback' && platform === 'android' && (
+                  <AndroidCallFallback phoneRaw={phone.raw} location="closer" />
+                )}
+              </div>
+            )}
+
+            <div className="mt-5 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2.5 text-left max-w-lg mx-auto">
+              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" strokeWidth={2.25} />
+              <p className="text-sm text-gray-800 leading-snug">
+                <span className="font-bold text-red-600">NOTE:</span> If we don't see your "Yes" RSVP within 12 hours, we cancel the slot and pass it to someone on the waitlist. We only get on calls with people who actually show up.
+              </p>
+            </div>
+
+            <p className="text-xs text-gray-400 mt-4">
+              Takes 10 seconds.{' '}
+              <span className="text-gray-500">
+                Wrong region?{' '}
+                {(Object.keys(PHONE_NUMBERS) as Region[]).filter(r => r !== region).map((r, i) => (
+                  <span key={r}>
+                    {i > 0 && <span className="text-gray-300">/</span>}{' '}
+                    <button
+                      onClick={() => handleRegionOverride(r)}
+                      className="text-orange-500 hover:text-orange-700 underline underline-offset-2 cursor-pointer"
+                    >
+                      {PHONE_NUMBERS[r].label}
+                    </button>
+                  </span>
+                ))}
+              </span>
+            </p>
+          </div>
+        )}
+
+        {/* Transition to next section (hidden in walkthrough - the walkthrough itself IS the next step) */}
+        {!compact && (
+          <p className="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-[0.15em] mt-10">
+            Then do these two things before your call ↓
+          </p>
+        )}
+
+        {/* Calendar add below - secondary micro-ask */}
+        {meeting && (
+          <div className={compact ? 'mt-6' : 'mt-5'}>
+            <CalendarButton meeting={meeting} variant="primary" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CloserFinalCTA({ meeting, firstName }: { meeting: MeetingInfo | null; firstName: string }) {
+  return (
+    <div className="bg-gradient-to-br from-gray-950 via-slate-900 to-orange-950 py-14 md:py-20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-orange-900/30 via-transparent to-transparent" />
+      <div className="relative max-w-3xl mx-auto px-4 text-center">
+        <h2 className="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight">
+          {firstName ? `${firstName}, you've taken the ` : "You've Already Taken the "}
+          <span className="text-orange-400">Hardest Step</span>
+        </h2>
+        <p className="text-slate-300 text-lg md:text-xl mb-8 max-w-xl mx-auto leading-relaxed">
+          You booked the call. Now show up ready, and let's build your plan together.
         </p>
-      </main>
+
+        {/* Email check-in callout */}
+        <div className="bg-white/5 backdrop-blur-sm border border-orange-400/40 rounded-2xl p-5 md:p-6 max-w-xl mx-auto mb-10 text-left">
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+              <span className="text-orange-300 text-lg">📩</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-orange-300 text-xs font-bold uppercase tracking-wider mb-1">
+                Check your email
+              </p>
+              <p className="text-white font-bold text-base md:text-lg leading-snug mb-2">
+                Look for an email titled <span className="text-orange-300">"Please confirm: your Amazon strategy call"</span>
+              </p>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                It has important info for your call. Open it, read it, and you'll be ready to go.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {meeting && (
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+            <CalendarButton meeting={meeting} variant="cta" />
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-center gap-6 text-slate-400 text-sm">
+          <span className="flex items-center gap-2"><Star className="w-4 h-4 text-orange-400" /> 14,000+ students taught</span>
+          <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-400" /> Personalized strategy session</span>
+          <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-slate-400" /> No pressure, no obligation</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────── main export ─────────────────────────── */
+
+export function ScalersConfirmation() {
+  const [meeting, setMeeting] = useState<MeetingInfo | null>(null);
+  const [firstName, setFirstName] = useState('');
+  const [p, setP] = useState<Personalization | null>(null);
+  const [popupRegion, setPopupRegion] = useState<Region>('us');
+
+  useScrollDepth('closer');
+  useDwellHeartbeat('closer');
+  useSproutvideoTracking('closer');
+  useExperimentInit({ page: 'closer' });
+
+  useEffect(() => {
+    setPopupRegion(detectRegion());
+    const urlMeeting = parseMeetingInfo();
+    setMeeting(urlMeeting);
+
+    const personalization = getPersonalization();
+    setP(personalization);
+    setFirstName(personalization.firstName || urlMeeting?.firstName || getFirstName());
+
+    // Fill in ANY missing fields (start time, Zoom URL, owner) from
+    // HubSpot via the meeting-lookup Netlify function. URL params are
+    // the source of truth; we only call the API for what's missing.
+    const email = urlMeeting?.email || personalization.email || getEmailFromUrl();
+    if (email) {
+      hydrateFromHubSpot(email, urlMeeting).then((hydrated) => {
+        if (hydrated) setMeeting(hydrated);
+      });
+    }
+
+    // PostHog: identify + track
+    if (personalization.email) {
+      identifyUser(personalization.email, {
+        first_name: personalization.firstName,
+        last_name: personalization.lastName,
+      });
+      // Fallback timezone sync - primary call is from /book on
+      // booking success. Deduped by email+tz inside syncContactTimezone.
+      syncContactTimezone(personalization.email, 'closer_confirmation');
+      // UTM fallback: sessionStorage from /book is still alive on this
+      // same domain. Catches cases where the booking-page sync dropped.
+      syncContactUtms(personalization.email, 'closer_confirmation');
+    }
+    setPersonProperties({
+      region: personalization.region,
+      reason: personalization.reason,
+      situation: personalization.situation,
+      travis_history: personalization.travisHistory,
+      valued_feature: personalization.valuedFeature,
+      capital: personalization.capital,
+    });
+    trackConfirmationPageViewed('closer', {
+      region: personalization.region,
+      reason: personalization.reason,
+      situation: personalization.situation,
+      capital: personalization.capital,
+      travis_history: personalization.travisHistory,
+      has_meeting: !!urlMeeting,
+    });
+  }, []);
+
+  const popupCoach = (() => {
+    const organizer = meeting?.organizer?.trim();
+    if (!organizer || organizer === 'Passion Product Team') return 'Ibrahim';
+    return organizer.split(/\s+/)[0] || 'Ibrahim';
+  })();
+  const popupPhone = getCloserPhone(meeting?.organizer, popupRegion);
+  const popupFullName = [
+    meeting?.firstName || firstName,
+    meeting?.lastName,
+  ].filter(Boolean).join(' ').trim();
+  const namePart = popupFullName ? ` - ${popupFullName}` : '';
+  const rawBody = meeting && !meeting.startUnknown
+    ? `Hi Coach ${popupCoach}, YES, I'm confirming my call on ${formatHumanDate(meeting.start)} at ${formatHumanTime(meeting.start)}${namePart}`
+    : `Hi Coach ${popupCoach}, YES, I'm confirming my call${namePart}`;
+  const encodedBody = encodeURIComponent(rawBody);
+
+  return (
+    <PrepChecklistProvider>
+      <CloserPageBody
+        meeting={meeting}
+        firstName={firstName}
+        p={p}
+        popupCoach={popupCoach}
+        popupPhone={popupPhone}
+        encodedBody={encodedBody}
+      />
+    </PrepChecklistProvider>
+  );
+}
+
+/* ─── inner body lives inside the PrepChecklistProvider so the walkthrough
+       gate can read completed.microAsk to decide whether to prompt ─── */
+
+interface CloserPageBodyProps {
+  meeting: MeetingInfo | null;
+  firstName: string;
+  p: Personalization | null;
+  popupCoach: string;
+  popupPhone: { raw: string; display: string };
+  encodedBody: string;
+}
+
+function CloserPageBody({
+  meeting,
+  firstName,
+  p,
+  popupCoach,
+  popupPhone,
+  encodedBody,
+}: CloserPageBodyProps) {
+  const isMobile = useIsMobileViewport();
+  const { completed } = usePrepChecklist();
+
+  // Skip the coach step entirely when we can't decode the organizer
+  // back to one of our known coaches - showing a generic empty pane
+  // is worse than just not having that step.
+  const hasCoach = getCoachByOwnerName(meeting?.organizer) !== null;
+  const isLowCapital = p?.capital === 'none' || p?.capital === 'save';
+  const showCreditCard = isLowCapital && p?.region === 'usa';
+
+  // Cycle-1 experiment hooks for layout + chip injection
+  const vLowCapitalChip = useExperiment('closer-low-capital-launch-stat');
+  const vVideoFirst     = useExperiment('closer-new-video-first');
+  const showLowCapitalChip = vLowCapitalChip?.id === 'chip';
+  const videoFirst = vVideoFirst?.id === 'video-first';
+  const researchVideoWithChip = (
+    <>
+      <ResearchVideo travisHistory={p?.travisHistory} />
+      {showLowCapitalChip && <LowCapitalLaunchStatChip location="closer" />}
+    </>
+  );
+
+  const bannerStep: WalkthroughStep = {
+    key: 'banner',
+    label: 'Your Call',
+    content: <CloserConfirmationBanner meeting={meeting} firstName={firstName} compact travisHistory={p?.travisHistory} />,
+    gate: {
+      canAdvance: () => completed.microAsk,
+      title: 'Have you confirmed your call yet?',
+      body: 'We cancel slots that don\'t reply YES within 12 hours. Tap "Confirm via Text" above so we know you\'re coming.',
+      stayLabel: 'Go back and confirm',
+      advanceLabel: 'I\'ll do it later',
+    },
+  };
+  const researchStep: WalkthroughStep = { key: 'research', label: 'Research', content: researchVideoWithChip };
+
+  const allSteps: (WalkthroughStep | null)[] = [
+    // Video-first variant (familiarity:new): research precedes banner so
+    // new visitors see Travis speak before being asked to confirm.
+    ...(videoFirst ? [researchStep, bannerStep] : [bannerStep, researchStep]),
+    { key: 'passion-product-method', label: 'The Method', content: <PassionProductMethodSection /> },
+    { key: 'accelerator-overview', label: 'Accelerator', content: <AcceleratorSection /> },
+    { key: 'faq', label: 'FAQ', content: <ConfirmationFAQ p={p} location="closer" /> },
+    { key: 'typical-student-results', label: 'Students', content: <TestimonialHighlights p={p} /> },
+    hasCoach ? { key: 'coach', label: 'Your Coach', content: <MeetYourCoach ownerName={meeting?.organizer} /> } : null,
+    isLowCapital ? { key: 'low-capital', label: 'Low Capital', content: <LowCapitalStrategies p={p} /> } : null,
+    showCreditCard ? { key: 'credit', label: 'Credit Cards', content: <CreditCardQuiz p={p} /> } : null,
+    { key: 'final', label: "You're Ready", content: <CloserFinalCTA meeting={meeting} firstName={firstName} /> },
+  ];
+  const steps = allSteps.filter((s): s is WalkthroughStep => s !== null);
+
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-white text-gray-900">
+        <MobileWalkthrough steps={steps} location="closer" />
+        <LegalDisclaimer />
+        <ConfirmationExitPopup
+          location="closer"
+          coachFirstName={popupCoach}
+          phoneRaw={popupPhone.raw}
+          smsBody={encodedBody}
+          travisHistory={p?.travisHistory}
+        />
+      </div>
+    );
+  }
+
+  const desktopBanner = <CloserConfirmationBanner meeting={meeting} firstName={firstName} travisHistory={p?.travisHistory} />;
+  return (
+    <div className="min-h-screen bg-white text-gray-900">
+      {videoFirst ? researchVideoWithChip : desktopBanner}
+      {videoFirst ? desktopBanner : researchVideoWithChip}
+      <NextStepsList microAskLabel="Confirm via Text or WhatsApp (above)" />
+      <PassionProductMethodSection />
+      <AcceleratorSection />
+      <ConfirmationFAQ p={p} location="closer" />
+      <TestimonialHighlights p={p} />
+      {hasCoach && <MeetYourCoach ownerName={meeting?.organizer} />}
+      <LowCapitalStrategies p={p} />
+      <CreditCardQuiz p={p} />
+      <CloserFinalCTA meeting={meeting} firstName={firstName} />
+      <SharedFooter />
+      <LegalDisclaimer />
+      <ConfirmationExitPopup
+        location="closer"
+        coachFirstName={popupCoach}
+        phoneRaw={popupPhone.raw}
+        smsBody={encodedBody}
+        travisHistory={p?.travisHistory}
+      />
+      <MobileConfirmStickyBar
+        location="closer"
+        coachFirstName={popupCoach}
+        phoneRaw={popupPhone.raw}
+        smsBody={encodedBody}
+      />
+      <ScrollToNextButton location="closer" />
     </div>
   );
 }

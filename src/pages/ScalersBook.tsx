@@ -1,93 +1,368 @@
-import { useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { trackEvent, trackBookingPageViewed, trackBookingCompleted } from '../lib/posthog';
-import { getCleanIdentity } from '../lib/urlParams';
-import {
-  SCALERS_TRACK,
-  SCALERS_ONCEHUB_PAGE,
-  SCALERS_CONFIRMATION_PATH,
-  SCALERS_LOGO_URL,
-} from '../lib/scalers';
+import { useEffect, useRef } from 'react';
+import { CheckCircle, Sparkles } from 'lucide-react';
+import { identifyUser, setPersonProperties, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
+import { readLeadScoreFromUrl } from '../lib/leadScore';
+import { syncContactTimezone } from '../lib/syncTimezone';
+import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
+import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
-/* ───── /scalers/book — Seller Growth Call booking ────────────────
-   OnceHub embed for the Scalers-specific calendar. Mirrors Book.tsx
-   / BookCall.tsx structure: listens for the oncehub.booking.scheduled
-   postMessage, fires booking_completed with booking_type='scalers_closer',
-   and routes to /scalers/confirmation.
+/* ───── /bookacall - embedded OnceHub setter scheduler ─────────────
+   Setter scheduler now runs on OnceHub (calendar BKC-P9JY2GLKJX)
+   instead of HubSpot's native meetings iframe.
 
-   PLACEHOLDERS:
-     - OnceHub page name in SCALERS_ONCEHUB_PAGE (currently points
-       at a non-existent "seller-growth-call" page so the embed
-       will render OnceHub's not-found view until Connor swaps in
-       the real page name).
-──────────────────────────────────────────────────────────────────── */
+   The setter call is a PHONE CALL, not a video meeting, so we don't
+   need to forward start times / join URLs / owner names like /book
+   does - the confirmation page (/trainingnew/setter) only needs
+   identity to look up the visitor's region and pick the right Kixie
+   line. We still let the OnceHub payload identity override URL/
+   localStorage in case the visitor typed a different email into
+   the OnceHub form.
+────────────────────────────────────────────────────────────────── */
+
+const ONCEHUB_CALENDAR_ID = 'BKC-P9JY2GLKJX';
+const STORAGE_KEY = 'pp_booking_data';
+const REDIRECT_TO = '/scalers/confirmation';
+
+function persistTypeformAnswers() {
+  if (typeof window === 'undefined') return;
+  const params = new URLSearchParams(window.location.search);
+  const data: Record<string, string> = {
+    _captured_at: new Date().toISOString(),
+  };
+  const id = getCleanIdentity(params);
+  if (id.firstname) data.firstname = id.firstname;
+  if (id.lastname)  data.lastname  = id.lastname;
+  if (id.phone)     data.phone     = id.phone;
+  if (id.email)     data.email     = id.email;
+  for (const field of ['location', 'reason', 'tried', 'travis', 'value', 'money']) {
+    const val = getCleanParam(params, field);
+    if (val) data[field] = val;
+  }
+  if (Object.keys(data).length > 1) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch {
+      /* no-op */
+    }
+  }
+}
+
+function isOncehubBookingConfirmed(data: unknown): boolean {
+  if (!data) return false;
+  let typeStr = '';
+  if (typeof data === 'string') {
+    typeStr = data.toLowerCase();
+  } else if (typeof data === 'object') {
+    const d = data as Record<string, unknown>;
+    typeStr = [
+      typeof d.type === 'string' ? d.type : '',
+      typeof d.eventType === 'string' ? d.eventType : '',
+      typeof d.eventName === 'string' ? d.eventName : '',
+    ].join(' ').toLowerCase();
+  }
+  if (!typeStr.includes('booking')) return false;
+  return (
+    typeStr.includes('confirmed') ||
+    typeStr.includes('succeeded') ||
+    typeStr.includes('success') ||
+    typeStr.includes('complete') ||
+    typeStr.includes('scheduled')
+  );
+}
+
+function getOncehubPrefill(): { name?: string; email?: string; phone?: string } {
+  if (typeof window === 'undefined') return {};
+  const params = new URLSearchParams(window.location.search);
+  const id = getCleanIdentity(params);
+  const rawName = getCleanParam(params, 'name') || getCleanParam(params, 'fullname') || getCleanParam(params, 'full_name');
+  const name =
+    rawName ||
+    [id.firstname, id.lastname].filter(Boolean).join(' ').trim() ||
+    id.firstname ||
+    undefined;
+  return {
+    name: name || undefined,
+    email: id.email || undefined,
+    phone: id.phone || undefined,
+  };
+}
 
 export function ScalersBook() {
-  const navigate = useNavigate();
-  const seed = useMemo(
-    () => getCleanIdentity(new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')),
-    [],
-  );
-
-  const oncehubUrl = useMemo(() => {
-    const params = new URLSearchParams();
-    if (seed.email) params.set('email', seed.email);
-    if (seed.firstname) params.set('name', [seed.firstname, seed.lastname].filter(Boolean).join(' '));
-    if (seed.phone) params.set('mobile_phone', seed.phone);
-    const qs = params.toString();
-    return `https://meetings.hubspot.com/${SCALERS_ONCEHUB_PAGE}${qs ? `?${qs}` : ''}`;
-  }, [seed]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    document.title = 'Schedule Your Seller Growth Call';
-    trackBookingPageViewed('closer');
-    trackEvent('scalers_book_viewed', { funnel_track: SCALERS_TRACK });
+    persistTypeformAnswers();
+    persistUtmsFromUrl();
+    const { raw: leadScoreRaw, score: leadScore } = readLeadScoreFromUrl();
+    trackBookingPageViewed('setter');
+    if (leadScore !== null) {
+      trackEvent('lead_score_captured', { booking_type: 'setter', lead_score: leadScore });
+    }
 
-    const onMessage = (e: MessageEvent) => {
-      if (!e?.data) return;
-      const raw = typeof e.data === 'string' ? e.data : '';
-      if (!raw.includes('booking.scheduled')) return;
+    const params = new URLSearchParams(window.location.search);
+    const id = getCleanIdentity(params);
+    if (id.email) {
+      identifyUser(id.email, {
+        first_name: id.firstname ?? undefined,
+        last_name: id.lastname ?? undefined,
+        phone: id.phone ?? undefined,
+      });
+    }
+    // Tag the Person with the Typeform score so cohort analysis later
+    // (close rate / CDBC by score band) can be filtered without
+    // needing to re-join to HubSpot.
+    if (leadScore !== null) {
+      setPersonProperties({ typeform_score: leadScore });
+    }
+
+    const handleMessage = (event: MessageEvent) => {
+      const origin = event.origin || '';
+      if (!origin.includes('oncehub.com') && !origin.includes('scheduleonce.com')) {
+        return;
+      }
+
+      let preview = '';
       try {
-        const payload = JSON.parse(raw);
-        if (payload?.type && String(payload.type).includes('booking.scheduled')) {
-          trackBookingCompleted('closer', {
-            funnel_track: SCALERS_TRACK,
-            scheduled_at: payload?.payload?.starting_time,
-          });
-          trackEvent('scalers_booking_completed', { funnel_track: SCALERS_TRACK });
-          navigate(SCALERS_CONFIRMATION_PATH);
+        preview = typeof event.data === 'string' ? event.data.slice(0, 800) : JSON.stringify(event.data).slice(0, 800);
+      } catch { /* no-op */ }
+      trackEvent('oncehub_postmessage_received', {
+        booking_type: 'setter',
+        origin,
+        preview,
+      });
+
+      if (!isOncehubBookingConfirmed(event.data)) return;
+
+      // eslint-disable-next-line no-console
+      console.log('[OnceHub booking confirmed - setter]', event.data);
+
+      trackBookingCompleted('setter', leadScore !== null ? { lead_score: leadScore } : undefined);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlId = getCleanIdentity(urlParams);
+      const rawName = getCleanParam(urlParams, 'name') || getCleanParam(urlParams, 'fullname') || '';
+
+      let storedFirst = '';
+      let storedEmail = '';
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          storedFirst = parsed?.firstname || '';
+          storedEmail = parsed?.email     || '';
         }
       } catch { /* no-op */ }
+
+      let firstname = urlId.firstname || storedFirst || '';
+      if (!firstname && rawName) {
+        firstname = rawName.split(/\s+/)[0] || '';
+      }
+      const bookingEmail = urlId.email || storedEmail || '';
+
+      // OnceHub payload identity wins over URL/localStorage.
+      const payload: Record<string, unknown> =
+        (typeof event.data === 'object' && event.data !== null
+          ? ((event.data as Record<string, unknown>).payload as Record<string, unknown> | undefined) || (event.data as Record<string, unknown>)
+          : {}) || {};
+      const pickStr = (...keys: string[]): string => {
+        for (const k of keys) {
+          const v = payload[k];
+          if (typeof v === 'string' && v.trim()) return v.trim();
+          if (typeof v === 'number') return String(v);
+        }
+        return '';
+      };
+      const pickNested = (path: string[]): string => {
+        let cur: unknown = payload;
+        for (const seg of path) {
+          if (!cur || typeof cur !== 'object') return '';
+          cur = (cur as Record<string, unknown>)[seg];
+        }
+        return typeof cur === 'string' && cur.trim() ? cur.trim() : '';
+      };
+      const payloadEmail = pickStr('customer_email', 'attendee_email', 'guest_email') || pickNested(['customer', 'email']);
+      const payloadFirst = pickStr('customer_first_name', 'attendee_first_name') || pickNested(['customer', 'first_name']);
+      const payloadName  = pickStr('customer_name', 'attendee_name')              || pickNested(['customer', 'name']);
+      const payloadPhone = pickStr('customer_phone', 'attendee_phone', 'phone')   || pickNested(['customer', 'phone']);
+      // OnceHub booking.scheduled payload includes the host (the
+      // setter who owns the booking). Forwarding this to
+      // /trainingnew/setter lets getSetterPhone pick the right
+      // Robin/Caeden line instead of a static default.
+      const ownerName =
+        pickStr('host_name', 'owner_name', 'organizer_name', 'organizer') ||
+        pickNested(['host', 'name']) ||
+        pickNested(['owner', 'name']);
+
+      let splitFirst = '';
+      if (payloadName && !payloadFirst) {
+        splitFirst = payloadName.split(/\s+/)[0] || '';
+      }
+      const finalEmail = payloadEmail || bookingEmail;
+      const finalFirst = payloadFirst || splitFirst || firstname;
+      const finalPhone = payloadPhone || '';
+
+      if (finalEmail) {
+        identifyUser(finalEmail, {
+          first_name: finalFirst || undefined,
+          phone:      finalPhone || undefined,
+        });
+      }
+
+      syncContactTimezone(finalEmail, 'bookacall_redirect');
+      syncContactUtms(finalEmail, 'bookacall_redirect');
+
+      const redirectParams = new URLSearchParams();
+      if (finalFirst) redirectParams.set('first_name', finalFirst);
+      if (finalEmail) redirectParams.set('email',     finalEmail);
+      if (ownerName)  redirectParams.set('owner',     ownerName);
+      // Forward the Typeform score so /trainingnew/setter and any
+      // post-booking logic can read it from URL params.
+      if (leadScoreRaw) redirectParams.set('leadscore', leadScoreRaw);
+
+      const target = redirectParams.toString()
+        ? `${REDIRECT_TO}?${redirectParams.toString()}`
+        : REDIRECT_TO;
+
+      setTimeout(() => {
+        window.location.href = target;
+      }, 800);
     };
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, [navigate]);
+
+    window.addEventListener('message', handleMessage);
+
+    const existing = document.querySelector('script[src*="cdn.oncehub.com/cal/embed.js"]');
+    if (!existing) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.oncehub.com/cal/embed.js';
+      script.async = true;
+      script.type = 'text/javascript';
+      document.body.appendChild(script);
+    }
+
+    const prefill = getOncehubPrefill();
+    const hasPrefill = !!(prefill.name || prefill.email || prefill.phone);
+    let pollHandle: ReturnType<typeof setInterval> | null = null;
+    if (hasPrefill) {
+      let attempts = 0;
+      const tryAddPrefill = (): boolean => {
+        const iframe = containerRef.current?.querySelector('iframe') as HTMLIFrameElement | null;
+        if (!iframe || !iframe.src) return false;
+        try {
+          const url = new URL(iframe.src);
+          let changed = false;
+          const setIfAbsent = (key: string, value: string) => {
+            if (!url.searchParams.has(key)) {
+              url.searchParams.set(key, value);
+              changed = true;
+            }
+          };
+          if (prefill.name) {
+            setIfAbsent('name', prefill.name);
+            const parts = prefill.name.split(/\s+/).filter(Boolean);
+            if (parts[0]) setIfAbsent('first_name', parts[0]);
+            if (parts.length > 1) setIfAbsent('last_name', parts.slice(1).join(' '));
+          }
+          if (prefill.email) {
+            setIfAbsent('email', prefill.email);
+          }
+          if (prefill.phone) {
+            setIfAbsent('phone', prefill.phone);
+            setIfAbsent('mobile', prefill.phone);
+            setIfAbsent('mobile_phone', prefill.phone);
+            setIfAbsent('phone_number', prefill.phone);
+            setIfAbsent('cellphone', prefill.phone);
+            const e164 = prefill.phone.replace(/[\s()-]/g, '');
+            if (e164 !== prefill.phone) {
+              url.searchParams.set('phone', e164);
+              url.searchParams.set('mobile', e164);
+              url.searchParams.set('mobile_phone', e164);
+              changed = true;
+            }
+          }
+          if (changed) iframe.src = url.toString();
+        } catch { /* no-op */ }
+        return true;
+      };
+      pollHandle = setInterval(() => {
+        attempts++;
+        if (tryAddPrefill() || attempts > 60) {
+          if (pollHandle) clearInterval(pollHandle);
+        }
+      }, 100);
+    }
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      if (pollHandle) clearInterval(pollHandle);
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <main className="mx-auto max-w-3xl px-5 pt-8 pb-16 md:pt-14">
-        <img
-          src={SCALERS_LOGO_URL}
-          alt="FBA Scalers"
-          className="mb-6 h-10 w-auto"
-          loading="eager"
-        />
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          Pick a time for your Seller Growth Call.
-        </h1>
-        <p className="mt-3 text-base text-slate-700">
-          Your coach will review your answers ahead of the call so you can jump straight into what matters.
-        </p>
-
-        <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <iframe
-            title="Seller Growth Call scheduler"
-            src={oncehubUrl}
-            className="h-[720px] w-full"
-            allow="camera; microphone; autoplay; encrypted-media; fullscreen"
-          />
+    <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white">
+      {/* Step bar */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold ring-4 ring-orange-100">
+                1
+              </div>
+              <span className="text-xs font-bold text-orange-600 uppercase tracking-wider">Book Call</span>
+            </div>
+            <div className="w-12 h-0.5 bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-bold">
+                2
+              </div>
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Prepare</span>
+            </div>
+          </div>
         </div>
-      </main>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-10 md:py-14">
+        {/* Qualified celebration */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-green-700 mb-5">
+            <CheckCircle className="w-3.5 h-3.5" />
+            You Qualified
+          </div>
+
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.05] mb-4">
+            Congrats - You're In.<br />
+            <span className="text-orange-600">Now Pick Your Time.</span>
+          </h1>
+
+          <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto">
+            You're about to get on a call with Travis or one of his top coaches.
+          </p>
+        </div>
+
+        {/* Embedded OnceHub scheduler with framing */}
+        <div className="relative">
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
+              <Sparkles className="w-4 h-4 text-orange-600" />
+              <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below - spots fill up fast</p>
+            </div>
+            <div
+              ref={containerRef}
+              data-oh-booking-calendar-id={ONCEHUB_CALENDAR_ID}
+              style={{ minWidth: 320, height: 'min(700px, calc(100vh - 120px))' }}
+            />
+          </div>
+        </div>
+
+        {/* Reassurance below the embed */}
+        <div className="text-center mt-8 max-w-xl mx-auto">
+          <p className="text-sm text-gray-500">
+            After you book, you'll get a confirmation page with everything you need to prepare for your call - plus stories from real students who started exactly where you are.
+          </p>
+        </div>
+      </div>
+      <LegalDisclaimer />
     </div>
   );
 }
