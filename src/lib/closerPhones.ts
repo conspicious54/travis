@@ -68,6 +68,16 @@ const CLOSER_PHONES: Record<string, CloserPhoneMap> = {
     eu:   { display: '+44 7886 082565',  raw: '+447886082565', label: 'Finn - UK' },
     aunz: { display: '+61 468 014 516',  raw: '+61468014516',  label: 'Finn - AU' },
   },
+  // Adam + Kamil have US lines only for now. No eu/aunz entries so
+  // UK and AU visitors fall through to the generic team line in
+  // PHONE_NUMBERS — safer than borrowing someone else's personal
+  // number. Add their regional lines when they're issued.
+  'adam chohan': {
+    us: { display: '(567) 866-2031', raw: '+15678662031', label: 'Adam - US' },
+  },
+  'kamil stachura': {
+    us: { display: '(857) 392-2834', raw: '+18573922834', label: 'Kamil - US' },
+  },
 };
 
 /**

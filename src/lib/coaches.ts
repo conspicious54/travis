@@ -118,6 +118,28 @@ export const COACHES: Record<string, Coach> = {
       "Finn is one of my newest in-house Amazon coaches at Passion Product. Direct, serious about the work, and the kind of coach who'll help you get clear on exactly what your next step should be.",
     bio: "He's been trained directly on the Passion Product method and is working with our students through every stage of their launch. On your call he'll cut through the noise and give you the straight read on your situation.",
   },
+  'adam chohan': {
+    id: 'adam',
+    firstName: 'Adam',
+    fullName: 'Adam Chohan',
+    role: 'Passion Product Lead Amazon Coach',
+    tenure: 'On the Passion Product team',
+    photoUrl: '',
+    travisIntro:
+      "Adam is one of my in-house Amazon coaches at Passion Product. Direct, serious about the work, and the kind of coach who'll help you get clear on exactly what your next step should be.",
+    bio: "He's been trained directly on the Passion Product method and is working with our students through every stage of their launch. On your call he'll cut through the noise and give you the straight read on your situation.",
+  },
+  'kamil stachura': {
+    id: 'kamil',
+    firstName: 'Kamil',
+    fullName: 'Kamil Stachura',
+    role: 'Passion Product Lead Amazon Coach',
+    tenure: 'On the Passion Product team',
+    photoUrl: '',
+    travisIntro:
+      "Kamil is one of my in-house Amazon coaches at Passion Product. Direct, serious about the work, and the kind of coach who'll help you get clear on exactly what your next step should be.",
+    bio: "He's been trained directly on the Passion Product method and is working with our students through every stage of their launch. On your call he'll cut through the noise and give you the straight read on your situation.",
+  },
   // Setters below - kept here so getCoachByOwnerName resolves them when a
   // HubSpot owner's name matches. Setter rotation is Robin + Caeden
   // (Ibrahim is still here for historical matching on past bookings).
