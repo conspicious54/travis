@@ -82,7 +82,7 @@ export function ScalersLanding() {
 
         <form
           method="POST"
-          action="/.netlify/functions/newform-post"
+          action="/.netlify/functions/scalers-post"
           onSubmit={onSubmit}
           className="mt-10 space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
         >

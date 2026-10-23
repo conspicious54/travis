@@ -9,7 +9,6 @@ import { retryFetch } from '../lib/retryFetch';
 import { loadCampaignVariant } from '../lib/campaignVariant';
 import { findLeadMagnet } from '../config/leadMagnets';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
-import { ScalersQualifierModal } from '../components/ScalersQualifierModal';
 
 /* ───── /newform - webinar opt-in form ────────────────────────────
    1:1 rebuild of the existing ClickFunnels opt-in page (headlines,
@@ -393,7 +392,6 @@ export function NewForm() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <ScalersQualifierModal />
       {/* Container is max-w-[1088px] (CF's measured form-area width).
           Desktop drops horizontal padding so the content fills the
           full 1088 — otherwise px-5 shaves 40px and the hero wraps

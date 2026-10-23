@@ -40,27 +40,8 @@ const EUROPE_COUNTRIES = new Set([
   'CH','UA','GB','VA',
 ]);
 const ALLOWED_COUNTRIES = new Set(['US', 'CA', 'AU', 'NZ', ...EUROPE_COUNTRIES]);
-
-/* ───── per-track routing table ───────────────────────────────────
-   Scalers track submits land here from both /scalers (landing) and
-   /scalers/apply. The right post-submit destination depends on the
-   stage, so routing is {track × stage × audience} not just
-   {audience}. Unknown track falls back to the main funnel. */
+const REDIRECT_TARGET = '/nextstep';
 const REDIRECT_NON_TARGET = '/router';
-
-function destinationFor(track: string, stage: string, audience: 'target' | 'non_target'): string {
-  // Non-target always goes to /router. The DQ UX is the same whether
-  // the lead came from the main funnel or the Scalers funnel.
-  if (audience === 'non_target') {
-    return track === 'scalers' ? `${REDIRECT_NON_TARGET}?track=scalers` : REDIRECT_NON_TARGET;
-  }
-  if (track === 'scalers') {
-    // Scalers apply form → straight to the booking page; the
-    // landing form behaves like NewForm did and goes to the VSL.
-    return stage === 'scalers_apply' ? '/scalers/book' : '/scalers/vsl';
-  }
-  return '/nextstep';
-}
 
 function classifyAudience(code: string): 'target' | 'non_target' {
   if (!code) return 'non_target';
@@ -136,12 +117,9 @@ function parseBody(event: HandlerEvent): Record<string, string> {
 }
 
 /** Build the redirect URL identically to how NewForm.tsx builds it
- *  client-side, so downstream pages receive the same query params.
- *  Path depends on {track, stage, audience} via destinationFor(). */
+ *  client-side, so downstream pages receive the same query params. */
 function buildRedirectUrl(audience: 'target' | 'non_target', body: Record<string, string>): string {
-  const track = (body.track || '').trim().toLowerCase();
-  const stage = (body.stage || '').trim().toLowerCase();
-  const path = destinationFor(track, stage, audience);
+  const path = audience === 'target' ? REDIRECT_TARGET : REDIRECT_NON_TARGET;
   const fwd = new URLSearchParams();
   const forwardFields = [
     'email', 'first_name', 'last_name', 'phone',
@@ -156,12 +134,6 @@ function buildRedirectUrl(audience: 'target' | 'non_target', body: Record<string
     'gclid', 'fbclid', 'ttclid', 'gbraid', 'wbraid', 'li_fat_id',
     '_fbp', '_fbc',
     'campaign_variant_id', 'lead_magnet_id',
-    // Scalers-track pass-throughs so /scalers/book + the confirmation
-    // page see the application answers alongside identity + attribution.
-    'track', 'funnel_track',
-    'scalers_asin', 'scalers_store_url', 'scalers_monthly_sales',
-    'scalers_units_at_amazon', 'scalers_monthly_ppc_spend',
-    'scalers_offer_preference', 'scalers_selling_now',
   ];
   for (const key of forwardFields) {
     const v = (body[key] || '').trim();
@@ -216,17 +188,6 @@ interface ZapierPayload {
   li_fat_id: string;
   _fbp: string;
   _fbc: string;
-  // Funnel-track tagging. Zapier → HubSpot writes funnel_track so
-  // reports can slice main vs scalers cleanly. Scalers-only fields
-  // are empty strings on main-funnel submits.
-  funnel_track: 'main' | 'scalers';
-  scalers_asin: string;
-  scalers_store_url: string;
-  scalers_monthly_sales: string;
-  scalers_units_at_amazon: string;
-  scalers_monthly_ppc_spend: string;
-  scalers_offer_preference: string;
-  scalers_selling_now: string;
 }
 
 async function forwardToZapier(payload: ZapierPayload): Promise<{ ok: boolean; reason?: string; status?: number }> {
@@ -357,23 +318,10 @@ export const handler: Handler = async (event: HandlerEvent) => {
     li_fat_id:    s(body.li_fat_id),
     _fbp:         s(body._fbp),
     _fbc:         s(body._fbc),
-    // Funnel-track tagging. s(body.track) is 'scalers' when the submit
-    // came from /scalers or /scalers/apply, else '' which we normalise
-    // to 'main' so HubSpot's dropdown always has a value.
-    funnel_track: (s(body.track).toLowerCase() === 'scalers' ? 'scalers' : 'main'),
-    scalers_asin:              s(body.scalers_asin),
-    scalers_store_url:         s(body.scalers_store_url),
-    scalers_monthly_sales:     s(body.scalers_monthly_sales),
-    scalers_units_at_amazon:   s(body.scalers_units_at_amazon),
-    scalers_monthly_ppc_spend: s(body.scalers_monthly_ppc_spend),
-    scalers_offer_preference:  s(body.scalers_offer_preference),
-    scalers_selling_now:       s(body.scalers_selling_now),
   });
 
-  const trackLabel = (s(body.track).toLowerCase() === 'scalers' ? 'scalers' : 'main');
   console.log(
     `[newform-post] email=${email} name="${firstname} ${lastname}" ` +
-    `track=${trackLabel} stage=${s(body.stage) || '-'} ` +
     `audience=${audience} country=${outCountryCode || '?'} geo_src=${geoSource} ` +
     `edge=${edgeGeo.code || '-'} body=${bodyCountryCode || '-'} ` +
     `zap_ok=${zapResult.ok} reason=${zapResult.reason || ''}`
