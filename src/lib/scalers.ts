@@ -12,12 +12,12 @@ export const SCALERS_TRACK = 'scalers' as const;
 export const MAIN_TRACK = 'main' as const;
 export type FunnelTrack = typeof SCALERS_TRACK | typeof MAIN_TRACK;
 
-/** FBA Scalers wordmark + arrow logo. Hosted on the same R2 bucket
- *  as the coach photos. UPLOAD STEP: Connor needs to drop the logo
- *  file at this exact filename on the R2 bucket for it to resolve.
- *  Height on the pages is capped around 48px so the orange arrow
- *  reads at a glance without crowding the hero. */
-export const SCALERS_LOGO_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/FBA-Scalers-Logo.png';
+/** FBA Scalers wordmark + arrow logo. Served from /public so there
+ *  is nothing to upload — once the PNG is at public/fba-scalers-logo.png
+ *  in the repo and committed, Netlify serves it at the site root
+ *  automatically. Height on the pages is capped around 48px so the
+ *  orange arrow reads at a glance without crowding the hero. */
+export const SCALERS_LOGO_URL = '/fba-scalers-logo.png';
 
 /** The Wistia (or Vimeo, or self-hosted mp4) ID that renders on
  *  /scalers/vsl. Placeholder = the same clip used on /nextstep so
@@ -57,17 +57,17 @@ export const SCALERS_HS_PROPS = {
 /** Standardised option sets. If HubSpot's internal values differ,
  *  change them here — not in the form. */
 export const SCALERS_MONTHLY_SALES_OPTIONS = [
-  { value: '0',       label: '$0 — not selling yet' },
+  { value: '0',       label: '$0 (not selling yet)' },
   { value: '<1k',     label: 'Under $1,000 / month' },
-  { value: '1k_5k',   label: '$1,000 – $5,000 / month' },
-  { value: '5k_25k',  label: '$5,000 – $25,000 / month' },
+  { value: '1k_5k',   label: '$1,000 to $5,000 / month' },
+  { value: '5k_25k',  label: '$5,000 to $25,000 / month' },
   { value: '25k+',    label: '$25,000+ / month' },
 ] as const;
 
 export const SCALERS_OFFER_OPTIONS = [
   { value: 'dfy',    label: 'Have your team run it for me' },
   { value: 'dwy',    label: 'Teach me to run it myself' },
-  { value: 'unsure', label: 'Not sure yet — want to hear both' },
+  { value: 'unsure', label: 'Not sure yet, want to hear both' },
 ] as const;
 
 /** Routing: where a qualified Scalers lead goes after the server

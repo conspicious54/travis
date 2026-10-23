@@ -52,7 +52,7 @@ export function ScalersApply() {
   }, []);
 
   useEffect(() => {
-    document.title = 'Passion Product Scalers — Apply for a Seller Growth Call';
+    document.title = 'Apply for a Seller Growth Call';
     trackEvent('scalers_apply_viewed', { funnel_track: SCALERS_TRACK });
   }, []);
 
@@ -78,7 +78,7 @@ export function ScalersApply() {
           A few quick questions before your call.
         </h1>
         <p className="mt-3 text-base text-slate-700">
-          Your closer runs an audit on your listing before the call, so the more detail here, the more useful the call.
+          Your coach will review your answers before the call, so the more detail here, the more useful the time together.
         </p>
 
         <form
@@ -130,7 +130,7 @@ export function ScalersApply() {
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
             <span className="mt-1 block text-xs text-slate-500">
-              This is the most useful one. Your closer audits the listing before the call.
+              This is the most useful one. Your coach will pull up your listing before the call.
             </span>
           </label>
 

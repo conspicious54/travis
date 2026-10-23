@@ -39,7 +39,7 @@ export function ScalersBook() {
   }, [seed]);
 
   useEffect(() => {
-    document.title = 'Passion Product Scalers — Schedule Your Seller Growth Call';
+    document.title = 'Schedule Your Seller Growth Call';
     trackBookingPageViewed('closer');
     trackEvent('scalers_book_viewed', { funnel_track: SCALERS_TRACK });
 
@@ -76,7 +76,7 @@ export function ScalersBook() {
           Pick a time for your Seller Growth Call.
         </h1>
         <p className="mt-3 text-base text-slate-700">
-          Your closer will have your audit pulled up when you arrive.
+          Your coach will review your answers ahead of the call so you can jump straight into what matters.
         </p>
 
         <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">

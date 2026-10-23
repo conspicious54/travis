@@ -15,7 +15,7 @@ import { SCALERS_TRACK, SCALERS_LOGO_URL } from '../lib/scalers';
 
 export function ScalersConfirmation() {
   useEffect(() => {
-    document.title = 'Passion Product Scalers — Call Confirmed';
+    document.title = 'Seller Growth Call Confirmed';
     trackConfirmationPageViewed('generic', { funnel_track: SCALERS_TRACK });
     trackEvent('scalers_confirmation_viewed', { funnel_track: SCALERS_TRACK });
   }, []);
@@ -33,7 +33,7 @@ export function ScalersConfirmation() {
           You're booked.
         </h1>
         <p className="mt-4 text-lg text-slate-700">
-          Check your email for the calendar invite. Your closer will audit your listing before the call.
+          Check your email for the calendar invite. Your coach will review your answers before the call.
         </p>
         <p className="mt-6 text-sm text-slate-500">
           Results not typical.

@@ -33,7 +33,7 @@ export function ScalersVsl() {
   }, []);
 
   useEffect(() => {
-    document.title = 'Passion Product Scalers — Audit Walkthrough';
+    document.title = 'Passion Product Scalers Walkthrough';
     trackEvent('scalers_vsl_viewed', { funnel_track: SCALERS_TRACK });
   }, []);
 
@@ -52,10 +52,10 @@ export function ScalersVsl() {
           loading="eager"
         />
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl md:text-4xl">
-          How we audit stuck Amazon listings.
+          How we help Amazon sellers scale.
         </h1>
         <p className="mt-3 text-base text-slate-700 sm:text-lg">
-          Watch this short walkthrough. When you're ready, apply for a Seller Growth Call and we'll pull up your listing live on the call.
+          Watch this short walkthrough. When you're ready, apply for a Seller Growth Call.
         </p>
 
         <div
@@ -63,7 +63,7 @@ export function ScalersVsl() {
           style={{ paddingTop: '56.25%' }}
         >
           <iframe
-            title="Scalers audit walkthrough"
+            title="Scalers walkthrough"
             src={`https://fast.wistia.net/embed/iframe/${SCALERS_VSL_WISTIA_ID}?seo=true&videoFoam=true`}
             allow="autoplay; fullscreen"
             allowFullScreen

@@ -40,7 +40,7 @@ export function ScalersLanding() {
   }, []);
 
   useEffect(() => {
-    document.title = 'Passion Product Scalers — Audit Your Amazon Listing';
+    document.title = 'Passion Product Scalers';
     persistUtmsFromUrl();
     trackEvent('scalers_landing_viewed', { funnel_track: SCALERS_TRACK });
   }, []);
@@ -67,17 +67,14 @@ export function ScalersLanding() {
           className="mb-8 h-12 w-auto"
           loading="eager"
         />
-        {/* SCALERS PLACEHOLDER: hero copy. Angle per Connor:
-            "You've done the hard part. If it's not selling, the
-            problem is usually PPC and the listing, not the product." */}
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
-          Your product is live on Amazon. It's just not moving.
+          Already selling on Amazon? Let's scale it.
         </h1>
         <p className="mt-5 text-lg text-slate-700 sm:text-xl">
-          You've done the hard part. Inventory is at Amazon, PPC is running, and the sales aren't matching the spend. In most cases the problem isn't the product. It's the listing and the ads.
+          If you're an Amazon seller who wants more revenue from your existing product, you're in the right place. We work with sellers at every stage, from first sales to serious volume.
         </p>
         <p className="mt-4 text-base text-slate-600">
-          Book a Seller Growth Call and we'll audit your listing, show you what's dragging it, and lay out the next move.
+          Book a Seller Growth Call and we'll walk through where you are now, where you want to be, and the fastest path between the two.
         </p>
 
         <form
