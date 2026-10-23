@@ -10,7 +10,23 @@ type RouterState = 'loading' | 'dq-question' | 'redirecting';
 // so the visitor stays on the same root domain (no cross-domain
 // identity bridge needed downstream). The CF version at
 // start.travismarziani.com/nextstep is being retired as we migrate.
+// Qualified-destination table. The Scalers track lands on
+// /scalers/vsl instead of /nextstep when ?track=scalers is in the
+// URL (set by the Netlify newform-post function when it 302s a
+// non-target Scalers lead here). Everything else falls back to the
+// main funnel's /nextstep.
 const GROUP_A_URL = "/nextstep";
+const GROUP_A_URL_SCALERS = "/scalers/vsl";
+
+function qualifiedDestination(): string {
+  if (typeof window === 'undefined') return GROUP_A_URL;
+  try {
+    const track = new URLSearchParams(window.location.search).get('track');
+    return track === 'scalers' ? GROUP_A_URL_SCALERS : GROUP_A_URL;
+  } catch {
+    return GROUP_A_URL;
+  }
+}
 const GROUP_B_URL = "https://start.travismarziani.com/passion-product-fasttrack";
 const DQ_YES_URL = "https://thepassionproductformula.com/waitlist";
 const TRACKING_ENDPOINT = "https://dashboardpp.vercel.app/api/webhooks/router";
@@ -284,7 +300,7 @@ export function Router() {
           source: 'url_param',
         });
         if (allowed) {
-          doRedirect(GROUP_A_URL, { result: 'qualified', country: incomingCountry });
+          doRedirect(qualifiedDestination(), { result: 'qualified', country: incomingCountry });
         } else {
           trackEvent('router_dq_question_shown', { country: incomingCountry, source: 'url_param' });
           setState('dq-question');
@@ -316,7 +332,7 @@ export function Router() {
         });
 
         if (allowed) {
-          doRedirect(GROUP_A_URL, { result: 'qualified', country });
+          doRedirect(qualifiedDestination(), { result: 'qualified', country });
         } else {
           trackEvent('router_dq_question_shown', { country });
           setState('dq-question');
@@ -327,7 +343,7 @@ export function Router() {
         // safer to let a legitimate target slip through than block
         // them. Rare now that we have NewForm's country_code as the
         // primary signal + country.is as fallback.
-        doRedirect(GROUP_A_URL, { result: 'qualified' });
+        doRedirect(qualifiedDestination(), { result: 'qualified' });
       }
     };
 

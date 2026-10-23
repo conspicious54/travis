@@ -56,6 +56,11 @@ const LiveTraining           = lz(() => import('./pages/LiveTraining'),         
 const PassionProductMethodRedirect = lz(() => import('./pages/AnchorRedirect'),   'PassionProductMethodRedirect');
 const AcceleratorOverviewRedirect  = lz(() => import('./pages/AnchorRedirect'),   'AcceleratorOverviewRedirect');
 const FaqRedirect                  = lz(() => import('./pages/AnchorRedirect'),   'FaqRedirect');
+const ScalersLanding               = lz(() => import('./pages/ScalersLanding'),      'ScalersLanding');
+const ScalersVsl                   = lz(() => import('./pages/ScalersVsl'),          'ScalersVsl');
+const ScalersApply                 = lz(() => import('./pages/ScalersApply'),        'ScalersApply');
+const ScalersBook                  = lz(() => import('./pages/ScalersBook'),         'ScalersBook');
+const ScalersConfirmation          = lz(() => import('./pages/ScalersConfirmation'), 'ScalersConfirmation');
 
 /* SPA route tracker.
    Both Whop and HubSpot have their snippet in index.html which
@@ -152,6 +157,11 @@ function AppWrapper() {
                   <Route path="/passionproductmethod" element={<PassionProductMethodRedirect />} />
                   <Route path="/acceleratoroverview" element={<AcceleratorOverviewRedirect />} />
                   <Route path="/faq" element={<FaqRedirect />} />
+                  <Route path="/scalers" element={<ScalersLanding />} />
+                  <Route path="/scalers/vsl" element={<ScalersVsl />} />
+                  <Route path="/scalers/apply" element={<ScalersApply />} />
+                  <Route path="/scalers/book" element={<ScalersBook />} />
+                  <Route path="/scalers/confirmation" element={<ScalersConfirmation />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Suspense>
