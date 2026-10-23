@@ -23,7 +23,12 @@ const EUROPE_COUNTRIES = new Set([
   'CH','UA','GB','VA',
 ]);
 const ALLOWED_COUNTRIES = new Set(['US', 'CA', 'AU', 'NZ', ...EUROPE_COUNTRIES]);
-const DQ_WAITLIST_URL = 'https://thepassionproductformula.com/waitlist';
+
+// Non-target Scalers leads land on the Scalers-branded DQ page
+// (/scalers/dq) with resources, instead of bouncing to the generic
+// external waitlist. Keeps them on brand and gives them something
+// useful to do today.
+const SCALERS_DQ_URL = '/scalers/dq';
 
 function classifyAudience(code: string): 'target' | 'non_target' {
   if (!code) return 'non_target';
@@ -31,7 +36,7 @@ function classifyAudience(code: string): 'target' | 'non_target' {
 }
 
 function destinationFor(stage: string, audience: 'target' | 'non_target'): string {
-  if (audience === 'non_target') return DQ_WAITLIST_URL;
+  if (audience === 'non_target') return SCALERS_DQ_URL;
   return stage === 'scalers_apply' ? '/scalers/book' : '/scalers/vsl';
 }
 
