@@ -38,7 +38,7 @@ export interface ScalersBrand {
 }
 
 export const SCALERS_BRANDS: ScalersBrand[] = [
-  { name: 'Amazon Ads',            logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/AmazonAds.png' },
+  { name: 'Amazon Ads',            logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/AmazonAds.png', forceWhite: true },
   { name: 'PNB',                   logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/PNB.jpeg' },
   { name: 'Feel Confident',        logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/FeelConfident.avif', forceWhite: true },
   { name: 'Cocktail Cards',        logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/CocktailCards.png' },
