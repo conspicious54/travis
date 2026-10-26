@@ -1,5 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  ClipboardList,
+  PhoneCall,
+  TrendingUp,
+  ArrowRight,
+  CheckCircle2,
+  XCircle,
+  Target,
+  Zap,
+  Compass,
+} from 'lucide-react';
 import { identifyUser, trackEvent, trackConversionLead } from '../lib/posthog';
 import { getCleanIdentity, persistIdentity } from '../lib/urlParams';
 import { getCountry, readCachedCountryCode, type CountryInfo } from '../lib/detectCountry';
@@ -487,7 +498,7 @@ export function ScalersLanding() {
         </div>
 
         {/* Form card */}
-        <div className="relative">
+        <div className="relative" id="scalers-apply-form">
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
             <form
@@ -733,24 +744,185 @@ export function ScalersLanding() {
           </div>
         </div>
 
-        {/* Countdown - 4-minute window, so only MM:SS shown (HOURS
-            tile would always read "00" and look weird). */}
-        <div className="text-center mt-10">
-          <p className="text-base md:text-lg font-bold text-orange-600 mb-4">Bonus training expires in:</p>
-          <div className="flex items-center justify-center gap-3 md:gap-5">
-            {[
-              { v: ttl.m, label: 'MINUTES' },
-              { v: ttl.s, label: 'SECONDS' },
-            ].map((unit) => (
-              <div key={unit.label} className="flex flex-col items-center">
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-slate-900 text-white flex items-center justify-center text-2xl md:text-3xl font-black tabular-nums">
-                  {unit.v}
-                </div>
-                <div className="mt-1.5 text-[10px] md:text-xs font-bold text-gray-500 tracking-widest">{unit.label}</div>
-              </div>
-            ))}
+        {/* How It Works - 3 steps */}
+        <section className="mt-20 md:mt-24 max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest text-orange-700 mb-4">
+              How It Works
+            </div>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 leading-[1.1]">
+              From where you are now to a clear scale plan, in three steps.
+            </h2>
           </div>
-        </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            {[
+              {
+                num: '01',
+                icon: ClipboardList,
+                title: 'Apply in under 2 minutes',
+                body: 'Fill out a short application so we know your product, your numbers, and where you want to go next. No fluff, no essay.',
+              },
+              {
+                num: '02',
+                icon: PhoneCall,
+                title: 'Get on your Seller Growth Call',
+                body: 'A focused 1-on-1 session with a Passion Product coach. We pull up your listing, your ads, and your goals, and work through what to change first.',
+              },
+              {
+                num: '03',
+                icon: TrendingUp,
+                title: 'Walk away with your scale plan',
+                body: 'You leave the call with a specific, prioritized plan for your next quarter and a clear read on whether we are the right team to help you execute it.',
+              },
+            ].map((step) => {
+              const Icon = step.icon;
+              return (
+                <div
+                  key={step.num}
+                  className="relative rounded-2xl bg-white border border-slate-200 p-6 shadow-sm hover:shadow-md transition"
+                >
+                  <div className="absolute -top-3 -left-3 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 text-white font-black text-sm shadow-md">
+                    {step.num}
+                  </div>
+                  <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-orange-50 text-orange-600 mb-3 ml-10">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900 mb-1.5 leading-tight">{step.title}</h3>
+                  <p className="text-sm text-slate-600 leading-snug">{step.body}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* What you walk away with - call deliverables */}
+        <section className="mt-20 max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest text-orange-700 mb-4">
+              <Zap className="w-3.5 h-3.5" /> What You Walk Away With
+            </div>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 leading-[1.1]">
+              A real roadmap, not a sales pitch disguised as a call.
+            </h2>
+            <p className="mt-4 text-base md:text-lg text-slate-600 max-w-2xl mx-auto">
+              Even if we never work together, you leave the Seller Growth Call with concrete things you can act on this week.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {[
+              {
+                icon: Target,
+                title: 'A clear read on what is holding you back',
+                body: 'Where the leverage actually lives on your listing, your ads, and your product mix.',
+              },
+              {
+                icon: Compass,
+                title: 'A prioritized plan for the next 90 days',
+                body: 'Specific moves in order, so you stop guessing which thing to work on first.',
+              },
+              {
+                icon: PhoneCall,
+                title: 'Honest fit check with our team',
+                body: 'Whether (and how) the Passion Product team could help you run the plan, laid out directly.',
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.title}
+                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-orange-50 text-orange-600 mb-3">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-base font-black text-slate-900 mb-1.5 leading-tight">{item.title}</h3>
+                  <p className="text-sm text-slate-600 leading-snug">{item.body}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Fit check - who it is / isn't for */}
+        <section className="mt-20 max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 leading-[1.1]">
+              Is this a fit?
+            </h2>
+            <p className="mt-3 text-base md:text-lg text-slate-600 max-w-2xl mx-auto">
+              We would rather tell you now than waste your call slot.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                <h3 className="text-lg font-black text-slate-900">A fit if you are...</h3>
+              </div>
+              <ul className="space-y-2.5">
+                {[
+                  'Already selling a product live on Amazon',
+                  'Ambitious about where you want this to go',
+                  'Open to feedback on what to actually change',
+                  'Willing to do the work your plan calls for',
+                ].map((line) => (
+                  <li key={line} className="flex items-start gap-2 text-sm text-slate-800">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border-2 border-slate-200 bg-white p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <XCircle className="w-6 h-6 text-slate-400" />
+                <h3 className="text-lg font-black text-slate-900">Not a fit if you...</h3>
+              </div>
+              <ul className="space-y-2.5">
+                {[
+                  'Do wholesale, retail arbitrage, or online arbitrage',
+                  'Are only looking for a get-rich-quick angle',
+                  'Will not change anything we identify together',
+                  'Have no product live on Amazon yet (watch the free training first)',
+                ].map((line) => (
+                  <li key={line} className="flex items-start gap-2 text-sm text-slate-700">
+                    <XCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA - scroll back to form */}
+        <section className="mt-20 max-w-4xl mx-auto">
+          <div className="rounded-3xl bg-gradient-to-br from-orange-500 via-orange-500 to-amber-500 p-8 md:p-12 text-center text-white shadow-xl">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-[1.1]">
+              Ready to find out what's possible?
+            </h2>
+            <p className="mt-4 text-base md:text-lg text-orange-50 max-w-2xl mx-auto leading-relaxed">
+              Apply for your Seller Growth Call. If we are the right team to help you execute, we will say so. If we are not, you still leave with a plan.
+            </p>
+            <a
+              href="#scalers-apply-form"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('scalers-apply-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-base md:text-lg font-black text-orange-700 shadow-lg transition hover:bg-orange-50 hover:scale-[1.02]"
+            >
+              Apply for your Seller Growth Call <ArrowRight className="w-5 h-5" />
+            </a>
+            <p className="mt-4 text-xs text-orange-100/90">
+              Nothing to pay to apply. Results not typical.
+            </p>
+          </div>
+        </section>
       </main>
 
       {/* Footer - disclaimer blocks copied verbatim from the original */}
