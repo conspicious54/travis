@@ -12,7 +12,7 @@ import {
   Compass,
 } from 'lucide-react';
 import { BrandMarquee } from '../components/BrandMarquee';
-import { SCALERS_BRANDS } from '../lib/scalers';
+import { SCALERS_BRANDS, SCALERS_LOGO_URL } from '../lib/scalers';
 import { identifyUser, trackEvent, trackConversionLead } from '../lib/posthog';
 import { getCleanIdentity, persistIdentity } from '../lib/urlParams';
 import { getCountry, readCachedCountryCode, type CountryInfo } from '../lib/detectCountry';
@@ -67,11 +67,8 @@ const STAGE_TAG = 'newform_optin';
 // used on the CF lead page. Hotlinked from CF's CDN for now. This
 // is a temporary third-party dependency; once ready to cut over,
 // self-host on our R2 bucket to remove the CF dependency (see
-// TravisStage.jpg / Alexis.png for the R2 self-hosting pattern).
-// The `passionproduct.com` WordPress asset that was here before
-// loads the "PASSION PRODUCT FORMULA" 3-line logo instead — wrong
-// mark for parity with CF.
-const LOGO_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/PassionProductFormulaLogo.webp';
+// Logo source now lives in src/lib/scalers.ts (SCALERS_LOGO_URL) so
+// the whole /scalers track swaps in one place.
 
 /* ───── Country dial codes ────────────────────────────────────────
    Target markets listed first (US / CA / UK / AU / NZ / IE), then
@@ -416,8 +413,8 @@ export function ScalersLanding() {
             ~35px gap down to the eyebrow. */}
         <div className="flex justify-center mb-5 md:mb-9">
           <img
-            src={LOGO_URL}
-            alt="Passion Product"
+            src={SCALERS_LOGO_URL}
+            alt="FBA Scalers"
             className="h-[62px] w-auto"
             loading="eager"
           />

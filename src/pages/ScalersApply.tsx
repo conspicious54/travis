@@ -8,6 +8,7 @@ import { persistUtmsFromUrl, readAttribution, syncContactUtms } from '../lib/syn
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { SCALERS_LOGO_URL } from '../lib/scalers';
 
 /* ───── /applynow - Typeform application page ─────────────────────
    The page green CTAs on /nextstep land on. Rebuild of the CF
@@ -273,9 +274,9 @@ export function ScalersApply() {
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-3xl mx-auto px-5 py-4 flex items-center justify-center">
           <img
-            src="https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Passion%20Product%20Formula%20-%20ICON.png"
-            alt="Passion Product Formula"
-            className="w-10 h-10 rounded-lg object-contain"
+            src={SCALERS_LOGO_URL}
+            alt="FBA Scalers"
+            className="h-10 w-auto object-contain"
             loading="eager"
           />
         </div>

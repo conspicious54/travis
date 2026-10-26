@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Play, BookOpen, Youtube, Users, Mail, Gift, Star } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { SCALERS_LOGO_URL } from '../lib/scalers';
 
 /* ───── /scalers/dq — resources page for DQ'd Scalers leads ─────────
    Shown to anyone the Scalers track filters out (country, no live
@@ -15,8 +16,6 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
    PLACEHOLDER — swap the URLs for the real Travis / Passion Product
    resources once we have the final list.
 ──────────────────────────────────────────────────────────────────── */
-
-const LOGO_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Passion%20Product%20Formula%20-%20ICON.png';
 
 // SCALERS DQ PLACEHOLDER: swap any href with the real destination.
 // Each card gets a specific value prop — this isn't a consolation
@@ -76,7 +75,7 @@ export function ScalersDq() {
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-5 py-4 flex items-center justify-center">
-          <img src={LOGO_URL} alt="Passion Product" className="h-9 w-auto" loading="eager" />
+          <img src={SCALERS_LOGO_URL} alt="FBA Scalers" className="h-10 w-auto" loading="eager" />
         </div>
       </header>
 

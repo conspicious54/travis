@@ -12,12 +12,12 @@ export const SCALERS_TRACK = 'scalers' as const;
 export const MAIN_TRACK = 'main' as const;
 export type FunnelTrack = typeof SCALERS_TRACK | typeof MAIN_TRACK;
 
-/** FBA Scalers wordmark + arrow logo. Served from /public so there
- *  is nothing to upload — once the PNG is at public/fba-scalers-logo.png
- *  in the repo and committed, Netlify serves it at the site root
- *  automatically. Height on the pages is capped around 48px so the
- *  orange arrow reads at a glance without crowding the hero. */
-export const SCALERS_LOGO_URL = '/fba-scalers-logo.png';
+/** FBA Scalers wordmark + arrow logo. Hotlinked from fbascalers.com
+ *  so we don't have to re-host it. Height on the pages is capped
+ *  around 48px so the orange arrow reads at a glance without
+ *  crowding the hero. If this ever 404s or we want to kill the
+ *  external dependency, mirror the PNG to R2 and swap the URL. */
+export const SCALERS_LOGO_URL = 'https://fbascalers.com/wp-content/uploads/2023/12/FBA-Scalers-06-2-1.png';
 
 /** Rotating brand strip on /scalers (BrandMarquee). Pattern copied
  *  from info.triviumco.com/google-ads-book-a-call. PLACEHOLDER

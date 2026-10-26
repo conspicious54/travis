@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, TrendingUp, Shield, Package, DollarSign, AlertTriangle, Zap } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { SCALERS_LOGO_URL } from '../lib/scalers';
 
 /* ───── /scalers/arbitrage — repositioning page for wholesale /
    retail arbitrage / online arbitrage sellers ───────────────────
@@ -19,8 +20,6 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
    Preserves any URL params so attribution survives the hop over to
    /nextstep.
 ──────────────────────────────────────────────────────────────────── */
-
-const LOGO_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Passion%20Product%20Formula%20-%20ICON.png';
 
 export function ScalersArbitrage() {
   // Keep attribution across the hop to /nextstep so UTMs and
@@ -45,7 +44,7 @@ export function ScalersArbitrage() {
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-5 py-4 flex items-center justify-center">
-          <img src={LOGO_URL} alt="Passion Product" className="h-9 w-auto" loading="eager" />
+          <img src={SCALERS_LOGO_URL} alt="FBA Scalers" className="h-10 w-auto" loading="eager" />
         </div>
       </header>
 
