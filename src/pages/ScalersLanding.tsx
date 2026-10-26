@@ -396,7 +396,7 @@ export function ScalersLanding() {
   // Variant.headline / supporting_copy override these when a UTM
   // campaign matches an active row in campaignVariants.ts.
   const DEFAULT_EYEBROW = 'For Ambitious Amazon Sellers Struggling To Hit Their Next Ceiling';
-  const DEFAULT_HEADLINE = 'Make Amazon Predictable And Scalable In 90 Days';
+  const DEFAULT_HEADLINE = 'Make Amazon FBA Predictable and Scalable';
   const DEFAULT_SUBHEAD = 'Apply for a Seller Growth Call to learn exactly what to fix, what to ignore, and what to scale next in your business.';
   const eyebrowText = variant ? variant.supporting_copy : DEFAULT_EYEBROW;
   const headlineText = (variant?.headline) || DEFAULT_HEADLINE;
@@ -457,10 +457,10 @@ export function ScalersLanding() {
             {headlineText === DEFAULT_HEADLINE ? (
               <>
                 <span className="font-semibold">
-                  Make Amazon
+                  Make Amazon FBA
                 </span>{' '}
                 <span className="font-black">
-                  Predictable And Scalable In 90 Days
+                  Predictable and Scalable
                 </span>
               </>
             ) : (
