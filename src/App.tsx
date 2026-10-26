@@ -63,6 +63,7 @@ const ScalersBook                  = lz(() => import('./pages/ScalersBook'),    
 const ScalersConfirmation          = lz(() => import('./pages/ScalersConfirmation'), 'ScalersConfirmation');
 const ScalersDq                    = lz(() => import('./pages/ScalersDq'),           'ScalersDq');
 const ScalersArbitrage             = lz(() => import('./pages/ScalersArbitrage'),    'ScalersArbitrage');
+const CustomLaunchRoom             = lz(() => import('./pages/CustomLaunchRoom'),    'CustomLaunchRoom');
 
 /* SPA route tracker.
    Both Whop and HubSpot have their snippet in index.html which
@@ -166,6 +167,7 @@ function AppWrapper() {
                   <Route path="/scalers/confirmation" element={<ScalersConfirmation />} />
                   <Route path="/scalers/dq" element={<ScalersDq />} />
                   <Route path="/scalers/arbitrage" element={<ScalersArbitrage />} />
+                  <Route path="/customlaunchroom/:id" element={<CustomLaunchRoom />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Suspense>
