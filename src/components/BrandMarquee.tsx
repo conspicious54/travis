@@ -60,13 +60,13 @@ export function BrandMarquee({
         }}
       >
         <div
-          className="flex items-center gap-10 md:gap-14 w-max brand-marquee-track"
+          className="flex items-center gap-12 md:gap-16 w-max brand-marquee-track"
           style={{ animationDuration: `${speedSeconds}s` }}
         >
           {loop.map((brand, i) => (
             <div
               key={`${brand.name}-${i}`}
-              className="flex items-center justify-center shrink-0"
+              className="flex items-center justify-center shrink-0 w-32 md:w-44 h-12 md:h-16"
               aria-hidden={i >= brands.length ? 'true' : undefined}
             >
               {brand.logoUrl ? (
@@ -74,7 +74,7 @@ export function BrandMarquee({
                   src={brand.logoUrl}
                   alt={brand.name}
                   loading="lazy"
-                  className="h-7 md:h-9 w-auto object-contain grayscale opacity-80 hover:opacity-100 hover:grayscale-0 transition"
+                  className="max-h-full max-w-full object-contain grayscale opacity-80 hover:opacity-100 hover:grayscale-0 transition"
                 />
               ) : (
                 <span className="text-base md:text-lg font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">

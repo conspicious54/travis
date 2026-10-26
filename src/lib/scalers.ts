@@ -33,14 +33,12 @@ export interface ScalersBrand {
 }
 
 export const SCALERS_BRANDS: ScalersBrand[] = [
-  { name: 'Brand One' },
-  { name: 'Brand Two' },
-  { name: 'Brand Three' },
-  { name: 'Brand Four' },
-  { name: 'Brand Five' },
-  { name: 'Brand Six' },
-  { name: 'Brand Seven' },
-  { name: 'Brand Eight' },
+  { name: 'Amazon Ads',            logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/AmazonAds.png' },
+  { name: 'PNB',                   logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/PNB.jpeg' },
+  { name: 'Feel Confident',        logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/FeelConfident.avif' },
+  { name: 'Cocktail Cards',        logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/CocktailCards.png' },
+  { name: 'Carnivore Electrolytes', logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/CarnivoreElectrolytes.png' },
+  { name: 'Sear Pro',              logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/SearPro.webp' },
 ];
 
 /** The Wistia (or Vimeo, or self-hosted mp4) ID that renders on
