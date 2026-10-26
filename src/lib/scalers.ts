@@ -19,6 +19,30 @@ export type FunnelTrack = typeof SCALERS_TRACK | typeof MAIN_TRACK;
  *  orange arrow reads at a glance without crowding the hero. */
 export const SCALERS_LOGO_URL = '/fba-scalers-logo.png';
 
+/** Rotating brand strip on /scalers (BrandMarquee). Pattern copied
+ *  from info.triviumco.com/google-ads-book-a-call. PLACEHOLDER
+ *  list below — swap for the real brands we have helped scale.
+ *  When a logoUrl is empty, BrandMarquee renders the name as a
+ *  grey text badge so the strip looks intentional even before
+ *  the real logos are hosted. Suggested image spec: 180×60 PNG,
+ *  transparent background, single-colour or black-and-white so
+ *  the greyscale hover treatment reads cleanly. */
+export interface ScalersBrand {
+  name: string;
+  logoUrl?: string;
+}
+
+export const SCALERS_BRANDS: ScalersBrand[] = [
+  { name: 'Brand One' },
+  { name: 'Brand Two' },
+  { name: 'Brand Three' },
+  { name: 'Brand Four' },
+  { name: 'Brand Five' },
+  { name: 'Brand Six' },
+  { name: 'Brand Seven' },
+  { name: 'Brand Eight' },
+];
+
 /** The Wistia (or Vimeo, or self-hosted mp4) ID that renders on
  *  /scalers/vsl. Placeholder = the same clip used on /nextstep so
  *  the page still visibly works. Swap when Connor records the real

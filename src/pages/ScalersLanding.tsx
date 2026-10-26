@@ -11,6 +11,8 @@ import {
   Zap,
   Compass,
 } from 'lucide-react';
+import { BrandMarquee } from '../components/BrandMarquee';
+import { SCALERS_BRANDS } from '../lib/scalers';
 import { identifyUser, trackEvent, trackConversionLead } from '../lib/posthog';
 import { getCleanIdentity, persistIdentity } from '../lib/urlParams';
 import { getCountry, readCachedCountryCode, type CountryInfo } from '../lib/detectCountry';
@@ -748,6 +750,16 @@ export function ScalersLanding() {
             </form>
           </div>
         </div>
+
+        {/* Brand marquee - rotating conveyor of brands we have
+            worked with (Trivium pattern). Brands list is a
+            PLACEHOLDER - swap SCALERS_BRANDS in src/lib/scalers.ts
+            with the real names (and logoUrls once hosted) and the
+            strip updates. The component gracefully falls back to
+            text badges when logoUrl is empty. */}
+        <section className="mt-14 md:mt-16 -mx-5 md:mx-0">
+          <BrandMarquee brands={SCALERS_BRANDS} label="Brands We Have Helped Scale" />
+        </section>
 
         {/* How It Works - 3 steps */}
         <section className="mt-20 md:mt-24 max-w-4xl mx-auto">
