@@ -30,12 +30,17 @@ export const SCALERS_LOGO_URL = 'https://fbascalers.com/wp-content/uploads/2023/
 export interface ScalersBrand {
   name: string;
   logoUrl?: string;
+  /** Force this logo to pure white via a CSS filter. Set true when
+   *  the source PNG/AVIF is a dark mark on transparent (invisible
+   *  on the dark marquee panel). The filter is brightness(0) +
+   *  invert(1): kill all colour → black → flip to white. */
+  forceWhite?: boolean;
 }
 
 export const SCALERS_BRANDS: ScalersBrand[] = [
   { name: 'Amazon Ads',            logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/AmazonAds.png' },
   { name: 'PNB',                   logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/PNB.jpeg' },
-  { name: 'Feel Confident',        logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/FeelConfident.avif' },
+  { name: 'Feel Confident',        logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/FeelConfident.avif', forceWhite: true },
   { name: 'Cocktail Cards',        logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/CocktailCards.png' },
   { name: 'Carnivore Electrolytes', logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/CarnivoreElectrolytes.png' },
   { name: 'Sear Pro',              logoUrl: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Logos/SearPro.webp' },

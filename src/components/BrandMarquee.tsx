@@ -21,6 +21,10 @@ import React from 'react';
 export interface Brand {
   name: string;
   logoUrl?: string;
+  /** Force this logo to pure white (brightness(0) + invert(1)). Set
+   *  true for dark marks on transparent that would otherwise vanish
+   *  against the dark panel. */
+  forceWhite?: boolean;
 }
 
 interface BrandMarqueeProps {
@@ -82,6 +86,11 @@ export function BrandMarquee({
                     alt={brand.name}
                     loading="lazy"
                     className="max-h-full max-w-full object-contain opacity-90 hover:opacity-100 transition"
+                    style={
+                      brand.forceWhite
+                        ? { filter: 'brightness(0) invert(1)' }
+                        : undefined
+                    }
                   />
                 ) : (
                   <span className="text-base md:text-lg font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">
