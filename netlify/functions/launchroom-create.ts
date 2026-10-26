@@ -1,36 +1,24 @@
 import type { Handler, HandlerEvent } from '@netlify/functions';
-import { getStore } from '@netlify/blobs';
-import { randomBytes } from 'node:crypto';
-import {
-  scoreLaunchReadiness,
-  deriveTier,
-  type LaunchRoomRecord,
-  type LaunchRoomAnswers,
-  type LaunchRoomContact,
-} from '../../src/lib/launchroom';
+import { upsertByResponseId, createRecord } from '../lib/launchroom-store';
+import { scoreLaunchReadiness } from '../../src/lib/launchroom';
+import type { LaunchRoomAnswers, LaunchRoomContact } from '../../src/lib/launchroom';
 
 /* ───── /.netlify/functions/launchroom-create ────────────────────
-   Called by Zapier (or the Typeform webhook relay) when a new
-   application lands. Builds a Launch Room blob, assigns an
-   unguessable id, returns the public URL.
+   Canonical-input entry point. Used by Zapier (or any direct
+   caller) that already has canonicalised answer slugs.
 
-   Idempotency: if the caller passes `response_id` (Typeform's own
-   id), we store a secondary index response_id -> launchroom_id in
-   a sibling blob store. A second call with the same response_id
-   returns the same launchroom URL. This lets partial-submission
-   webhooks replay without creating duplicates.
+   For raw Typeform payloads, call /typeform-webhook instead —
+   that function maps Typeform's native shape then upserts via
+   the same shared store helper.
 
-   Body shape (POST, application/json):
-     {
-       response_id?: string,        // Typeform response id
-       contact: { name, email, phone },
-       answers: { q4..q13 (canonical slugs) }
-     }
+   Body (POST, application/json):
+     { response_id?, contact: {name,email,phone,firstName},
+       answers: { q4..q13 (canonical slugs) } }
 
    Response:
-     200 { id, url, tier }          // success
-     400 { error }                  // bad payload
-     500 { error }                  // blob failure
+     200 { id, url, tier, score }
+     400 { error }
+     500 { error }
 ──────────────────────────────────────────────────────────────── */
 
 const CORS = {
@@ -67,62 +55,20 @@ export const handler: Handler = async (event: HandlerEvent) => {
     return json(400, { error: 'need_email_or_response_id' });
   }
 
-  const rooms = getStore('launchrooms');
-  const index = getStore('launchrooms-index');
-
-  // Idempotency: replay by response_id returns the original.
-  if (payload.response_id) {
-    const existingId = await index.get(payload.response_id);
-    if (existingId) {
-      const existing = await rooms.get(existingId, { type: 'json' }) as LaunchRoomRecord | null;
-      if (existing) {
-        // Upsert with any new answers (partial submissions replay).
-        const merged: LaunchRoomRecord = {
-          ...existing,
-          contact: { ...existing.contact, ...contact },
-          answers: { ...existing.answers, ...answers },
-          tier: deriveTier({ ...existing.answers, ...answers }, { ...existing.contact, ...contact }),
-          updatedAt: new Date().toISOString(),
-        };
-        await rooms.setJSON(existingId, merged);
-        return json(200, {
-          id: existingId,
-          url: `${SITE_ORIGIN}/customlaunchroom/${existingId}`,
-          tier: merged.tier,
-        });
-      }
-    }
-  }
-
-  const id = randomBytes(18).toString('base64url'); // 24 chars, ~144 bits
-  const now = new Date().toISOString();
-  const record: LaunchRoomRecord = {
-    id,
-    createdAt: now,
-    updatedAt: now,
-    tier: deriveTier(answers, contact),
-    answers,
-    contact,
-    checklist: {},
-    visitCount: 0,
-    visitLog: [],
-  };
-
   try {
-    await rooms.setJSON(id, record);
-    if (payload.response_id) {
-      await index.set(payload.response_id, id);
-    }
+    const record = payload.response_id
+      ? await upsertByResponseId({ responseId: payload.response_id, contact, answers })
+      : await createRecord({ contact, answers });
+
+    return json(200, {
+      id: record.id,
+      url: `${SITE_ORIGIN}/customlaunchroom/${record.id}`,
+      tier: record.tier,
+      score: scoreLaunchReadiness(record.answers).total,
+    });
   } catch (err) {
     return json(500, { error: 'storage_failed', detail: String(err) });
   }
-
-  return json(200, {
-    id,
-    url: `${SITE_ORIGIN}/customlaunchroom/${id}`,
-    tier: record.tier,
-    score: scoreLaunchReadiness(answers).total,
-  });
 };
 
 function json(statusCode: number, body: unknown) {

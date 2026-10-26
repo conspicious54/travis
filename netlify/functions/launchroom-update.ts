@@ -1,20 +1,15 @@
 import type { Handler, HandlerEvent } from '@netlify/functions';
-import { getStore } from '@netlify/blobs';
-import type { LaunchRoomRecord, LaunchRoomChecklist } from '../../src/lib/launchroom';
+import { applyPatch } from '../lib/launchroom-store';
+import type { LaunchRoomChecklist } from '../../src/lib/launchroom';
 
 /* ───── /.netlify/functions/launchroom-update ────────────────────
-   Called by the /customlaunchroom/:id page when the lead ticks a
-   step or writes their commitment answer. Also used server-side
-   as a lightweight "set commitment, push to HubSpot" entry point.
+   Called by the /customlaunchroom/:id page when the lead ticks
+   a step or edits their commitment. Also usable server-side for
+   anywhere we want to patch state onto a record.
 
    Body (POST, application/json):
-     {
-       id: string,
-       checklist?: { step1?: boolean, step2?: boolean, step3?: boolean },
-       commitment?: string,
-     }
-
-   Returns 200 { record } on success.
+     { id, checklist?, commitment? }
+   Response: 200 { record } | 404 | 500
 ──────────────────────────────────────────────────────────────── */
 
 const CORS = {
@@ -23,8 +18,6 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type',
   'Content-Type': 'application/json',
 };
-
-const COMMITMENT_MAX = 1000;
 
 export const handler: Handler = async (event: HandlerEvent) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
@@ -44,27 +37,17 @@ export const handler: Handler = async (event: HandlerEvent) => {
   const id = payload.id?.trim();
   if (!id) return json(400, { error: 'missing_id' });
 
-  const rooms = getStore('launchrooms');
-  const record = (await rooms.get(id, { type: 'json' })) as LaunchRoomRecord | null;
-  if (!record) return json(404, { error: 'not_found' });
-
-  const updated: LaunchRoomRecord = {
-    ...record,
-    checklist: { ...record.checklist, ...(payload.checklist ?? {}) },
-    commitment:
-      typeof payload.commitment === 'string'
-        ? payload.commitment.slice(0, COMMITMENT_MAX)
-        : record.commitment,
-    updatedAt: new Date().toISOString(),
-  };
-
   try {
-    await rooms.setJSON(id, updated);
+    const record = await applyPatch({
+      id,
+      checklist: payload.checklist,
+      commitment: payload.commitment,
+    });
+    if (!record) return json(404, { error: 'not_found' });
+    return json(200, { record });
   } catch (err) {
     return json(500, { error: 'storage_failed', detail: String(err) });
   }
-
-  return json(200, { record: updated });
 };
 
 function json(statusCode: number, body: unknown) {
