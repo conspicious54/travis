@@ -52,6 +52,42 @@ const GAP_HINTS: Record<string, string> = {
   support:   'Line up the people and tools you need around the launch.',
 };
 
+/* ───── Demo record ─────────────────────────────────────────────
+   Visiting /customlaunchroom/demo renders the page with this mock
+   record — no backend call, no persistence. Lets Connor (and
+   Jeremy, when real copy lands) preview the page design without
+   needing to seed Netlify Blobs with a real applicant.
+──────────────────────────────────────────────────────────────── */
+const DEMO_RECORD: LaunchRoomRecord = {
+  id: 'demo',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  tier: 'full',
+  contact: {
+    firstName: 'Alex',
+    name: 'Alex Example',
+    email: 'alex@example.com',
+    phone: '+15555550123',
+  },
+  answers: {
+    q4:  'Austin, TX',
+    q5:  'default',
+    q6:  'tried_business',
+    q7:  'Want to be live before Q4 next year',
+    q8:  'several_months',
+    q9:  'niche',
+    q10: '1_3_months',
+    q11: 'default',
+    q13: '1k_5k',
+  },
+  checklist: { step1: true },
+  commitment: '',
+  bookingStatus: undefined,
+  visitCount: 1,
+  lastVisitAt: new Date().toISOString(),
+  visitLog: [],
+};
+
 export function CustomLaunchRoom() {
   const { id } = useParams<{ id: string }>();
   const [record, setRecord] = useState<LaunchRoomRecord | null>(null);
@@ -59,27 +95,41 @@ export function CustomLaunchRoom() {
   const [commitmentDraft, setCommitmentDraft] = useState('');
   const saveTimer = useRef<number | null>(null);
 
+  const isDemo = id === 'demo';
+
   // Initial load.
   useEffect(() => {
     if (!id) return;
+    if (isDemo) {
+      setRecord(DEMO_RECORD);
+      setCommitmentDraft(DEMO_RECORD.commitment ?? '');
+      setState('ready');
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
         const r = await fetch(`/.netlify/functions/launchroom-get?id=${encodeURIComponent(id)}`);
         if (r.status === 404) { if (!cancelled) setState('not_found'); return; }
-        if (!r.ok) { if (!cancelled) setState('error'); return; }
+        if (!r.ok) {
+          const detail = await r.text().catch(() => '');
+          console.error('[LaunchRoom] fetch failed', r.status, detail);
+          if (!cancelled) setState('error');
+          return;
+        }
         const { record: rec } = (await r.json()) as { record: LaunchRoomRecord };
         if (cancelled) return;
         setRecord(rec);
         setCommitmentDraft(rec.commitment ?? '');
         setState('ready');
         try { trackEvent('launchroom_viewed', { id: rec.id, tier: rec.tier }); } catch { /* noop */ }
-      } catch {
+      } catch (err) {
+        console.error('[LaunchRoom] fetch threw', err);
         if (!cancelled) setState('error');
       }
     })();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, isDemo]);
 
   // Title.
   useEffect(() => {
@@ -117,6 +167,7 @@ export function CustomLaunchRoom() {
 
   async function patch(body: { checklist?: LaunchRoomChecklist; commitment?: string }) {
     if (!id) return;
+    if (isDemo) return; // demo mode is in-memory only
     try {
       const r = await fetch('/.netlify/functions/launchroom-update', {
         method: 'POST',
@@ -180,6 +231,9 @@ export function CustomLaunchRoom() {
           <AlertCircle className="w-10 h-10 text-orange-500 mx-auto mb-4" />
           <h1 className="text-2xl font-black text-slate-900">Something went wrong loading your Launch Room.</h1>
           <p className="mt-3 text-slate-600">Try refreshing. If it keeps failing, reply to the email we sent you and we'll fix it fast.</p>
+          <p className="mt-6 text-xs text-slate-400">
+            Just previewing the design? Visit <a href="/customlaunchroom/demo" className="underline text-orange-600">/customlaunchroom/demo</a>.
+          </p>
         </div>
       </div>
     );
