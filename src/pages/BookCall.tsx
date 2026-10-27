@@ -1,11 +1,18 @@
 import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
-import { identifyUser, setPersonProperties, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
+import { identifyUser, setPersonProperties, trackBookingPageViewed, trackEvent } from '../lib/posthog';
 import { readLeadScoreFromUrl } from '../lib/leadScore';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import {
+  emitBookedCallConversion,
+  extractAttendee,
+  extractBookingId,
+  isBookingRescheduled,
+  isFreshBookingConfirmed,
+} from '../lib/booking';
 
 /* ───── /bookacall - embedded OnceHub setter scheduler ─────────────
    Setter scheduler now runs on OnceHub (calendar BKC-P9JY2GLKJX)
@@ -48,28 +55,9 @@ function persistTypeformAnswers() {
   }
 }
 
-function isOncehubBookingConfirmed(data: unknown): boolean {
-  if (!data) return false;
-  let typeStr = '';
-  if (typeof data === 'string') {
-    typeStr = data.toLowerCase();
-  } else if (typeof data === 'object') {
-    const d = data as Record<string, unknown>;
-    typeStr = [
-      typeof d.type === 'string' ? d.type : '',
-      typeof d.eventType === 'string' ? d.eventType : '',
-      typeof d.eventName === 'string' ? d.eventName : '',
-    ].join(' ').toLowerCase();
-  }
-  if (!typeStr.includes('booking')) return false;
-  return (
-    typeStr.includes('confirmed') ||
-    typeStr.includes('succeeded') ||
-    typeStr.includes('success') ||
-    typeStr.includes('complete') ||
-    typeStr.includes('scheduled')
-  );
-}
+// Fresh-booking detection + reschedule skip now live in
+// src/lib/booking.ts so BookCall and Book share one source of
+// truth (isFreshBookingConfirmed, isBookingRescheduled).
 
 function getOncehubPrefill(): { name?: string; email?: string; phone?: string } {
   if (typeof window === 'undefined') return {};
@@ -122,22 +110,54 @@ export function BookCall() {
         return;
       }
 
-      let preview = '';
+      // Record the handshake without the raw payload — OnceHub
+      // payloads include attendee email/phone and this event lands
+      // in PostHog. Keep only the non-PII type signal.
+      let eventTypeStr = '';
       try {
-        preview = typeof event.data === 'string' ? event.data.slice(0, 800) : JSON.stringify(event.data).slice(0, 800);
+        if (typeof event.data === 'object' && event.data) {
+          const d = event.data as Record<string, unknown>;
+          eventTypeStr = [d.type, d.eventType, d.eventName, d.event]
+            .filter((v) => typeof v === 'string')
+            .join(' ')
+            .slice(0, 200);
+        } else if (typeof event.data === 'string') {
+          eventTypeStr = event.data.slice(0, 200);
+        }
       } catch { /* no-op */ }
       trackEvent('oncehub_postmessage_received', {
         booking_type: 'setter',
         origin,
-        preview,
+        event_type: eventTypeStr,
       });
 
-      if (!isOncehubBookingConfirmed(event.data)) return;
+      if (isBookingRescheduled(event.data)) {
+        // Reschedule of an existing booking. Not a new conversion;
+        // Google Ads already counted the original. Record it for
+        // analytics but don't push the ad-conversion event.
+        trackEvent('booking_rescheduled', { booking_type: 'setter' });
+        return;
+      }
+      if (!isFreshBookingConfirmed(event.data)) return;
 
+      const bookingId = extractBookingId(event.data);
+      const attendee  = extractAttendee(event.data);
+
+      // Log only the stable id + type. The raw payload holds
+      // PII (email, phone) so it never goes to the console.
       // eslint-disable-next-line no-console
-      console.log('[OnceHub booking confirmed - setter]', event.data);
+      console.log('[OnceHub booking confirmed - setter]', { booking_id: bookingId });
 
-      trackBookingCompleted('setter', leadScore !== null ? { lead_score: leadScore } : undefined);
+      // Enhanced-Conversions-friendly dataLayer push + PostHog
+      // event, idempotent per booking_id so refresh / revisit /
+      // double postMessage can't double-count.
+      void emitBookedCallConversion({
+        bookingType: 'setter',
+        bookingId,
+        email: attendee.email,
+        phone: attendee.phone,
+        leadScore,
+      });
 
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = getCleanIdentity(urlParams);
@@ -209,15 +229,35 @@ export function BookCall() {
         });
       }
 
+      // Merge the OnceHub-authoritative identity back into
+      // localStorage so the confirmation page's getPersonalization
+      // reads it. Replaces what used to ride in the redirect URL.
+      try {
+        const prev = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const next = {
+          ...prev,
+          _captured_at: new Date().toISOString(),
+          firstname: finalFirst || prev.firstname || '',
+          email:     finalEmail || prev.email     || '',
+          phone:     finalPhone || prev.phone     || '',
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch { /* no-op */ }
+
       syncContactTimezone(finalEmail, 'bookacall_redirect');
       syncContactUtms(finalEmail, 'bookacall_redirect');
 
+      // PII (email, first_name, phone) is NOT forwarded in the
+      // URL. The confirmation page reads it from localStorage
+      // (pp_booking_data) via getPersonalization(), which was
+      // populated at form-submit time and refreshed again here
+      // via identifyUser above. Keeping URLs PII-free matches the
+      // Google Ads brief and avoids leaking identity in referrer
+      // headers / server logs / analytics URLs.
       const redirectParams = new URLSearchParams();
-      if (finalFirst) redirectParams.set('first_name', finalFirst);
-      if (finalEmail) redirectParams.set('email',     finalEmail);
-      if (ownerName)  redirectParams.set('owner',     ownerName);
-      // Forward the Typeform score so /trainingnew/setter and any
-      // post-booking logic can read it from URL params.
+      if (ownerName)    redirectParams.set('owner',     ownerName);
+      // Forward the Typeform score (non-PII) so /trainingnew/setter
+      // and any post-booking logic can read it from URL params.
       if (leadScoreRaw) redirectParams.set('leadscore', leadScoreRaw);
 
       const target = redirectParams.toString()

@@ -1,11 +1,18 @@
 import { useEffect, useRef } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
-import { identifyUser, setPersonProperties, trackBookingPageViewed, trackBookingCompleted, trackEvent } from '../lib/posthog';
+import { identifyUser, setPersonProperties, trackBookingPageViewed, trackEvent } from '../lib/posthog';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
 import { readLeadScoreFromUrl } from '../lib/leadScore';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import {
+  emitBookedCallConversion,
+  extractAttendee,
+  extractBookingId,
+  isBookingRescheduled,
+  isFreshBookingConfirmed,
+} from '../lib/booking';
 
 /* ───── /book - embedded OnceHub closer scheduler ─────────────────
    The closer scheduler now runs on OnceHub (calendar BKC-Q45L7MVX52)
@@ -52,30 +59,9 @@ function persistTypeformAnswers() {
   }
 }
 
-/* OnceHub fires events as type: "oncehub.booking_calendar.<action>".
-   Match broadly on any booking-related success terminology. */
-function isOncehubBookingConfirmed(data: unknown): boolean {
-  if (!data) return false;
-  let typeStr = '';
-  if (typeof data === 'string') {
-    typeStr = data.toLowerCase();
-  } else if (typeof data === 'object') {
-    const d = data as Record<string, unknown>;
-    typeStr = [
-      typeof d.type === 'string' ? d.type : '',
-      typeof d.eventType === 'string' ? d.eventType : '',
-      typeof d.eventName === 'string' ? d.eventName : '',
-    ].join(' ').toLowerCase();
-  }
-  if (!typeStr.includes('booking')) return false;
-  return (
-    typeStr.includes('confirmed') ||
-    typeStr.includes('succeeded') ||
-    typeStr.includes('success') ||
-    typeStr.includes('complete') ||
-    typeStr.includes('scheduled')
-  );
-}
+// Fresh-booking detection + reschedule skip live in
+// src/lib/booking.ts (isFreshBookingConfirmed, isBookingRescheduled)
+// so BookCall and Book share one source of truth.
 
 function getOncehubPrefill(): { name?: string; email?: string; phone?: string } {
   if (typeof window === 'undefined') return {};
@@ -131,22 +117,48 @@ export function Book() {
 
       // Diagnostic - log every OnceHub postMessage to PostHog so we can
       // refine isOncehubBookingConfirmed if a new event shape appears.
-      let preview = '';
+      // Record the handshake without the raw payload — OnceHub
+      // payloads include attendee email/phone and this event ends
+      // up in PostHog, which is still a log store. Keep only the
+      // non-PII type signal.
+      let eventTypeStr = '';
       try {
-        preview = typeof event.data === 'string' ? event.data.slice(0, 800) : JSON.stringify(event.data).slice(0, 800);
+        if (typeof event.data === 'object' && event.data) {
+          const d = event.data as Record<string, unknown>;
+          eventTypeStr = [d.type, d.eventType, d.eventName, d.event]
+            .filter((v) => typeof v === 'string')
+            .join(' ')
+            .slice(0, 200);
+        } else if (typeof event.data === 'string') {
+          eventTypeStr = event.data.slice(0, 200);
+        }
       } catch { /* no-op */ }
       trackEvent('oncehub_postmessage_received', {
         booking_type: 'closer',
         origin,
-        preview,
+        event_type: eventTypeStr,
       });
 
-      if (!isOncehubBookingConfirmed(event.data)) return;
+      if (isBookingRescheduled(event.data)) {
+        trackEvent('booking_rescheduled', { booking_type: 'closer' });
+        return;
+      }
+      if (!isFreshBookingConfirmed(event.data)) return;
 
+      const bookingId = extractBookingId(event.data);
+      const attendee  = extractAttendee(event.data);
+
+      // Log only the stable id + type; raw payload has PII.
       // eslint-disable-next-line no-console
-      console.log('[OnceHub booking confirmed - closer]', event.data);
+      console.log('[OnceHub booking confirmed - closer]', { booking_id: bookingId });
 
-      trackBookingCompleted('closer', leadScore !== null ? { lead_score: leadScore } : undefined);
+      void emitBookedCallConversion({
+        bookingType: 'closer',
+        bookingId,
+        email: attendee.email,
+        phone: attendee.phone,
+        leadScore,
+      });
 
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = getCleanIdentity(urlParams);
@@ -255,22 +267,40 @@ export function Book() {
         });
       }
 
+      // Merge the OnceHub-authoritative identity into localStorage
+      // so /trainingnew/closer reads it via getPersonalization —
+      // replaces what used to ride in the redirect URL as PII.
+      try {
+        const prev = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const next = {
+          ...prev,
+          _captured_at: new Date().toISOString(),
+          firstname: finalFirst || prev.firstname || '',
+          lastname:  finalLast  || prev.lastname  || '',
+          email:     finalEmail || prev.email     || '',
+          phone:     finalPhone || prev.phone     || '',
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch { /* no-op */ }
+
       syncContactTimezone(finalEmail, 'book_redirect');
       syncContactUtms(finalEmail, 'book_redirect');
 
+      // PII (email, first_name, last_name, phone) is NOT forwarded
+      // in the URL. The confirmation page reads it from
+      // pp_booking_data via getPersonalization. Keeping URLs
+      // PII-free matches the Google Ads tracking brief and avoids
+      // leaking identity in referrer headers / server logs /
+      // analytics URL fields.
       const redirectParams = new URLSearchParams();
-      if (finalEmail)   redirectParams.set('email',     finalEmail);
-      if (finalFirst)   redirectParams.set('first_name', finalFirst);
-      if (finalLast)    redirectParams.set('last_name',  finalLast);
-      if (finalPhone)   redirectParams.set('phone',     finalPhone);
       if (meetingStart) redirectParams.set('start',     meetingStart);
       if (meetingEnd)   redirectParams.set('end',       meetingEnd);
       if (meetingTitle) redirectParams.set('title',     meetingTitle);
       if (ownerName)    redirectParams.set('owner',     ownerName);
       if (joinUrl)      redirectParams.set('join',      joinUrl);
-      // Forward the Typeform score so /trainingnew/closer and any
-      // post-booking logic (coach routing, tiered messaging, PostHog
-      // event correlation) can read it from URL params.
+      // Forward the Typeform score (non-PII) so /trainingnew/closer
+      // and any post-booking logic (coach routing, tiered messaging,
+      // PostHog event correlation) can read it from URL params.
       if (leadScoreRaw) redirectParams.set('leadscore', leadScoreRaw);
 
       const target = redirectParams.toString()
