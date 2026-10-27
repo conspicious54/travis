@@ -14,6 +14,43 @@
 
 import { pushDataLayer, trackEvent } from './posthog';
 
+/* ─── Message authenticity ──────────────────────────────────── */
+
+/** True when `origin` is a real OnceHub origin. Uses URL hostname
+ *  parsing and an exact-or-subdomain match so a hostile origin
+ *  like `https://oncehub.com.evil.com` or
+ *  `https://evilsiteoncehub.com` cannot slip past a naive
+ *  substring check. */
+export function isAllowedOnceHubOrigin(origin: string | undefined | null): boolean {
+  if (!origin) return false;
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== 'https:') return false;
+    const h = url.hostname;
+    return (
+      h === 'oncehub.com' || h.endsWith('.oncehub.com') ||
+      h === 'scheduleonce.com' || h.endsWith('.scheduleonce.com')
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** True when the postMessage event genuinely came from the
+ *  OnceHub iframe this component rendered. Ties message authority
+ *  to the exact window we embedded, not just to any OnceHub
+ *  origin — which would allow a cross-tab OnceHub page to forge
+ *  a booking confirmation into our page. */
+export function isFromOnceHubIframe(
+  event: MessageEvent,
+  container: HTMLElement | null,
+): boolean {
+  if (!container) return false;
+  const iframe = container.querySelector('iframe') as HTMLIFrameElement | null;
+  if (!iframe) return false;
+  return event.source === iframe.contentWindow;
+}
+
 /* ─── Payload-shape detectors ───────────────────────────────── */
 
 /** Pulls the OnceHub event-type string from whichever field holds
@@ -93,10 +130,11 @@ function pickNested(obj: PayloadLike, path: string[]): string {
 
 /** Returns a stable identifier for this booking that we can hand
  *  Google Ads as `transaction_id` for dedup. Prefers OnceHub's own
- *  booking id; falls back to a deterministic hash of start-time +
- *  attendee email so reschedules of the same slot don't look like
- *  new bookings. Returns empty string only when we have nothing. */
-export function extractBookingId(data: unknown): string {
+ *  booking id; falls back to an opaque SHA-256 hash of normalized
+ *  start-time + email so reschedules of the same slot still dedupe
+ *  WITHOUT leaking any raw PII in the id itself. Returns '' only
+ *  when we have nothing at all to key off. */
+export async function extractBookingId(data: unknown): Promise<string> {
   const p = unwrapPayload(data);
   const direct =
     pickString(p, ['booking_id', 'bookingId', 'event_id', 'eventId', 'id', 'appointment_id', 'appointmentId', 'uuid']) ||
@@ -105,8 +143,6 @@ export function extractBookingId(data: unknown): string {
     pickNested(p, ['event', 'id']);
   if (direct) return direct;
 
-  // Fallback — compose a key from start time + email so a reload
-  // without a stable id still dedupes against the first fire.
   const start =
     pickString(p, ['start_time', 'startTime', 'scheduled_at', 'scheduledAt', 'date', 'start']) ||
     pickNested(p, ['booking', 'start_time']) ||
@@ -114,10 +150,14 @@ export function extractBookingId(data: unknown): string {
   const email =
     pickString(p, ['customer_email', 'attendee_email', 'guest_email', 'email']) ||
     pickNested(p, ['customer', 'email']);
-  if (start || email) {
-    return `fallback-${start || ''}-${email || ''}`.slice(0, 200);
-  }
-  return '';
+  if (!start && !email) return '';
+  // Normalise before hashing so case / whitespace variants collapse
+  // to the same id. Output is opaque: `oh-fb-<64 hex chars>`.
+  const normalised = `${start.trim().toLowerCase()}|${email.trim().toLowerCase()}`;
+  const hash = await sha256Hex(normalised);
+  if (!hash) return ''; // SubtleCrypto unavailable — safer to skip
+                       // the conversion than emit a weak id.
+  return `oh-fb-${hash}`;
 }
 
 export function extractAttendee(data: unknown): { email: string; phone: string; firstName: string } {
@@ -135,13 +175,21 @@ export function extractAttendee(data: unknown): { email: string; phone: string; 
   };
 }
 
-/* ─── Dedup (localStorage, per-booking-id) ──────────────────── */
+/* ─── Dedup (localStorage with in-memory fallback) ─────────── */
 
 const DEDUP_KEY_PREFIX = 'pp_bc_fired:';
 const DEDUP_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 
+/** Private-mode / storage-blocked backstop so that even when
+ *  localStorage throws, two postMessages within one page lifetime
+ *  can't both fire the conversion. localStorage remains the
+ *  cross-session memory; this is the within-session guarantee. */
+const inMemoryFired: Set<string> = new Set();
+
 export function hasFiredBookedCallConversion(bookingId: string): boolean {
-  if (!bookingId || typeof window === 'undefined') return false;
+  if (!bookingId) return false;
+  if (inMemoryFired.has(bookingId)) return true;
+  if (typeof window === 'undefined') return false;
   try {
     const raw = localStorage.getItem(DEDUP_KEY_PREFIX + bookingId);
     if (!raw) return false;
@@ -155,10 +203,17 @@ export function hasFiredBookedCallConversion(bookingId: string): boolean {
 }
 
 export function markBookedCallFired(bookingId: string): void {
-  if (!bookingId || typeof window === 'undefined') return;
+  if (!bookingId) return;
+  inMemoryFired.add(bookingId);
+  if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(DEDUP_KEY_PREFIX + bookingId, String(Date.now()));
-  } catch { /* no-op */ }
+  } catch { /* no-op — in-memory set is the backstop */ }
+}
+
+/** Test-only reset. Does not touch localStorage. */
+export function _resetInMemoryFiredForTest(): void {
+  inMemoryFired.clear();
 }
 
 /* ─── SHA-256 helper for Enhanced Conversions ───────────────── */

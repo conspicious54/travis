@@ -10,8 +10,10 @@ import {
   emitBookedCallConversion,
   extractAttendee,
   extractBookingId,
+  isAllowedOnceHubOrigin,
   isBookingRescheduled,
   isFreshBookingConfirmed,
+  isFromOnceHubIframe,
 } from '../lib/booking';
 
 /* ───── /bookacall - embedded OnceHub setter scheduler ─────────────
@@ -105,10 +107,14 @@ export function BookCall() {
     }
 
     const handleMessage = (event: MessageEvent) => {
-      const origin = event.origin || '';
-      if (!origin.includes('oncehub.com') && !origin.includes('scheduleonce.com')) {
-        return;
-      }
+      // Strict origin check — exact or subdomain of
+      // oncehub.com / scheduleonce.com over HTTPS. Rejects
+      // `oncehub.com.evil.com` and the like.
+      if (!isAllowedOnceHubOrigin(event.origin)) return;
+      // Source check — must be the iframe we rendered, not any
+      // OnceHub window that happens to post to us.
+      if (!isFromOnceHubIframe(event, containerRef.current)) return;
+      const origin = event.origin;
 
       // Record the handshake without the raw payload — OnceHub
       // payloads include attendee email/phone and this event lands
@@ -140,24 +146,28 @@ export function BookCall() {
       }
       if (!isFreshBookingConfirmed(event.data)) return;
 
-      const bookingId = extractBookingId(event.data);
-      const attendee  = extractAttendee(event.data);
+      // Resolve the opaque booking id, hash the attendee contact,
+      // and push the conversion. All async because the fallback
+      // id and Enhanced Conversions hashes both go through
+      // SubtleCrypto. Fire-and-forget — we don't need to await
+      // in the handler.
+      void (async () => {
+        const bookingId = await extractBookingId(event.data);
+        const attendee  = extractAttendee(event.data);
+        if (!bookingId) return;
 
-      // Log only the stable id + type. The raw payload holds
-      // PII (email, phone) so it never goes to the console.
-      // eslint-disable-next-line no-console
-      console.log('[OnceHub booking confirmed - setter]', { booking_id: bookingId });
+        // Log only the opaque id. Raw payload is PII; never logged.
+        // eslint-disable-next-line no-console
+        console.log('[OnceHub booking confirmed - setter]', { booking_id: bookingId });
 
-      // Enhanced-Conversions-friendly dataLayer push + PostHog
-      // event, idempotent per booking_id so refresh / revisit /
-      // double postMessage can't double-count.
-      void emitBookedCallConversion({
-        bookingType: 'setter',
-        bookingId,
-        email: attendee.email,
-        phone: attendee.phone,
-        leadScore,
-      });
+        await emitBookedCallConversion({
+          bookingType: 'setter',
+          bookingId,
+          email: attendee.email,
+          phone: attendee.phone,
+          leadScore,
+        });
+      })();
 
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = getCleanIdentity(urlParams);

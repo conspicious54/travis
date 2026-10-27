@@ -10,8 +10,10 @@ import {
   emitBookedCallConversion,
   extractAttendee,
   extractBookingId,
+  isAllowedOnceHubOrigin,
   isBookingRescheduled,
   isFreshBookingConfirmed,
+  isFromOnceHubIframe,
 } from '../lib/booking';
 
 /* ───── /book - embedded OnceHub closer scheduler ─────────────────
@@ -110,10 +112,12 @@ export function Book() {
     }
 
     const handleMessage = (event: MessageEvent) => {
-      const origin = event.origin || '';
-      if (!origin.includes('oncehub.com') && !origin.includes('scheduleonce.com')) {
-        return;
-      }
+      // Strict origin + source checks. Exact or subdomain of
+      // oncehub.com / scheduleonce.com over HTTPS, AND the message
+      // must come from the exact iframe we embedded.
+      if (!isAllowedOnceHubOrigin(event.origin)) return;
+      if (!isFromOnceHubIframe(event, containerRef.current)) return;
+      const origin = event.origin;
 
       // Diagnostic - log every OnceHub postMessage to PostHog so we can
       // refine isOncehubBookingConfirmed if a new event shape appears.
@@ -145,20 +149,25 @@ export function Book() {
       }
       if (!isFreshBookingConfirmed(event.data)) return;
 
-      const bookingId = extractBookingId(event.data);
-      const attendee  = extractAttendee(event.data);
+      // Async: fallback booking id and Enhanced Conversions hashes
+      // both route through SubtleCrypto.
+      void (async () => {
+        const bookingId = await extractBookingId(event.data);
+        const attendee  = extractAttendee(event.data);
+        if (!bookingId) return;
 
-      // Log only the stable id + type; raw payload has PII.
-      // eslint-disable-next-line no-console
-      console.log('[OnceHub booking confirmed - closer]', { booking_id: bookingId });
+        // Log only the opaque id. Raw payload is PII; never logged.
+        // eslint-disable-next-line no-console
+        console.log('[OnceHub booking confirmed - closer]', { booking_id: bookingId });
 
-      void emitBookedCallConversion({
-        bookingType: 'closer',
-        bookingId,
-        email: attendee.email,
-        phone: attendee.phone,
-        leadScore,
-      });
+        await emitBookedCallConversion({
+          bookingType: 'closer',
+          bookingId,
+          email: attendee.email,
+          phone: attendee.phone,
+          leadScore,
+        });
+      })();
 
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = getCleanIdentity(urlParams);
