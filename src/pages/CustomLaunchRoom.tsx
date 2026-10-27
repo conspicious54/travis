@@ -13,12 +13,20 @@ import {
   scoreLaunchReadiness,
   computeLaunchDate,
   formatLaunchDate,
-  blockKey,
   type LaunchRoomRecord,
   type LaunchRoomChecklist,
 } from '../lib/launchroom';
-import { SECTIONS, resolveBlock } from '../lib/launchroom.content';
 import { trackEvent } from '../lib/posthog';
+import {
+  ProductIdeaBlock,
+  WhyYouBuilt,
+  WhereYouStart,
+  WhoGuides,
+  FundingPath,
+  TimelineMap,
+  SellingFromWhere,
+  GapFiller,
+} from '../components/launchroom/sections';
 
 /* ───── /customlaunchroom/:id — the personalized Launch Room ─────
    Day-one feel: name header, projected launch date countdown,
@@ -275,10 +283,16 @@ export function CustomLaunchRoom() {
               {formatLaunchDate(launchDate)}
             </p>
             <p className="mt-2 text-slate-300">
-              If you start this week — {daysToLaunch} days away. Every week you wait pushes this back.
+              If you start this week, {daysToLaunch} days away. Every week you wait pushes this back.
             </p>
           </div>
         </section>
+
+        {/* Interactive product-idea block, placed at the top of
+            the content area per the brief. Only the no_idea
+            variant uses the brainstormer; other q9 values render
+            a specialized interactive module. */}
+        <ProductIdeaBlock record={record} />
 
         {/* Readiness Score */}
         <section className="mt-10">
@@ -307,7 +321,7 @@ export function CustomLaunchRoom() {
             </div>
 
             <div className="mt-6 rounded-xl bg-orange-50 border border-orange-200 p-4 md:p-5">
-              <p className="text-sm font-black uppercase tracking-wider text-orange-700 mb-2">Your 3 gaps — your strategist covers these on your call</p>
+              <p className="text-sm font-black uppercase tracking-wider text-orange-700 mb-2">Your 3 gaps, your strategist covers these on your call</p>
               <ul className="space-y-2">
                 {score.gaps.map((g) => (
                   <li key={g} className="flex items-start gap-2 text-sm text-slate-800">
@@ -320,30 +334,16 @@ export function CustomLaunchRoom() {
           </div>
         </section>
 
-        {/* Personalized sections — one block per section, placeholder */}
-        <section className="mt-10 space-y-5">
-          {SECTIONS.map((s) => {
-            const answer = record.answers[s.id as keyof typeof record.answers] as string | undefined;
-            const block = resolveBlock(blockKey(s.id, answer));
-            return (
-              <article key={s.id} className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6 md:p-7">
-                <p className="text-[11px] font-black uppercase tracking-wider text-orange-600">{s.label}</p>
-                <h3 className="mt-1 text-lg md:text-xl font-black text-slate-900">{block.heading}</h3>
-                <p className="mt-3 text-slate-700 leading-relaxed whitespace-pre-line">{block.body}</p>
-                {/* Video slot — fills in when Travis records */}
-                {block.videoUrl ? (
-                  <div className="mt-4 aspect-video rounded-lg bg-slate-100 border border-slate-200 overflow-hidden">
-                    <iframe src={block.videoUrl} className="w-full h-full" allow="autoplay; fullscreen" />
-                  </div>
-                ) : (
-                  <div className="mt-4 aspect-video rounded-lg bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center text-slate-400 text-sm">
-                    Travis video placeholder
-                  </div>
-                )}
-              </article>
-            );
-          })}
-        </section>
+        {/* Personalized section modules. Real diagrams, student
+            stories, timelines, and gap-matched support instead
+            of generic copy + video placeholders. */}
+        <WhyYouBuilt record={record} />
+        <WhereYouStart record={record} />
+        <WhoGuides record={record} />
+        <FundingPath record={record} />
+        <TimelineMap record={record} />
+        <SellingFromWhere record={record} />
+        <GapFiller record={record} score={score} />
 
         {/* First 3 moves */}
         <section className="mt-10">
@@ -389,21 +389,21 @@ export function CustomLaunchRoom() {
           </div>
         </section>
 
-        {/* Locked steps 4–8 */}
+        {/* Locked steps 4-8 */}
         <section className="mt-10">
           <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6 md:p-8">
-            <h2 className="text-xl md:text-2xl font-black">Steps 4 to 8 — Built live on your call</h2>
+            <h2 className="text-xl md:text-2xl font-black">Steps 4 to 8. Built live on your call.</h2>
             <p className="mt-2 text-slate-600">
               Your manufacturer shortlist, your launch budget, your 9-month roadmap. Your strategist walks these with you so the plan fits your actual situation, not a template.
             </p>
 
             <ul className="mt-6 grid gap-3 md:grid-cols-2">
               {[
-                '4 — Your supplier shortlist (3 real options)',
-                '5 — Your launch budget by month',
-                '6 — Your pre-launch keyword map',
-                '7 — Your 9-month roadmap',
-                '8 — Your first paid campaign',
+                '4. Your supplier shortlist (3 real options)',
+                '5. Your launch budget by month',
+                '6. Your pre-launch keyword map',
+                '7. Your 9-month roadmap',
+                '8. Your first paid campaign',
               ].map((label) => (
                 <li
                   key={label}

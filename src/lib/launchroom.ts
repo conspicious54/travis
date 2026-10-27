@@ -176,13 +176,3 @@ export function deriveTier(
   return 'starter';
 }
 
-/* ───── Content block keying ───────────────────────────── */
-
-/** Returns the content block key for a given section + answers.
- *  Each section tries `qN_<answer>` first, falls back to
- *  `qN_default`. The content map (launchroom.content.ts) owns
- *  the actual copy. */
-export function blockKey(section: `q${number}`, answer: string | undefined): string {
-  if (!answer) return `${section}_default`;
-  return `${section}_${answer}`;
-}
