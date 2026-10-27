@@ -22,7 +22,7 @@ const EUROPE_COUNTRIES = [
   "CH","UA","GB","VA"
 ];
 
-const ALLOWED_COUNTRIES = ["US","CA","AU","NZ", ...EUROPE_COUNTRIES];
+const ALLOWED_COUNTRIES = ["US","CA","AU","NZ","AE","IL","QA","JP", ...EUROPE_COUNTRIES];
 
 /* ─────────────── tracking pixel + redirect helpers ───────────────── */
 
