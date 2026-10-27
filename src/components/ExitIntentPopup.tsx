@@ -19,6 +19,7 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
   const isNextStepPage = location.pathname === '/nextstep';
   const isApplyNowPage = location.pathname === '/applynow';
   const isGetStartedPage = location.pathname === '/getstarted';
+  const isNewFormPage = location.pathname === '/' || location.pathname === '/newform';
 
   /* Personalization name - URL-first with localStorage fallback
      so the popup uses the visitor's name even when URL params got
@@ -260,6 +261,73 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
             className="w-full mt-3 text-sm text-gray-400 hover:text-gray-600 transition-colors"
           >
             No thanks, I'll start over later
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // / and /newform exit popup. Nudge back to the opt-in form with an
+  // action-taker framing. GIF is swappable: any media.tenor.com or
+  // media.giphy.com GIF URL works. UTM-specific copy can be layered
+  // on later by reading the merged attribution and branching here.
+  if (isNewFormPage) {
+    const handleBackToForm = () => {
+      setShowExitPopup(false);
+      const target = document.getElementById('newform-opt-in');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div
+          className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+          onClick={() => setShowExitPopup(false)}
+        />
+
+        <div className="relative bg-white border border-gray-200 rounded-2xl p-6 md:p-8 max-w-lg w-full shadow-[0_0_60px_rgba(249,115,22,0.25)] animate-popup">
+          <button
+            onClick={() => setShowExitPopup(false)}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close"
+          >
+            <X size={22} />
+          </button>
+
+          <div className="mb-5">
+            <img
+              src="https://media.tenor.com/NMvVsicSz_cAAAAM/onenolesfan3-snap.gif"
+              alt=""
+              className="w-full max-w-[260px] mx-auto rounded-xl shadow-md"
+            />
+          </div>
+
+          <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-3 tracking-tight text-center">
+            {firstname ? <>Hold up, {firstname}. </> : <>Hold up. </>}
+            <span className="text-orange-600">Action takers win.</span>
+          </h2>
+
+          <p className="text-gray-600 text-base md:text-lg leading-snug mb-7 text-center">
+            Waiting is the thing that keeps most people from ever launching.
+            The best time to move forward is now, while it is right in front of you.
+          </p>
+
+          <button
+            onClick={handleBackToForm}
+            className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-lg font-black tracking-tight py-4 px-6 rounded-xl shadow-lg shadow-orange-500/30 transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+          >
+            Okay, I&apos;m in. Take me back &rarr;
+          </button>
+
+          <button
+            onClick={() => setShowExitPopup(false)}
+            className="w-full mt-3 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            No thanks
           </button>
         </div>
       </div>

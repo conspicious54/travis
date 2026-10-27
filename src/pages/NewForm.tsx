@@ -9,6 +9,7 @@ import { retryFetch } from '../lib/retryFetch';
 import { loadCampaignVariant } from '../lib/campaignVariant';
 import { findLeadMagnet } from '../config/leadMagnets';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { ExitIntentPopup } from '../components/ExitIntentPopup';
 
 /* ───── /newform - webinar opt-in form ────────────────────────────
    1:1 rebuild of the existing ClickFunnels opt-in page (headlines,
@@ -488,7 +489,7 @@ export function NewForm() {
         </div>
 
         {/* Form card */}
-        <div className="relative">
+        <div id="newform-opt-in" className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
             <form
@@ -774,6 +775,7 @@ export function NewForm() {
       </footer>
 
       <LegalDisclaimer />
+      <ExitIntentPopup theme="light" />
     </div>
   );
 }
