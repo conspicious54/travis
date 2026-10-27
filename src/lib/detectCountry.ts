@@ -29,6 +29,10 @@ const TARGET_COUNTRIES = new Set([
   'AU', // Australia
   'NZ', // New Zealand
   'IE', // Ireland
+  'AE', // United Arab Emirates
+  'IL', // Israel
+  'QA', // Qatar
+  'JP', // Japan
 ]);
 
 export function classifyAudience(countryCode: string): Audience {
