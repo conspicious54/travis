@@ -48,7 +48,8 @@ export function isFromOnceHubIframe(
   if (!container) return false;
   const iframe = container.querySelector('iframe') as HTMLIFrameElement | null;
   if (!iframe) return false;
-  return event.source === iframe.contentWindow;
+  const source = iframe.contentWindow;
+  return source !== null && event.source === source;
 }
 
 /* ─── Payload-shape detectors ───────────────────────────────── */
@@ -77,24 +78,36 @@ function readTypeString(data: unknown): string {
  *  should count as a conversion. Explicitly excludes reschedules
  *  (which fire a "scheduled" variant but should not emit a second
  *  Google Ads conversion). */
-export function isFreshBookingConfirmed(data: unknown): boolean {
-  const t = readTypeString(data);
-  if (!t.includes('booking')) return false;
-  // Reschedule / cancel are NOT fresh bookings.
-  if (t.includes('reschedul')) return false;
-  if (t.includes('cancel')) return false;
-  return (
-    t.includes('confirmed') ||
-    t.includes('succeeded') ||
-    t.includes('success') ||
-    t.includes('complete') ||
-    t.includes('scheduled')
-  );
-}
+const CONFIRMED_EVENTS = new Set([
+  'oncehub.booking.scheduled',
+  'oncehub.booking_calendar.booking.scheduled',
+  'booking.scheduled',
+  'booking.confirmed',
+  'booking_success',
+]);
 
 export function isBookingRescheduled(data: unknown): boolean {
   const t = readTypeString(data);
-  return t.includes('booking') && t.includes('reschedul');
+  const p = unwrapPayload(data);
+  const status = pickString(p, ['status']).toLowerCase();
+  return (t.includes('booking') && t.includes('reschedul')) ||
+    status.includes('reschedul') ||
+    !!pickString(p, ['rescheduled_booking_id', 'rescheduled_from']);
+}
+
+export function isFreshBookingConfirmed(data: unknown): boolean {
+  if (isBookingRescheduled(data)) return false;
+  const types = readTypeString(data).trim().split(/\s+/);
+  if (!types.some((t) => CONFIRMED_EVENTS.has(t))) return false;
+  if (types.some((t) => /cancel|reschedul|failed|unscheduled/.test(t))) return false;
+  const status = pickString(unwrapPayload(data), ['status']).toLowerCase();
+  return !status || ['scheduled', 'confirmed', 'success', 'succeeded'].includes(status);
+}
+
+/** A payload that supplies its calendar must match the embedded one. */
+export function isBookingForCalendar(data: unknown, calendarId: string): boolean {
+  const calendar = pickString(unwrapPayload(data), ['booking_calendar', 'booking_calendar_id']);
+  return !calendar || calendar === calendarId;
 }
 
 /* ─── Booking ID extraction ─────────────────────────────────── */
@@ -128,51 +141,59 @@ function pickNested(obj: PayloadLike, path: string[]): string {
   return typeof cur === 'string' && cur.trim() ? cur.trim() : '';
 }
 
-/** Returns a stable identifier for this booking that we can hand
- *  Google Ads as `transaction_id` for dedup. Prefers OnceHub's own
- *  booking id; falls back to an opaque SHA-256 hash of normalized
- *  start-time + email so reschedules of the same slot still dedupe
- *  WITHOUT leaking any raw PII in the id itself. Returns '' only
- *  when we have nothing at all to key off. */
-export async function extractBookingId(data: unknown): Promise<string> {
-  const p = unwrapPayload(data);
-  const direct =
-    pickString(p, ['booking_id', 'bookingId', 'event_id', 'eventId', 'id', 'appointment_id', 'appointmentId', 'uuid']) ||
-    pickNested(p, ['booking', 'id']) ||
-    pickNested(p, ['appointment', 'id']) ||
-    pickNested(p, ['event', 'id']);
-  if (direct) return direct;
-
-  const start =
-    pickString(p, ['start_time', 'startTime', 'scheduled_at', 'scheduledAt', 'date', 'start']) ||
-    pickNested(p, ['booking', 'start_time']) ||
-    pickNested(p, ['appointment', 'start_time']);
-  const email =
-    pickString(p, ['customer_email', 'attendee_email', 'guest_email', 'email']) ||
-    pickNested(p, ['customer', 'email']);
-  if (!start && !email) return '';
-  // Normalise before hashing so case / whitespace variants collapse
-  // to the same id. Output is opaque: `oh-fb-<64 hex chars>`.
-  const normalised = `${start.trim().toLowerCase()}|${email.trim().toLowerCase()}`;
-  const hash = await sha256Hex(normalised);
-  if (!hash) return ''; // SubtleCrypto unavailable — safer to skip
-                       // the conversion than emit a weak id.
-  return `oh-fb-${hash}`;
+/** Read explicitly named guest fields; attendees can contain hosts. */
+function customField(p: PayloadLike, names: string[]): string {
+  if (!Array.isArray(p?.custom_fields)) return '';
+  for (const name of names) {
+    for (const field of p.custom_fields) {
+      if (!field || typeof field !== 'object') continue;
+      const key = typeof field.name === 'string'
+        ? field.name.trim().toLowerCase().replace(/[\s-]+/g, '_') : '';
+      if (key === name && typeof field.value === 'string' && field.value.trim()) {
+        return field.value.trim();
+      }
+    }
+  }
+  return '';
 }
 
-export function extractAttendee(data: unknown): { email: string; phone: string; firstName: string } {
+export function extractAttendee(data: unknown): {
+  email: string; phone: string; firstName: string; lastName: string;
+} {
   const p = unwrapPayload(data);
+  const fullName = pickString(p, ['customer_name', 'attendee_name']) ||
+    pickNested(p, ['customer', 'name']) || customField(p, ['name', 'full_name']);
+  const parts = fullName.split(/\s+/).filter(Boolean);
   return {
-    email:
-      pickString(p, ['customer_email', 'attendee_email', 'guest_email', 'email']) ||
-      pickNested(p, ['customer', 'email']) || '',
-    phone:
-      pickString(p, ['customer_phone', 'attendee_phone', 'phone']) ||
-      pickNested(p, ['customer', 'phone']) || '',
-    firstName:
-      pickString(p, ['customer_first_name', 'attendee_first_name', 'first_name']) ||
-      pickNested(p, ['customer', 'first_name']) || '',
+    email: pickString(p, ['customer_email', 'attendee_email', 'guest_email', 'email']) ||
+      pickNested(p, ['customer', 'email']) || customField(p, ['email', 'email_address']),
+    phone: pickString(p, ['customer_phone', 'attendee_phone', 'phone']) ||
+      pickNested(p, ['customer', 'phone']) ||
+      customField(p, ['phone', 'phone_number', 'mobile_phone', 'mobile_phone_number', 'mobile']),
+    firstName: pickString(p, ['customer_first_name', 'attendee_first_name', 'first_name']) ||
+      pickNested(p, ['customer', 'first_name']) || customField(p, ['first_name', 'firstname']) || parts[0] || '',
+    lastName: pickString(p, ['customer_last_name', 'attendee_last_name', 'last_name']) ||
+      pickNested(p, ['customer', 'last_name']) || customField(p, ['last_name', 'lastname']) || parts.slice(1).join(' '),
   };
+}
+
+/** Prefer an appointment ID. A generic calendar/event ID is not a booking ID.
+ * Fallback requires calendar, start and guest so unrelated bookings cannot collapse. */
+export async function extractBookingId(data: unknown): Promise<string> {
+  const p = unwrapPayload(data);
+  const direct = pickString(p, ['booking_id', 'bookingId', 'appointment_id', 'appointmentId']) ||
+    pickNested(p, ['booking', 'id']) || pickNested(p, ['appointment', 'id']);
+  if (direct) return direct;
+  const genericId = pickString(p, ['id']);
+  if (/^BKNG-/i.test(genericId)) return genericId;
+  const start = pickString(p, ['starting_time', 'start_time', 'startTime', 'scheduled_at', 'scheduledAt', 'start']) ||
+    pickNested(p, ['booking', 'starting_time']) || pickNested(p, ['booking', 'start_time']);
+  const calendar = pickString(p, ['booking_calendar', 'booking_calendar_id']);
+  const email = normaliseEmailForHash(extractAttendee(data).email);
+  const timestamp = Date.parse(start);
+  if (!calendar || !email || !Number.isFinite(timestamp)) return '';
+  const hash = await sha256Hex(`${calendar}|${new Date(timestamp).toISOString()}|${email}`);
+  return hash ? `oh-fb-${hash}` : '';
 }
 
 /* ─── Dedup (localStorage with in-memory fallback) ─────────── */
@@ -233,17 +254,21 @@ async function sha256Hex(input: string): Promise<string> {
   }
 }
 
-/** Normalises a phone to E.164-ish before hashing: strips every
- *  non-digit except a leading plus. Google's Enhanced Conversions
- *  spec expects E.164. Imperfect without a real libphonenumber,
- *  but better than hashing a free-form string. */
-function normalisePhoneForHash(raw: string): string {
-  if (!raw) return '';
+/** Google matching normalization. Preserve the guest's CRM email separately. */
+export function normaliseEmailForHash(raw: string): string {
+  const email = raw.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return '';
+  const [local, domain] = email.split('@');
+  return `${['gmail.com', 'googlemail.com'].includes(domain) ? local.replace(/\./g, '') : local}@${domain}`;
+}
+
+/** Only send an international number when a country code is actually supplied.
+ * Do not guess a country for national-format numbers; email can match alone. */
+export function normalisePhoneForHash(raw: string): string {
   const trimmed = raw.trim();
-  const plus = trimmed.startsWith('+');
-  const digits = trimmed.replace(/[^0-9]/g, '');
-  if (!digits) return '';
-  return plus ? '+' + digits : digits;
+  if (!/^\+[0-9\s().-]+$/.test(trimmed)) return '';
+  const number = '+' + trimmed.replace(/[^0-9]/g, '');
+  return /^\+[1-9][0-9]{7,14}$/.test(number) ? number : '';
 }
 
 /* ─── The one unified conversion emitter ────────────────────── */
@@ -270,12 +295,12 @@ export async function emitBookedCallConversion(args: EmitBookedCallArgs): Promis
   if (hasFiredBookedCallConversion(args.bookingId)) return false;
 
   const [sha256EmailAddress, sha256PhoneNumber] = await Promise.all([
-    sha256Hex(args.email || ''),
+    sha256Hex(normaliseEmailForHash(args.email || '')),
     sha256Hex(normalisePhoneForHash(args.phone || '')),
   ]);
 
-  // Mark BEFORE push so a racing second postMessage (same booking
-  // id, same tab lifetime) can't slip through.
+  // Recheck after async hashing. No await may separate this check and mark.
+  if (hasFiredBookedCallConversion(args.bookingId)) return false;
   markBookedCallFired(args.bookingId);
 
   // Google Ads Enhanced Conversions user data. The GTM operator
@@ -288,7 +313,15 @@ export async function emitBookedCallConversion(args: EmitBookedCallArgs): Promis
   if (sha256EmailAddress) enhanced_conversion_data.sha256_email_address = sha256EmailAddress;
   if (sha256PhoneNumber)  enhanced_conversion_data.sha256_phone_number  = sha256PhoneNumber;
 
+  let finishTags: () => void = () => {};
+  const tagsFinished = new Promise<void>((resolve) => { finishTags = resolve; });
+  // GTM's callback reports tag completion, not Google server receipt.
+  // A local timeout also protects navigation when GTM is blocked entirely.
+  const timeout = setTimeout(finishTags, 1500);
   pushDataLayer('booked_call', {
+    eventCallback: finishTags,
+    eventTimeout: 1400,
+    _clear: true,
     booking_id: args.bookingId,
     booking_type: args.bookingType,
     // Non-PII extras — safe to log, used by GTM for filtering.
@@ -299,11 +332,19 @@ export async function emitBookedCallConversion(args: EmitBookedCallArgs): Promis
 
   // PostHog event — unchanged shape so existing insights continue
   // to work; booking_id is the only addition and is non-breaking.
-  trackEvent('booking_completed', {
-    booking_type: args.bookingType,
-    booking_id: args.bookingId,
-    lead_score: args.leadScore ?? undefined,
-  });
+  // Analytics failures must never interrupt advertising delivery or navigation.
+  try {
+    trackEvent('booking_completed', {
+      booking_type: args.bookingType,
+      booking_id: args.bookingId,
+      lead_score: args.leadScore ?? undefined,
+    });
+    if (!sha256EmailAddress && !sha256PhoneNumber) {
+      trackEvent('booking_matching_data_missing', { booking_type: args.bookingType, booking_id: args.bookingId });
+    }
+  } catch { /* booking tag is independent of PostHog */ }
 
+  await tagsFinished;
+  clearTimeout(timeout);
   return true;
 }

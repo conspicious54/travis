@@ -12,6 +12,7 @@ import {
   extractBookingId,
   isAllowedOnceHubOrigin,
   isBookingRescheduled,
+  isBookingForCalendar,
   isFreshBookingConfirmed,
   isFromOnceHubIframe,
 } from '../lib/booking';
@@ -111,6 +112,7 @@ export function Book() {
       setPersonProperties({ typeform_score: leadScore });
     }
 
+    let bookingHandled = false;
     const handleMessage = (event: MessageEvent) => {
       // Strict origin + source checks. Exact or subdomain of
       // oncehub.com / scheduleonce.com over HTTPS, AND the message
@@ -148,18 +150,17 @@ export function Book() {
         return;
       }
       if (!isFreshBookingConfirmed(event.data)) return;
+      if (!isBookingForCalendar(event.data, ONCEHUB_CALENDAR_ID)) return;
+      if (bookingHandled) return;
+      bookingHandled = true;
 
-      // Async: fallback booking id and Enhanced Conversions hashes
-      // both route through SubtleCrypto.
-      void (async () => {
+      const attendee = extractAttendee(event.data);
+      const conversionReady = (async () => {
         const bookingId = await extractBookingId(event.data);
-        const attendee  = extractAttendee(event.data);
-        if (!bookingId) return;
-
-        // Log only the opaque id. Raw payload is PII; never logged.
-        // eslint-disable-next-line no-console
-        console.log('[OnceHub booking confirmed - closer]', { booking_id: bookingId });
-
+        if (!bookingId) {
+          trackEvent('booking_tracking_incomplete', { reason: 'missing_booking_id' });
+          return;
+        }
         await emitBookedCallConversion({
           bookingType: 'closer',
           bookingId,
@@ -167,7 +168,9 @@ export function Book() {
           phone: attendee.phone,
           leadScore,
         });
-      })();
+      })().catch(() => {
+        trackEvent('booking_tracking_incomplete', { reason: 'conversion_error' });
+      });
 
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = getCleanIdentity(urlParams);
@@ -248,23 +251,12 @@ export function Book() {
       // the booking form. The OnceHub email is what created the HubSpot
       // contact + deal, so it's what /trainingnew/closer needs to find
       // the right record.
-      const payloadEmail = pickStr('customer_email', 'attendee_email', 'guest_email') || pickNested(['customer', 'email']);
-      const payloadFirst = pickStr('customer_first_name', 'attendee_first_name') || pickNested(['customer', 'first_name']);
-      const payloadLast  = pickStr('customer_last_name', 'attendee_last_name')   || pickNested(['customer', 'last_name']);
-      const payloadName  = pickStr('customer_name', 'attendee_name')              || pickNested(['customer', 'name']);
-      const payloadPhone = pickStr('customer_phone', 'attendee_phone', 'phone')   || pickNested(['customer', 'phone']);
-
-      let splitFirst = '';
-      let splitLast  = '';
-      if (payloadName && !payloadFirst && !payloadLast) {
-        const parts = payloadName.split(/\s+/).filter(Boolean);
-        splitFirst = parts[0] || '';
-        if (parts.length > 1) splitLast = parts.slice(1).join(' ');
-      }
-      const finalEmail = payloadEmail || bookingEmail;
-      const finalFirst = payloadFirst || splitFirst || firstname;
-      const finalLast  = payloadLast  || splitLast  || lastname;
-      const finalPhone = payloadPhone || bookingPhone;
+      const identityChanged = !!attendee.email &&
+        attendee.email.toLowerCase() !== bookingEmail.toLowerCase();
+      const finalEmail = attendee.email || bookingEmail;
+      const finalFirst = attendee.firstName || (identityChanged ? '' : firstname);
+      const finalLast = attendee.lastName || (identityChanged ? '' : lastname);
+      const finalPhone = attendee.phone || (identityChanged ? '' : bookingPhone);
 
       // Identify with the OnceHub-confirmed email so trackBookingCompleted
       // and downstream events are attributed to the right Person.
@@ -284,10 +276,10 @@ export function Book() {
         const next = {
           ...prev,
           _captured_at: new Date().toISOString(),
-          firstname: finalFirst || prev.firstname || '',
-          lastname:  finalLast  || prev.lastname  || '',
+          firstname: finalFirst || '',
+          lastname:  finalLast || '',
           email:     finalEmail || prev.email     || '',
-          phone:     finalPhone || prev.phone     || '',
+          phone:     finalPhone || '',
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       } catch { /* no-op */ }
@@ -316,9 +308,11 @@ export function Book() {
         ? `${REDIRECT_TO}?${redirectParams.toString()}`
         : REDIRECT_TO;
 
-      setTimeout(() => {
-        window.location.href = target;
-      }, 800);
+      // Allow the booking tag to finish, without indefinitely delaying confirmation.
+      void Promise.race([
+        conversionReady,
+        new Promise<void>((resolve) => setTimeout(resolve, 2500)),
+      ]).then(() => { window.location.href = target; });
     };
 
     window.addEventListener('message', handleMessage);

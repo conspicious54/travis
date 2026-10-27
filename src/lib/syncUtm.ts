@@ -8,9 +8,8 @@
    2. Ad-platform click IDs:
         gclid  → hs_google_click_id   (Google Ads — required for
                                        GCLID-based offline conv)
-        gbraid → also folded into hs_google_click_id (Google's iOS
-                 in-app click id; HubSpot only has one Google slot)
-        wbraid → ditto (Google's iOS web-from-app click id)
+        gbraid / wbraid remain separate identifiers in the
+                 attribution envelope and form/webhook payloads
         fbclid → hs_facebook_click_id (Meta — ready for when the
                                        Meta Pixel + offline conv
                                        integration goes live)
@@ -38,8 +37,7 @@ const UTM_FIELDS = [
 /* Browser-side click-ID param names. Each ad platform uses a
    different query-string key. We read all of them from the URL and
    send to the server, which maps to the matching HubSpot
-   hs_*_click_id property. gbraid and wbraid both end up under
-   hs_google_click_id since HubSpot only exposes one Google slot. */
+   hs_*_click_id property where supported. Braid IDs are not GCLIDs. */
 const CLICK_ID_FIELDS = [
   'gclid',
   'gbraid',
@@ -184,6 +182,7 @@ export function readPersistedClickIds(): ClickIdData {
 }
 
 let lastSyncedKey = '';
+const inFlightSyncs = new Set<string>();
 
 /**
  * Fire-and-forget POST to /.netlify/functions/save-contact-utm.
@@ -216,56 +215,32 @@ export function syncContactUtms(
   }
 
   const key = `${email.trim().toLowerCase()}|${JSON.stringify(attribution)}`;
-  if (key === lastSyncedKey) {
+  if (key === lastSyncedKey || inFlightSyncs.has(key)) {
     trackEvent('contact_utm_sync_skipped', { source, reason: 'duplicate_in_session' });
     return;
   }
-  lastSyncedKey = key;
+  inFlightSyncs.add(key);
 
+  // keepalive survives navigation; only a confirmed server response counts
+  // as success. A queued sendBeacon cannot tell us whether HubSpot saved it.
   const payload = JSON.stringify({ email, source, ...attribution });
-  const url = '/.netlify/functions/save-contact-utm';
-
-  // sendBeacon survives the post-booking redirect
-  let queued = false;
-  if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-    try {
-      const blob = new Blob([payload], { type: 'application/json' });
-      queued = navigator.sendBeacon(url, blob);
-    } catch {
-      /* fall through */
-    }
-  }
-
-  if (!queued) {
-    fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: payload,
-      keepalive: true,
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          trackEvent('contact_utm_sync_failed', { source, status: res.status });
-          return;
-        }
-        const data = await res.json().catch(() => ({}));
-        if (data?.ok) {
-          trackEvent('contact_utm_synced', {
-            source,
-            written: Object.keys(data.written || {}),
-          });
-        } else {
-          trackEvent('contact_utm_sync_failed', { source, reason: data?.reason });
-        }
-      })
-      .catch(() => {
-        trackEvent('contact_utm_sync_failed', { source, reason: 'network_error' });
+  void fetch('/.netlify/functions/save-contact-utm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: payload,
+    keepalive: true,
+  }).then(async (res) => {
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data?.ok) {
+      lastSyncedKey = key;
+      trackEvent('contact_utm_synced', {
+        source,
+        written: Object.keys(data.written || {}),
       });
-  } else {
-    trackEvent('contact_utm_synced', {
-      source,
-      via: 'beacon',
-      utm_fields: Object.keys(attribution),
-    });
-  }
+    } else {
+      trackEvent('contact_utm_sync_failed', { source, status: res.status, reason: data?.reason });
+    }
+  }).catch(() => {
+    trackEvent('contact_utm_sync_failed', { source, reason: 'network_error' });
+  }).finally(() => { inFlightSyncs.delete(key); });
 }

@@ -12,6 +12,7 @@ import {
   extractBookingId,
   isAllowedOnceHubOrigin,
   isBookingRescheduled,
+  isBookingForCalendar,
   isFreshBookingConfirmed,
   isFromOnceHubIframe,
 } from '../lib/booking';
@@ -106,6 +107,7 @@ export function BookCall() {
       setPersonProperties({ typeform_score: leadScore });
     }
 
+    let bookingHandled = false;
     const handleMessage = (event: MessageEvent) => {
       // Strict origin check — exact or subdomain of
       // oncehub.com / scheduleonce.com over HTTPS. Rejects
@@ -145,21 +147,17 @@ export function BookCall() {
         return;
       }
       if (!isFreshBookingConfirmed(event.data)) return;
+      if (!isBookingForCalendar(event.data, ONCEHUB_CALENDAR_ID)) return;
+      if (bookingHandled) return;
+      bookingHandled = true;
 
-      // Resolve the opaque booking id, hash the attendee contact,
-      // and push the conversion. All async because the fallback
-      // id and Enhanced Conversions hashes both go through
-      // SubtleCrypto. Fire-and-forget — we don't need to await
-      // in the handler.
-      void (async () => {
+      const attendee = extractAttendee(event.data);
+      const conversionReady = (async () => {
         const bookingId = await extractBookingId(event.data);
-        const attendee  = extractAttendee(event.data);
-        if (!bookingId) return;
-
-        // Log only the opaque id. Raw payload is PII; never logged.
-        // eslint-disable-next-line no-console
-        console.log('[OnceHub booking confirmed - setter]', { booking_id: bookingId });
-
+        if (!bookingId) {
+          trackEvent('booking_tracking_incomplete', { reason: 'missing_booking_id' });
+          return;
+        }
         await emitBookedCallConversion({
           bookingType: 'setter',
           bookingId,
@@ -167,7 +165,9 @@ export function BookCall() {
           phone: attendee.phone,
           leadScore,
         });
-      })();
+      })().catch(() => {
+        trackEvent('booking_tracking_incomplete', { reason: 'conversion_error' });
+      });
 
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = getCleanIdentity(urlParams);
@@ -211,10 +211,9 @@ export function BookCall() {
         }
         return typeof cur === 'string' && cur.trim() ? cur.trim() : '';
       };
-      const payloadEmail = pickStr('customer_email', 'attendee_email', 'guest_email') || pickNested(['customer', 'email']);
-      const payloadFirst = pickStr('customer_first_name', 'attendee_first_name') || pickNested(['customer', 'first_name']);
-      const payloadName  = pickStr('customer_name', 'attendee_name')              || pickNested(['customer', 'name']);
-      const payloadPhone = pickStr('customer_phone', 'attendee_phone', 'phone')   || pickNested(['customer', 'phone']);
+      const payloadEmail = attendee.email;
+      const payloadFirst = attendee.firstName;
+      const payloadPhone = attendee.phone;
       // OnceHub booking.scheduled payload includes the host (the
       // setter who owns the booking). Forwarding this to
       // /trainingnew/setter lets getSetterPhone pick the right
@@ -224,12 +223,10 @@ export function BookCall() {
         pickNested(['host', 'name']) ||
         pickNested(['owner', 'name']);
 
-      let splitFirst = '';
-      if (payloadName && !payloadFirst) {
-        splitFirst = payloadName.split(/\s+/)[0] || '';
-      }
+      const identityChanged = !!attendee.email &&
+        attendee.email.toLowerCase() !== bookingEmail.toLowerCase();
       const finalEmail = payloadEmail || bookingEmail;
-      const finalFirst = payloadFirst || splitFirst || firstname;
+      const finalFirst = payloadFirst || (identityChanged ? '' : firstname);
       const finalPhone = payloadPhone || '';
 
       if (finalEmail) {
@@ -247,9 +244,10 @@ export function BookCall() {
         const next = {
           ...prev,
           _captured_at: new Date().toISOString(),
-          firstname: finalFirst || prev.firstname || '',
+          firstname: finalFirst || '',
+          lastname: attendee.lastName || (identityChanged ? '' : prev.lastname || ''),
           email:     finalEmail || prev.email     || '',
-          phone:     finalPhone || prev.phone     || '',
+          phone:     finalPhone || '',
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       } catch { /* no-op */ }
@@ -274,9 +272,11 @@ export function BookCall() {
         ? `${REDIRECT_TO}?${redirectParams.toString()}`
         : REDIRECT_TO;
 
-      setTimeout(() => {
-        window.location.href = target;
-      }, 800);
+      // Allow the booking tag to finish, without indefinitely delaying confirmation.
+      void Promise.race([
+        conversionReady,
+        new Promise<void>((resolve) => setTimeout(resolve, 2500)),
+      ]).then(() => { window.location.href = target; });
     };
 
     window.addEventListener('message', handleMessage);
