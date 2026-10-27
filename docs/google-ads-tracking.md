@@ -5,7 +5,7 @@
 | Outcome | Authoritative source | Ads use |
 | --- | --- | --- |
 | Booked call | Fresh confirmed OnceHub booking on the paid acquisition calendars | Primary; campaign optimization |
-| Closed Won sale | Actual amount on the Closed Won HubSpot deal | Separate Secondary import initially |
+| Customer / sale signal | Native HubSpot Customer lifecycle event, fixed $6,000 estimated value | Secondary; observation only |
 
 PostHog supports funnel analysis; it is not an intermediate delivery service for Google Ads. HubSpot Lead/SQL/Opportunity lifecycle changes do not establish that a booking happened.
 
@@ -27,19 +27,13 @@ Only these two paid acquisition routes are migrated. The DM, webinar and Scalers
 
 The browser marks a CRM update successful only after a server acknowledgement. Failures remain retryable on a later sync invocation. The endpoint retries briefly while a newly created OnceHub contact is indexed. This remains best effort, not a durable attribution job; preserve a deal-linked acquisition snapshot when implementing revenue imports.
 
-## Sales delivery: not yet implemented
+## Sales delivery: native HubSpot connection
 
-The user selected **Closed Won deal amount**, not collected cash. The existing native HubSpot Customer conversion sends a fixed $6,000 contact-lifecycle value and is not actual revenue. The existing `hubspot-to-posthog` job does not upload Google Ads sales conversions.
+Use the existing HubSpot Customer event at the user's selected fixed **$6,000** value. Keep it Secondary. This is an estimated customer value, not the actual amount on each deal or collected cash. It can report sales outcomes without adding another integration or affecting booking-based bidding.
 
-An actual-revenue import requires:
+There is no custom sales uploader or Google Cloud dependency in this setup. Actual Closed Won deal-amount imports are deferred. The existing `hubspot-to-posthog` analytics job is independent of the native HubSpot-to-Google connection.
 
-- A separate import conversion action, initially Secondary, with unique deal/order ID.
-- The actual deal amount and its currency, original Closed Won timestamp and an unambiguous associated buyer contact.
-- Supported matching identifiers and the existing applicable consent state; no guessed consent or substituted identifier types.
-- Retry visibility, duplicate suppression, and a defined policy for deal amount edits or reversals. Do not count re-entering Closed Won as a new sale.
-- An authorized Google Data Manager API connection, or a managed import source that supports these fields. Native HubSpot lifecycle sync alone cannot supply actual deal amounts.
-
-Do not connect this import to the website booking action, turn on sale-based bidding, or add booking and sale values together as revenue. The booking action's current $1 is a lead-value placeholder.
+Do not add the booking action's $1 placeholder or other lifecycle-event values to Customer value and call that total revenue. Do not combine booking and sale counts as unique customers.
 
 ## Validation
 
@@ -47,4 +41,4 @@ Run `node scripts/test-tracking.mjs` and `npm run build`.
 
 The regression harness stubs analytics and HTTP delivery and sends no real conversions. It covers documented payloads, identity precedence, concurrent callbacks, blocked storage/GTM, normalizations, status/calendar rejection, GCLID mapping and acknowledged CRM sync.
 
-A production sign-off still requires coordinated real setter and closer test bookings in Tag Assistant, matching HubSpot records, and a later eligible paid-attribution check. Direct visits to confirmation pages must not fire booking conversions. A real Closed Won import must be validated separately after connecting the sales importer.
+A production sign-off still requires coordinated real setter and closer test bookings in Tag Assistant, matching HubSpot records, and a later eligible paid-attribution check. Direct visits to confirmation pages must not fire booking conversions. The native Customer event should remain visible in HubSpot sync diagnostics and Secondary in Google Ads.
