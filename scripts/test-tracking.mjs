@@ -23,12 +23,35 @@ const stub = {
     builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: `
       export function pushDataLayer(event, props) { const e = {event,...props}; globalThis.__trackingEvents.push(e); globalThis.__completeTag(e); }
       export function trackEvent(event, props) { globalThis.__trackingEvents.push({event,...props}); }
+      export function identifyUser(email, props) { globalThis.__trackingEvents.push({event:'identify',email,...props}); }
+      export function setPersonProperties() {}
+      export function trackBookingPageViewed() {}
     `, loader: 'js' }));
   },
 };
-async function load(name, entry) {
+const componentStubs = {
+  name: 'booking-page-browser-stubs',
+  setup(builder) {
+    builder.onResolve({filter:/^lucide-react$/},()=>({path:'icons',namespace:'component'}));
+    builder.onResolve({filter:/^react(\/jsx-runtime)?$/}, args=>({path:args.path,namespace:'component'}));
+    builder.onResolve({filter:/\/syncTimezone$/},()=>({path:'timezone',namespace:'component'}));
+    builder.onResolve({filter:/\/syncUtm$/},()=>({path:'utm',namespace:'component'}));
+    builder.onLoad({filter:/.*/,namespace:'component'},args=>({contents:args.path==='icons' ? `export function CheckCircle(){}export function Sparkles(){}` : args.path==='react' ? `
+      export function useRef(){return {current:globalThis.__bookingContainer};}
+      export function useEffect(fn){globalThis.__bookingCleanup=fn();}
+    `:args.path==='react/jsx-runtime'?`
+      export const Fragment='fragment';export function jsx(){return null;}export function jsxs(){return null;}
+    `:args.path==='timezone'?`
+      export function syncContactTimezone(){}
+    `:`
+      export function persistUtmsFromUrl(){}
+      export function syncContactUtms(email){globalThis.__trackingEvents.push({event:'sync_identity',email});}
+    `,loader:'js'}));
+  },
+};
+async function load(name, entry, extraPlugins=[]) {
   const outfile = join(temporary, `${name}.mjs`);
-  await build({ entryPoints:[resolve(entry)], outfile, bundle:true, platform:'node', format:'esm', plugins:[stub], logLevel:'silent' });
+  await build({ entryPoints:[resolve(entry)], outfile, bundle:true, platform:'node', format:'esm', jsx:'automatic', plugins:[stub,...extraPlugins], logLevel:'silent' });
   return import(pathToFileURL(outfile).href);
 }
 let passed = 0;
@@ -121,5 +144,31 @@ try {
   });
   await test('confirmed CRM update deduplicates later attempts',async()=>{sync.syncContactUtms('guest@example.com','test');await flush();assert.equal(calls,2);});
   globalThis.fetch=originalFetch;
+  for (const [component,page,calendar,target] of [
+    ['Book','src/pages/Book.tsx','BKC-Q45L7MVX52','/trainingnew/closer'],
+    ['BookCall','src/pages/BookCall.tsx','BKC-P9JY2GLKJX','/trainingnew/setter'],
+  ]) {
+    await test(`${component} authenticates, updates guest identity, redirects and fires once`,async()=>{
+      const listeners=new Map(); const source={};const iframe={contentWindow:source,src:`https://oncehub.com/c/${calendar}`};
+      globalThis.__bookingContainer={querySelector:()=>iframe};
+      globalThis.document={cookie:'',querySelector:()=>({})};
+      globalThis.window={location:{search:'?email=old@example.com&firstname=Old&lastname=Identity&phone=2025550999',href:''},addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:()=>{}};
+      const module=await load(`page-${component}`,page,[componentStubs]);
+      module[component]();events.length=0;
+      const message={origin:'https://oncehub.com',source,data:{...fixture,payload:{...fixture.payload,id:`BKNG-${component}`,booking_calendar:calendar}}};
+      const handler=listeners.get('message');assert.equal(typeof handler,'function');
+      handler({...message,source:{}});await flush();assert.equal(events.some(e=>e.event==='booked_call'),false);
+      handler({...message,data:{...message.data,payload:{...message.data.payload,booking_calendar:'BKC-WRONG'}}});await flush();assert.equal(events.some(e=>e.event==='booked_call'),false);
+      handler(message);handler(message);await new Promise(r=>setTimeout(r,40));
+      assert.equal(events.filter(e=>e.event==='booked_call').length,1);
+      assert.equal(events.find(e=>e.event==='sync_identity').email,'guest@example.com');
+      assert.equal(JSON.parse(stored.get('pp_booking_data')).email,'guest@example.com');
+      assert.equal(JSON.parse(stored.get('pp_booking_data')).lastname,'Person');
+      assert.equal(new URL(globalThis.window.location.href,'https://example.com').pathname,target);
+      assert.ok(!globalThis.window.location.href.includes('email='));
+      assert.ok(!globalThis.window.location.href.includes('phone='));
+      globalThis.__bookingCleanup?.();
+    });
+  }
   console.log(`\n${passed} tracking regression checks passed. No network requests sent.`);
 } finally { await rm(temporary,{recursive:true,force:true}); }
