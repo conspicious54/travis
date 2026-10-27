@@ -40,15 +40,11 @@ const UTM_FIELDS = [
 ] as const;
 type UtmField = (typeof UTM_FIELDS)[number];
 
-/* Browser click-ID param name → HubSpot contact property name.
-   gbraid and wbraid both fold into hs_google_click_id because
-   HubSpot exposes a single Google slot - and they're both Google's
-   identifiers anyway (iOS app campaigns / web-from-iOS-app). The
-   gclid takes precedence if both are present on the same hit. */
+/* Preserve identifier types. The native HubSpot Google click-ID
+   property is for GCLID; braid identifiers must not masquerade as
+   GCLIDs. They remain separate in the form/webhook attribution data. */
 const CLICK_ID_MAP: Record<string, string> = {
   gclid: 'hs_google_click_id',
-  gbraid: 'hs_google_click_id',
-  wbraid: 'hs_google_click_id',
   fbclid: 'hs_facebook_click_id',
   li_fat_id: 'hs_linkedin_click_id',
   ttclid: 'hs_tiktok_click_id',
@@ -93,15 +89,11 @@ export const handler: Handler = async (event: HandlerEvent) => {
     if (v) incoming[f] = v;
   }
 
-  // Map browser click-ID names → HubSpot property names. gclid wins
-  // over gbraid/wbraid since real gclid is the most actionable ID
-  // (works with the broadest set of Google Ads offline-conv tools).
+  // Map only supported identifier types to their native CRM properties.
   for (const f of CLICK_ID_FIELDS) {
     const v = ((body as Record<string, string | undefined>)[f] || '').trim();
     if (!v) continue;
     const hsProp = CLICK_ID_MAP[f];
-    // Don't overwrite a gclid we already set this request with a
-    // gbraid/wbraid value - first write wins, and we iterate gclid first.
     if (incoming[hsProp]) continue;
     incoming[hsProp] = v;
   }
@@ -115,15 +107,15 @@ export const handler: Handler = async (event: HandlerEvent) => {
     return json(200, { ok: false, reason: 'token_not_set' });
   }
 
-  // Two-pass retry - HubSpot sometimes takes a moment to index a
-  // brand-new contact created by the booking flow.
-  for (const delayMs of [0, 2000]) {
+  // Bounded retry while OnceHub indexes a new contact. The client also
+  // retries a not-yet-created contact on a later sync attempt.
+  for (const delayMs of [0, 1000, 2000]) {
     if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
 
     const writeRes = await patchContact(email, incoming, token);
     if (writeRes.ok) {
       console.log(
-        `[save-contact-utm] ok email=${email} wrote=${JSON.stringify(incoming)}`
+        `[save-contact-utm] ok fields=${Object.keys(incoming).join(',')}`
       );
       return json(200, { ok: true, written: incoming });
     }
@@ -132,17 +124,16 @@ export const handler: Handler = async (event: HandlerEvent) => {
       continue;
     }
     console.warn(
-      `[save-contact-utm] HubSpot ${writeRes.status} email=${email} body=${writeRes.body}`
+      `[save-contact-utm] HubSpot status=${writeRes.status}`
     );
     return json(200, {
       ok: false,
       reason: 'hubspot_error',
       status: writeRes.status,
-      detail: writeRes.body,
     });
   }
 
-  console.warn(`[save-contact-utm] contact not found after retries email=${email}`);
+  console.warn('[save-contact-utm] contact not found after retries');
   return json(200, { ok: false, reason: 'contact_not_found' });
 };
 
