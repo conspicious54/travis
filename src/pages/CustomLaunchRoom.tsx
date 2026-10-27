@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  Lock,
   CheckCircle2,
   Circle,
   AlertCircle,
   Download,
-  ArrowRight,
   Loader2,
 } from 'lucide-react';
 import {
@@ -19,6 +17,7 @@ import {
 import { trackEvent } from '../lib/posthog';
 import {
   ProductIdeaBlock,
+  ReadinessScore,
   WhyYouBuilt,
   WhereYouStart,
   WhoGuides,
@@ -26,6 +25,7 @@ import {
   TimelineMap,
   SellingFromWhere,
   GapFiller,
+  LockedSteps,
 } from '../components/launchroom/sections';
 
 /* ───── /customlaunchroom/:id — the personalized Launch Room ─────
@@ -44,21 +44,6 @@ import {
        lands; v2 will swap in the real calendar
 ──────────────────────────────────────────────────────────────── */
 
-const SCORE_LABELS: Record<string, string> = {
-  product:   'Product',
-  capital:   'Capital',
-  timing:    'Timing',
-  knowledge: 'Knowledge',
-  support:   'Support',
-};
-
-const GAP_HINTS: Record<string, string> = {
-  product:   'Lock in a product idea that will actually sell.',
-  capital:   'Right-size your launch budget to what you can deploy.',
-  timing:    'Nail down a start date so this stops drifting.',
-  knowledge: 'Fill in the gaps on how Amazon actually works today.',
-  support:   'Line up the people and tools you need around the launch.',
-};
 
 /* ───── Demo record ─────────────────────────────────────────────
    Visiting /customlaunchroom/demo renders the page with this mock
@@ -283,56 +268,21 @@ export function CustomLaunchRoom() {
               {formatLaunchDate(launchDate)}
             </p>
             <p className="mt-2 text-slate-300">
-              If you start this week, {daysToLaunch} days away. Every week you wait pushes this back.
+              If you start this week, {daysToLaunch} days away.
+            </p>
+            <p className="mt-1 text-sm text-slate-400">
+              4 to 6 months is average. If we get you moving fast, we can get you launched at 4.
             </p>
           </div>
         </section>
 
-        {/* Interactive product-idea block, placed at the top of
-            the content area per the brief. Only the no_idea
-            variant uses the brainstormer; other q9 values render
-            a specialized interactive module. */}
+        {/* Interactive product-idea block, at the top of content.
+            AI-driven multi-turn when ANTHROPIC_API_KEY is set on
+            Netlify; falls back to a guided prompt otherwise. */}
         <ProductIdeaBlock record={record} />
 
-        {/* Readiness Score */}
-        <section className="mt-10">
-          <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6 md:p-8">
-            <div className="flex items-baseline justify-between flex-wrap gap-3">
-              <h2 className="text-xl md:text-2xl font-black">Launch Readiness Score</h2>
-              <p className="text-3xl md:text-5xl font-black text-orange-600">
-                {score.total}
-                <span className="text-slate-400 text-xl md:text-2xl font-bold">/100</span>
-              </p>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">
-              {(['product', 'capital', 'timing', 'knowledge', 'support'] as const).map((k) => {
-                const v = score[k];
-                return (
-                  <div key={k} className="rounded-xl bg-slate-50 border border-slate-200 p-4">
-                    <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">{SCORE_LABELS[k]}</p>
-                    <p className="mt-1 text-xl font-black text-slate-900">{v}<span className="text-slate-400 text-sm font-bold">/20</span></p>
-                    <div className="mt-2 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-orange-500 rounded-full" style={{ width: `${(v / 20) * 100}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-6 rounded-xl bg-orange-50 border border-orange-200 p-4 md:p-5">
-              <p className="text-sm font-black uppercase tracking-wider text-orange-700 mb-2">Your 3 gaps, your strategist covers these on your call</p>
-              <ul className="space-y-2">
-                {score.gaps.map((g) => (
-                  <li key={g} className="flex items-start gap-2 text-sm text-slate-800">
-                    <ArrowRight className="w-4 h-4 text-orange-600 mt-[2px] shrink-0" />
-                    <span><span className="font-black">{SCORE_LABELS[g]}:</span> {GAP_HINTS[g]}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </section>
+        {/* Launch Readiness — hero gauge + 5 dimension dials */}
+        <ReadinessScore record={record} score={score} />
 
         {/* Personalized section modules. Real diagrams, student
             stories, timelines, and gap-matched support instead
@@ -389,36 +339,8 @@ export function CustomLaunchRoom() {
           </div>
         </section>
 
-        {/* Locked steps 4-8 */}
-        <section className="mt-10">
-          <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6 md:p-8">
-            <h2 className="text-xl md:text-2xl font-black">Steps 4 to 8. Built live on your call.</h2>
-            <p className="mt-2 text-slate-600">
-              Your manufacturer shortlist, your launch budget, your 9-month roadmap. Your strategist walks these with you so the plan fits your actual situation, not a template.
-            </p>
-
-            <ul className="mt-6 grid gap-3 md:grid-cols-2">
-              {[
-                '4. Your supplier shortlist (3 real options)',
-                '5. Your launch budget by month',
-                '6. Your pre-launch keyword map',
-                '7. Your 9-month roadmap',
-                '8. Your first paid campaign',
-              ].map((label) => (
-                <li
-                  key={label}
-                  className="relative rounded-xl bg-slate-50 border border-slate-200 p-4 overflow-hidden"
-                >
-                  <div className="absolute inset-0 backdrop-blur-sm bg-white/50" aria-hidden />
-                  <div className="relative flex items-center gap-2 text-slate-700">
-                    <Lock className="w-4 h-4" />
-                    <span className="font-black">{label}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+        {/* Locked steps 4-8 — real preview cards, blurred & gated */}
+        <LockedSteps record={record} />
 
         {/* Commitment */}
         <section className="mt-10">

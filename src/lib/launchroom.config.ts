@@ -61,21 +61,28 @@ export const SCORE_BANDS = {
 
 export const SCORE_MAX_PER_DIMENSION = 20;
 
+/** The projected launch date on the page is a flat 4 months out
+ *  for every lead, by design. The "4 to 6 months is average"
+ *  variance lives in the subtext, not in the number. Keeping the
+ *  per-answer map here (all 4s) so if we ever want to re-introduce
+ *  variance it is a one-line change. */
 export const LAUNCH_BASE_MONTHS = {
   validated: 4,
-  niche:     5,
-  no_idea:   6,
-  unsure:    6,
+  niche:     4,
+  no_idea:   4,
+  unsure:    4,
 } satisfies Record<ProductClarity, number>;
 
-/** Added to base months when capital answer is under_1k. */
-export const LAUNCH_UNDER_1K_PENALTY_MONTHS = 1;
+/** Previously added a month for sub-$1K capital. Pulled back to
+ *  zero so the projected date is a flat 4 months regardless of
+ *  budget. */
+export const LAUNCH_UNDER_1K_PENALTY_MONTHS = 0;
 
 /** 0 = Sunday, 1 = Monday, ... Launch date anchors to this day of
  *  the current week, then advances by (base + penalty) months. */
 export const START_OF_WEEK_DAY = 1;
 
 /** Fallback months if we don't know product clarity yet (partial
- *  responses that haven't reached Q9). Keeps the number realistic
- *  so the countdown doesn't lie by promising something soon. */
-export const LAUNCH_DEFAULT_MONTHS = 6;
+ *  responses that haven't reached Q9). Matches the flat 4-month
+ *  projection used everywhere else. */
+export const LAUNCH_DEFAULT_MONTHS = 4;

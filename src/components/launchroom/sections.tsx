@@ -1,13 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   Youtube,
-  Store,
-  Package,
-  Factory,
-  CheckCircle2,
-  Circle,
   Lightbulb,
   AlertCircle,
   Users,
@@ -46,169 +41,400 @@ const EYEBROW = 'text-[11px] font-black uppercase tracking-wider text-orange-600
 interface Props { record: LaunchRoomRecord; }
 interface ScoredProps extends Props { score: LaunchRoomScore; }
 
-/* ─── Product Idea block (TOP of page, interactive) ──────────── */
+const SCORE_LABELS: Record<string, string> = {
+  product:   'Product',
+  capital:   'Capital',
+  timing:    'Timing',
+  knowledge: 'Knowledge',
+  support:   'Support',
+};
 
-export function ProductIdeaBlock({ record }: Props) {
-  const q9 = record.answers.q9;
-  const [interestInput, setInterestInput] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+const GAP_HINTS: Record<string, string> = {
+  product:   'Lock in a product idea that will actually sell.',
+  capital:   'Right-size your launch budget to what you can deploy.',
+  timing:    'Nail down a start date so this stops drifting.',
+  knowledge: 'Fill in the gaps on how Amazon actually works today.',
+  support:   'Line up the people and tools you need around the launch.',
+};
 
-  // Suggestion heuristic for the no_idea path. Not AI yet; it maps
-  // a free-text interest to a product shape + a reason, so the lead
-  // gets a concrete starting point instead of a blank page. Real
-  // AI integration is a separate task once ANTHROPIC_API_KEY is
-  // wired on Netlify.
-  const suggestion = useMemo(() => {
-    if (!submitted || !interestInput.trim()) return null;
-    const i = interestInput.toLowerCase();
-    if (i.includes('fitness') || i.includes('gym') || i.includes('workout')) {
-      return {
-        shape: 'A specialty fitness accessory your gym friends ask to borrow',
-        why: 'Fitness buyers on Amazon over-reward products that solve one annoying moment at the gym. Your lived knowledge is the moat.',
-      };
-    }
-    if (i.includes('kitchen') || i.includes('cooking') || i.includes('food')) {
-      return {
-        shape: 'A kitchen tool that fixes one specific cooking frustration you already live with',
-        why: 'Kitchen on Amazon is loud, but single-task tools with a clear hero use case keep converting. Your frustration is the research.',
-      };
-    }
-    if (i.includes('pet') || i.includes('dog') || i.includes('cat')) {
-      return {
-        shape: 'A pet accessory for the specific breed or life stage you own',
-        why: 'Breed-specific or senior-pet gear outsells generic pet gear because owners search that way. Your pet is the test market.',
-      };
-    }
-    if (i.includes('baby') || i.includes('kid') || i.includes('parent')) {
-      return {
-        shape: 'A parenting micro-pain-point product for a specific age band',
-        why: 'Parents search for the exact age and the exact problem. Age-banded products beat generic ones on both click and convert.',
-      };
-    }
-    if (i.includes('garden') || i.includes('plant') || i.includes('outdoor')) {
-      return {
-        shape: 'A gardening tool scoped to one plant type or climate',
-        why: 'Hobbyist gardeners buy specialized gear the big brands ignore. Scope by plant or region and the listing writes itself.',
-      };
-    }
-    return {
-      shape: `A product in "${interestInput.trim()}" scoped to one specific user, use case, or moment of friction`,
-      why: 'Generic beats narrow on Amazon almost never. The sharper the user and the moment, the easier the listing, the easier the ads, and the easier it is to beat incumbents.',
+/** Returns a Tailwind-safe hex colour for a 0-100 total score. */
+function colorForTotal(total: number): string {
+  if (total >= 80) return '#10b981'; // emerald
+  if (total >= 60) return '#f97316'; // orange
+  if (total >= 40) return '#f59e0b'; // amber
+  return '#ef4444';                  // red
+}
+
+/** Hex colour for a 0-20 dimension score. */
+function colorForDimension(v: number): string {
+  if (v >= 15) return '#10b981';
+  if (v >= 10) return '#f97316';
+  if (v >= 5)  return '#f59e0b';
+  return '#ef4444';
+}
+
+/* ─── Readiness Score — hero semi-arc + dimension dials ──── */
+
+export function ReadinessScore({ score }: ScoredProps) {
+  // Animate from empty to actual on mount so the dials "fill
+  // in" and the number counts up. CSS transition handles the
+  // visual; a one-shot state flip triggers it.
+  const [filled, setFilled] = useState(false);
+  const [displayTotal, setDisplayTotal] = useState(0);
+
+  useEffect(() => {
+    const t = setTimeout(() => setFilled(true), 60);
+    // Count-up for the big number. 1200ms matches the dial fill.
+    const start = performance.now();
+    const target = score.total;
+    const duration = 1200;
+    let raf = 0;
+    const step = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      setDisplayTotal(Math.round(target * eased));
+      if (p < 1) raf = requestAnimationFrame(step);
     };
-  }, [submitted, interestInput]);
+    raf = requestAnimationFrame(step);
+    return () => { clearTimeout(t); cancelAnimationFrame(raf); };
+  }, [score.total]);
 
-  // Different panel per q9 answer. Each one is a self-contained
-  // interactive moment that gives the lead real value in 30s.
+  // Hero semi-arc: radius 100, 180deg arc. Arc length = pi * r.
+  const HERO_R = 100;
+  const HERO_LEN = Math.PI * HERO_R;
+  const heroOffset = filled ? HERO_LEN * (1 - score.total / 100) : HERO_LEN;
+  const heroColor = colorForTotal(score.total);
+
+  // Dimension dials: radius 36, full circle. Circumference 2*pi*r.
+  const DIAL_R = 36;
+  const DIAL_LEN = 2 * Math.PI * DIAL_R;
+
   return (
     <section className="mt-10">
       <div className={CARD_BASE}>
-        <p className={EYEBROW}>Your Product Idea</p>
-        <h2 className="mt-1 text-xl md:text-2xl font-black">
-          {q9 === 'validated' && 'Score the idea you already have'}
-          {q9 === 'niche' && 'Narrow your niche into one product'}
-          {q9 === 'no_idea' && 'Brainstorm a product in 30 seconds'}
-          {q9 === 'unsure' && 'Is Amazon FBA the right path for you?'}
-          {!q9 && 'Start with a product direction'}
-        </h2>
+        <p className={EYEBROW}>Launch Readiness</p>
+        <h2 className="mt-1 text-xl md:text-2xl font-black">Your score across the five dimensions</h2>
 
-        {/* no_idea or missing: free-text interest → suggestion */}
-        {(q9 === 'no_idea' || !q9) && (
-          <div className="mt-5">
-            <p className="text-slate-700">
-              Type anything you already know, do, or spend time on. We will aim you at a product shape worth testing.
-            </p>
-            <div className="mt-4 flex flex-col md:flex-row gap-2">
-              <input
-                value={interestInput}
-                onChange={(e) => setInterestInput(e.target.value)}
-                placeholder="e.g. home fitness, baking, dog training, gardening"
-                className="flex-1 rounded-lg border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none p-3 text-slate-900"
-                onKeyDown={(e) => { if (e.key === 'Enter') setSubmitted(true); }}
+        {/* Hero semi-arc with centered number */}
+        <div className="mt-5 flex justify-center">
+          <div className="relative w-full max-w-[320px]">
+            <svg viewBox="0 0 240 140" className="w-full h-auto">
+              {/* Background arc */}
+              <path
+                d={`M 20 120 A ${HERO_R} ${HERO_R} 0 0 1 220 120`}
+                fill="none"
+                stroke="#e2e8f0"
+                strokeWidth="18"
+                strokeLinecap="round"
               />
-              <button
-                onClick={() => setSubmitted(true)}
-                className="rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-black px-5 py-3 transition inline-flex items-center justify-center gap-2"
-              >
-                <Lightbulb className="w-4 h-4" /> Get a direction
-              </button>
+              {/* Foreground arc, animated */}
+              <path
+                d={`M 20 120 A ${HERO_R} ${HERO_R} 0 0 1 220 120`}
+                fill="none"
+                stroke={heroColor}
+                strokeWidth="18"
+                strokeLinecap="round"
+                strokeDasharray={`${HERO_LEN} ${HERO_LEN}`}
+                strokeDashoffset={heroOffset}
+                style={{ transition: 'stroke-dashoffset 1200ms cubic-bezier(0.22, 1, 0.36, 1), stroke 400ms' }}
+              />
+            </svg>
+            {/* Score number overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-end pb-1 pointer-events-none">
+              <p className="text-5xl md:text-6xl font-black tracking-tight" style={{ color: heroColor }}>
+                {displayTotal}
+                <span className="text-slate-400 text-xl md:text-2xl font-bold">/100</span>
+              </p>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 mt-1">
+                Launch Readiness
+              </p>
             </div>
-            {suggestion && (
-              <div className="mt-5 rounded-xl bg-orange-50 border border-orange-200 p-5">
-                <p className={EYEBROW}>Starting Shape</p>
-                <p className="mt-1 text-lg md:text-xl font-black text-slate-900">{suggestion.shape}</p>
-                <p className="mt-3 text-slate-700">{suggestion.why}</p>
-                <p className="mt-4 text-sm text-slate-600">
-                  Next: your strategist pressure-tests this on your call and gives you three real supplier directions you can quote this week.
+          </div>
+        </div>
+
+        {/* 5 dimension dials */}
+        <div className="mt-8 grid grid-cols-5 gap-2 md:gap-4">
+          {(['product', 'capital', 'timing', 'knowledge', 'support'] as const).map((k) => {
+            const v = score[k];
+            const color = colorForDimension(v);
+            const offset = filled ? DIAL_LEN * (1 - v / 20) : DIAL_LEN;
+            const isGap = score.gaps.includes(k);
+            return (
+              <div
+                key={k}
+                className={
+                  'flex flex-col items-center rounded-xl p-2 md:p-3 transition ' +
+                  (isGap
+                    ? 'bg-orange-50 ring-1 ring-orange-200'
+                    : 'bg-slate-50 ring-1 ring-slate-100')
+                }
+              >
+                <div className="relative w-full max-w-[90px]">
+                  <svg viewBox="0 0 90 90" className="w-full h-auto -rotate-90">
+                    <circle cx="45" cy="45" r={DIAL_R} fill="none" stroke="#e2e8f0" strokeWidth="8" />
+                    <circle
+                      cx="45"
+                      cy="45"
+                      r={DIAL_R}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray={`${DIAL_LEN} ${DIAL_LEN}`}
+                      strokeDashoffset={offset}
+                      style={{ transition: 'stroke-dashoffset 1200ms cubic-bezier(0.22, 1, 0.36, 1), stroke 400ms' }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <p className="text-base md:text-xl font-black" style={{ color }}>
+                      {v}
+                      <span className="text-slate-400 text-[10px] md:text-xs font-bold">/20</span>
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-1 text-[10px] md:text-xs font-black uppercase tracking-wider text-slate-600 text-center">
+                  {SCORE_LABELS[k]}
                 </p>
+                {isGap && (
+                  <p className="mt-1 text-[9px] md:text-[10px] font-black uppercase tracking-wider text-orange-600">
+                    Gap
+                  </p>
+                )}
               </div>
+            );
+          })}
+        </div>
+
+        {/* Gap callout */}
+        <div className="mt-6 rounded-xl bg-orange-50 border border-orange-200 p-4 md:p-5">
+          <p className="text-sm font-black uppercase tracking-wider text-orange-700 mb-2">
+            Your 3 gaps, your strategist covers these on your call
+          </p>
+          <ul className="space-y-2">
+            {score.gaps.map((g) => (
+              <li key={g} className="flex items-start gap-2 text-sm text-slate-800">
+                <ArrowRight className="w-4 h-4 text-orange-600 mt-[2px] shrink-0" />
+                <span><span className="font-black">{SCORE_LABELS[g]}:</span> {GAP_HINTS[g]}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Product Idea block (TOP, AI-driven multi-turn chat) ──── */
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export function ProductIdeaBlock({ record }: Props) {
+  const q9 = record.answers.q9;
+
+  const openerByQ9: string = useMemo(() => {
+    if (q9 === 'validated')
+      return `You said you have an idea. Tell me what it is in one sentence (the product and who it is for) and I will help you sharpen it before your strategy call.`;
+    if (q9 === 'niche')
+      return `You know your niche. Tell me what it is and I will help you narrow it to one product worth sampling this month.`;
+    if (q9 === 'unsure')
+      return `Fair. Tell me what you spend your time on and I will tell you honestly whether an Amazon product fits, and if so what shape it would take.`;
+    // no_idea or missing q9
+    return `Type anything you already know, do, or spend time on. We will work together to find a product shape worth testing. Even one word is enough to start.`;
+  }, [q9]);
+
+  const [history, setHistory] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [handoff, setHandoff] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  async function send() {
+    const text = input.trim();
+    if (!text || sending) return;
+    setErrorMsg(null);
+    const next: ChatMessage[] = [...history, { role: 'user', content: text }];
+    setHistory(next);
+    setInput('');
+    setSending(true);
+    try {
+      const r = await fetch('/.netlify/functions/launchroom-brainstorm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: next,
+          context: {
+            firstName: record.contact?.firstName,
+            q13: record.answers.q13,
+            q10: record.answers.q10,
+          },
+        }),
+      });
+      if (!r.ok) {
+        const detail = await r.text().catch(() => '');
+        console.error('[brainstorm]', r.status, detail);
+        setErrorMsg('The brainstormer is taking a breath. Try sending that again in a sec.');
+        setHistory(history); // roll back the user turn so they can retry
+        setInput(text);
+        return;
+      }
+      const { reply, handoff: nextHandoff } = (await r.json()) as { reply: string; handoff: boolean };
+      setHistory([...next, { role: 'assistant', content: reply }]);
+      if (nextHandoff) setHandoff(true);
+    } catch (err) {
+      console.error('[brainstorm]', err);
+      setErrorMsg('Could not reach the brainstormer. Try again.');
+      setHistory(history);
+      setInput(text);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function reset() {
+    setHistory([]);
+    setInput('');
+    setHandoff(false);
+    setErrorMsg(null);
+  }
+
+  return (
+    <section className="mt-10">
+      <div className={CARD_BASE}>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <p className={EYEBROW}>Your Product Idea</p>
+            <h2 className="mt-1 text-xl md:text-2xl font-black">
+              Workshop a product idea with the coach
+            </h2>
+          </div>
+          {history.length > 0 && (
+            <button
+              onClick={reset}
+              className="text-xs font-black uppercase tracking-wider text-slate-500 hover:text-slate-900 transition"
+            >
+              Start over
+            </button>
+          )}
+        </div>
+
+        {/* Opening prompt before any conversation. */}
+        {history.length === 0 && (
+          <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-4 md:p-5">
+            <div className="flex items-start gap-3">
+              <div className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-orange-500 text-white shrink-0">
+                <Lightbulb className="w-5 h-5" />
+              </div>
+              <p className="text-slate-800 leading-relaxed">{openerByQ9}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Conversation */}
+        {history.length > 0 && (
+          <div className="mt-4 space-y-3">
+            {/* Keep the opener visible as the first assistant bubble */}
+            <ChatBubble role="assistant" content={openerByQ9} />
+            {history.map((m, i) => (
+              <ChatBubble key={i} role={m.role} content={m.content} />
+            ))}
+            {sending && (
+              <ChatBubble role="assistant" content="Thinking..." muted />
             )}
           </div>
         )}
 
-        {/* niche: 3 narrowing prompts */}
-        {q9 === 'niche' && (
-          <div className="mt-5 space-y-3">
-            <p className="text-slate-700">You know your space. The money is in picking the one SKU that works. Answer these on the back of a napkin before your call.</p>
-            {[
-              'Who is your most frustrated customer in this niche, specifically?',
-              'What is the one thing they already pay for that annoys them?',
-              'What would make them switch in one sentence?',
-            ].map((q, i) => (
-              <div key={i} className="rounded-xl bg-slate-50 border border-slate-200 p-4">
-                <p className="text-sm font-black text-orange-600">Question {i + 1}</p>
-                <p className="mt-1 text-slate-900 font-bold">{q}</p>
-              </div>
-            ))}
-          </div>
+        {/* Composer */}
+        <div className="mt-4 flex flex-col md:flex-row gap-2">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={sending}
+            placeholder={
+              history.length === 0
+                ? 'e.g. home fitness, baking, dog training, gardening'
+                : 'Keep going. Tell me more, or ask a question.'
+            }
+            className="flex-1 rounded-lg border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none p-3 text-slate-900 disabled:bg-slate-50"
+            onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
+          />
+          <button
+            onClick={send}
+            disabled={sending || !input.trim()}
+            className="rounded-lg bg-orange-600 hover:bg-orange-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black px-5 py-3 transition inline-flex items-center justify-center gap-2"
+          >
+            {sending ? 'Working...' : history.length === 0 ? 'Start' : 'Send'}
+          </button>
+        </div>
+
+        {errorMsg && (
+          <p className="mt-3 text-sm text-red-600">{errorMsg}</p>
         )}
 
-        {/* validated: scoring checklist */}
-        {q9 === 'validated' && (
-          <div className="mt-5">
-            <p className="text-slate-700">You have an idea. Here is the 5-point gut check your strategist runs. Score yourself before your call.</p>
-            <ul className="mt-4 space-y-2">
+        {/* Handoff — appears after enough back-and-forth */}
+        {handoff && (
+          <div className="mt-5 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-300 p-5 md:p-6">
+            <p className={EYEBROW}>Where We Take This Next</p>
+            <h3 className="mt-1 text-lg md:text-xl font-black text-slate-900">
+              Nice. You have a shape worth walking into your call with.
+            </h3>
+            <p className="mt-2 text-slate-700">
+              Here is what the first three weeks look like once you are inside the program.
+            </p>
+            <ol className="mt-4 space-y-2">
               {[
-                'There is proof someone paid for a near-match in the last 90 days.',
-                'You can get to a sampling supplier in under 10 days of outreach.',
-                'The buyer searches for it by name, not by category.',
-                'The margin after Amazon fees and ads clears 25 percent.',
-                'You are not the hero of the listing. The outcome is.',
+                'Your strategist pressure-tests this idea against the 5-point score, live, on the call.',
+                'Week one: three real supplier quotes in your inbox, no outreach to write yourself.',
+                'Week two: your listing and ad plan drafted with you, not for you.',
               ].map((line, i) => (
                 <li key={i} className="flex items-start gap-2 text-slate-800">
-                  <CheckCircle2 className="w-5 h-5 text-orange-600 mt-[2px] shrink-0" />
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-black shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
                   <span>{line}</span>
                 </li>
               ))}
-            </ul>
-          </div>
-        )}
-
-        {/* unsure: FBA fit flow */}
-        {q9 === 'unsure' && (
-          <div className="mt-5">
-            <p className="text-slate-700">Fair question. FBA is right for a specific kind of operator. Here is the quick read.</p>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4">
-                <p className="text-sm font-black text-emerald-700 uppercase tracking-wider">FBA fits if</p>
-                <ul className="mt-2 space-y-1 text-slate-800">
-                  <li>You want to build an asset, not a side gig</li>
-                  <li>You can wait 4 to 6 months on first revenue</li>
-                  <li>You have between $1K and $25K to deploy</li>
-                </ul>
-              </div>
-              <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
-                <p className="text-sm font-black text-slate-700 uppercase tracking-wider">FBA is wrong if</p>
-                <ul className="mt-2 space-y-1 text-slate-800">
-                  <li>You need cash in 60 days</li>
-                  <li>You want services or digital products</li>
-                  <li>You will not read a listing or an ad report</li>
-                </ul>
-              </div>
-            </div>
+            </ol>
+            <p className="mt-4 text-sm text-slate-600 italic">
+              Scroll down to book your strategy call when you are ready.
+            </p>
           </div>
         )}
       </div>
     </section>
+  );
+}
+
+interface ChatBubbleProps {
+  role: 'user' | 'assistant';
+  content: string;
+  muted?: boolean;
+}
+
+function ChatBubble({ role, content, muted }: ChatBubbleProps) {
+  const isUser = role === 'user';
+  return (
+    <div className={'flex gap-3 ' + (isUser ? 'justify-end' : '')}>
+      {!isUser && (
+        <div className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-orange-500 text-white shrink-0 mt-0.5">
+          <Lightbulb className="w-5 h-5" />
+        </div>
+      )}
+      <div
+        className={
+          'max-w-[85%] rounded-2xl px-4 py-3 whitespace-pre-wrap leading-relaxed ' +
+          (isUser
+            ? 'bg-slate-900 text-white'
+            : muted
+            ? 'bg-slate-50 border border-slate-200 text-slate-500 italic'
+            : 'bg-slate-50 border border-slate-200 text-slate-800')
+        }
+      >
+        {content}
+      </div>
+    </div>
   );
 }
 
@@ -559,6 +785,212 @@ export function SellingFromWhere({ record }: Props) {
         </div>
       </div>
     </section>
+  );
+}
+
+/* ─── Locked Steps 4-8 — full preview cards, gated ─────────── */
+
+/** Each locked step renders as a near-full-sized section preview
+ *  with real-looking content (supplier cards, budget rows, keyword
+ *  table, timeline, campaign table) blurred under a lock overlay.
+ *  The point is to show the lead what they are missing, not a
+ *  one-line label. */
+export function LockedSteps({ record }: Props) {
+  const first = record.contact?.firstName || 'you';
+
+  return (
+    <section className="mt-10">
+      <div className="relative">
+        <div className="mb-4">
+          <p className={EYEBROW}>Steps 4 to 8</p>
+          <h2 className="mt-1 text-xl md:text-2xl font-black">
+            Built live with your strategist on your call
+          </h2>
+          <p className="mt-2 text-slate-600">
+            These are the sections {first} would walk through next. They are personalized to your product, your budget, and your timeline, so they only make sense once a strategist has you in the chair.
+          </p>
+        </div>
+
+        <div className="space-y-5">
+          {/* 4. Supplier shortlist */}
+          <LockedCard number={4} title="Your supplier shortlist" subtitle="Three real factories that will quote your product this week.">
+            <div className="grid gap-3 md:grid-cols-3">
+              {[
+                { name: 'Ningbo Precision Co.', region: 'Zhejiang, CN', moq: 'MOQ 300', lead: '35 day lead time', score: 92 },
+                { name: 'Dongguan Craft Mfg.',  region: 'Guangdong, CN', moq: 'MOQ 500', lead: '28 day lead time', score: 88 },
+                { name: 'Vinh Phuc Industries', region: 'Hanoi, VN',    moq: 'MOQ 250', lead: '42 day lead time', score: 85 },
+              ].map((s) => (
+                <div key={s.name} className="rounded-xl bg-white border border-slate-200 p-4">
+                  <p className="font-black text-slate-900">{s.name}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{s.region}</p>
+                  <div className="mt-3 flex items-center justify-between text-sm">
+                    <span className="text-slate-700">{s.moq}</span>
+                    <span className="font-black text-orange-600">Fit {s.score}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">{s.lead}</p>
+                </div>
+              ))}
+            </div>
+          </LockedCard>
+
+          {/* 5. Launch budget */}
+          <LockedCard number={5} title="Your launch budget" subtitle="Month-by-month cash plan, right-sized to your capital answer.">
+            <div className="rounded-xl bg-white border border-slate-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-slate-600">
+                  <tr>
+                    <th className="text-left px-4 py-2 font-black">Month</th>
+                    <th className="text-left px-4 py-2 font-black">Line item</th>
+                    <th className="text-right px-4 py-2 font-black">Spend</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['1', 'Samples + supplier deposits',    '$620'],
+                    ['2', 'Production + QC inspection',     '$1,840'],
+                    ['3', 'Freight + FBA inbound',          '$520'],
+                    ['4', 'Launch ads week 1-4',            '$900'],
+                    ['5', 'Reorder + ad scale',             '$2,400'],
+                  ].map(([m, item, spend]) => (
+                    <tr key={m} className="border-t border-slate-100">
+                      <td className="px-4 py-2 font-black text-slate-900">{m}</td>
+                      <td className="px-4 py-2 text-slate-700">{item}</td>
+                      <td className="px-4 py-2 text-right font-black text-slate-900">{spend}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </LockedCard>
+
+          {/* 6. Keyword map */}
+          <LockedCard number={6} title="Your pre-launch keyword map" subtitle="The 10 search terms your listing has to win on day one.">
+            <div className="grid gap-2 md:grid-cols-2">
+              {[
+                { kw: 'collapsible dog bowl travel', vol: '18.2K', comp: 'Low' },
+                { kw: 'dog bowl for suv',            vol: '9.8K',  comp: 'Low' },
+                { kw: 'portable water bowl hiking',  vol: '14.1K', comp: 'Medium' },
+                { kw: 'leak proof travel bowl',      vol: '6.4K',  comp: 'Low' },
+                { kw: 'silicone dog bowl camping',   vol: '11.0K', comp: 'Medium' },
+                { kw: 'collapsible water dish',      vol: '7.9K',  comp: 'Low' },
+              ].map((k) => (
+                <div key={k.kw} className="flex items-center justify-between rounded-lg bg-white border border-slate-200 px-3 py-2">
+                  <span className="text-sm text-slate-800">{k.kw}</span>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="text-slate-500">{k.vol}/mo</span>
+                    <span className={'font-black ' + (k.comp === 'Low' ? 'text-emerald-600' : 'text-amber-600')}>{k.comp}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </LockedCard>
+
+          {/* 7. 9-month roadmap */}
+          <LockedCard number={7} title="Your 9-month roadmap" subtitle="Quarter-by-quarter moves from launch to your first scale decision.">
+            <div className="space-y-2">
+              {[
+                { q: 'Q1', focus: 'Launch SKU 1, break into category top 100',  cash: 'Cash flow positive by month 4' },
+                { q: 'Q2', focus: 'Push SKU 1 to top 20, open sampling SKU 2', cash: 'Reinvest 70% of profit into inventory' },
+                { q: 'Q3', focus: 'Launch SKU 2, start brand-registry work',   cash: 'First owner distribution' },
+              ].map((r) => (
+                <div key={r.q} className="rounded-xl bg-white border border-slate-200 p-4">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-xs font-black uppercase tracking-wider text-orange-600">{r.q}</span>
+                    <p className="font-black text-slate-900">{r.focus}</p>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-600">{r.cash}</p>
+                </div>
+              ))}
+            </div>
+          </LockedCard>
+
+          {/* 8. First paid campaign */}
+          <LockedCard number={8} title="Your first paid campaign" subtitle="The exact ad groups, keywords and bid strategy for launch week.">
+            <div className="rounded-xl bg-white border border-slate-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-slate-600">
+                  <tr>
+                    <th className="text-left px-4 py-2 font-black">Ad group</th>
+                    <th className="text-left px-4 py-2 font-black">Match</th>
+                    <th className="text-right px-4 py-2 font-black">Daily cap</th>
+                    <th className="text-right px-4 py-2 font-black">Target ACoS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Exact brand defense',  'Exact',   '$8',  '12%'],
+                    ['Phrase high-intent',    'Phrase',  '$18', '28%'],
+                    ['Broad research',        'Broad',   '$12', '45%'],
+                    ['Auto discovery',        'Auto',    '$10', '35%'],
+                  ].map(([g, m, cap, acos]) => (
+                    <tr key={g} className="border-t border-slate-100">
+                      <td className="px-4 py-2 font-black text-slate-900">{g}</td>
+                      <td className="px-4 py-2 text-slate-700">{m}</td>
+                      <td className="px-4 py-2 text-right text-slate-900">{cap}</td>
+                      <td className="px-4 py-2 text-right text-slate-900">{acos}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </LockedCard>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+interface LockedCardProps {
+  number: number;
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}
+
+function LockedCard({ number, title, subtitle, children }: LockedCardProps) {
+  return (
+    <div className="relative rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+      {/* Header stays sharp so the module reads as a real section */}
+      <div className="relative z-20 p-6 md:p-7 border-b border-slate-100 bg-white">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className={EYEBROW}>Step {number}</p>
+            <h3 className="mt-1 text-lg md:text-xl font-black text-slate-900">{title}</h3>
+            <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 text-white px-3 py-1 text-[11px] font-black uppercase tracking-wider shrink-0">
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            Locked
+          </span>
+        </div>
+      </div>
+
+      {/* Preview body, blurred and dimmed */}
+      <div className="relative p-6 md:p-7 bg-slate-50/70">
+        <div
+          className="pointer-events-none select-none"
+          style={{ filter: 'blur(5px)', opacity: 0.9 }}
+          aria-hidden="true"
+        >
+          {children}
+        </div>
+
+        {/* Centered unlock overlay */}
+        <div className="absolute inset-0 flex items-center justify-center p-5">
+          <div className="rounded-xl bg-white border border-slate-200 shadow-md px-5 py-4 text-center max-w-sm">
+            <p className="text-sm font-black text-slate-900">
+              Unlocks on your strategy call
+            </p>
+            <p className="mt-1 text-xs text-slate-600">
+              Your strategist fills this in live with you, so it fits your actual product and situation.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
