@@ -2,34 +2,34 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Calendar, Clock, CheckCircle, ArrowRight, BookmarkPlus,
   Phone, Youtube, Video, AlertTriangle, Wifi, MonitorSmartphone,
-  Users, ShieldCheck, Package, TrendingUp, Trophy, Zap,
 } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
-/* ───── /freelivetraining — long-form sales-letter opt-in ────────
-   Replicates the ClickFunnels webinar opt-in Travis is moving off:
-   hero form, three-pillar value prop, Amazon ecosystem stats, and
-   student results. Submits through the same /register-webinar
-   Zapier bridge as /live-training so there's one list and one
-   downstream automation.
+/* ───── /freelivetraining — webinar opt-in ───────────────────────
+   Faithful port of the ClickFunnels source Travis is moving off:
+     dark SVG-overlay hero (banner + sign-up form)
+     3-pillar value prop block ("…has all 3…")
+     Amazon ecosystem stat block (60% / $375K / 75K+)
+     Student results social proof (Andrew / Michael / Jenny / Alyssa)
+     Dark bottom CTA.
+   Submits through the shared /register-webinar Zapier bridge so
+   leads flow into the same list as /live-training.
 
-   Flip SHOW_STUDENT_RESULTS to false to hide the student results
-   section (removes all student revenue figures).
+   Dates mirror /live-training by design — update both constants
+   together when the real event date is locked.
 ──────────────────────────────────────────────────────────────────── */
 
 const WEBINAR_TITLE = 'Turn Any Passion Into A Profitable Amazon Business';
-const WEBINAR_START_ISO = '2026-05-22T13:00:00-04:00'; // Wed May 22 2026, 1:00 PM EDT
+const WEBINAR_START_ISO = '2026-05-22T13:00:00-04:00';
 const WEBINAR_DURATION_MIN = 60;
 const WEBINAR_JOIN_URL = 'https://www.youtube.com/watch?v=2Wx_YWBCiHo';
 const WEBINAR_DESCRIPTION =
   "Travis Marziani's live training: how he picks winning products, the launch playbook he uses, and how to avoid the most common mistakes new sellers make.";
 
-// Toggle the student results block. The ClickFunnels source carries
-// specific revenue claims per student — set to false to remove them.
-const SHOW_STUDENT_RESULTS = true;
+const ASSET = '/freelivetraining';
 
 function emailFromUrl(): string {
   if (typeof window === 'undefined') return '';
@@ -46,10 +46,23 @@ function formatHumanTime(d: Date): string {
     hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
   });
 }
-function formatShortDate(d: Date): string {
-  const date = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-  const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  return `${date} @ ${time}`;
+function formatShortET(d: Date): string {
+  // "Wednesday, July 29th // 7pm EST (4pm PST)" style, auto-derived
+  const et = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric',
+    hour: 'numeric', timeZone: 'America/New_York',
+  }).formatToParts(d);
+  const pt = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric', timeZone: 'America/Los_Angeles',
+  }).formatToParts(d);
+  const get = (parts: Intl.DateTimeFormatPart[], type: string) =>
+    parts.find((p) => p.type === type)?.value || '';
+  const weekday = get(et, 'weekday');
+  const month = get(et, 'month');
+  const day = get(et, 'day');
+  const etHour = (get(et, 'hour') + get(et, 'dayPeriod')).toLowerCase();
+  const ptHour = (get(pt, 'hour') + get(pt, 'dayPeriod')).toLowerCase();
+  return `${weekday}, ${month} ${day} // ${etHour} ET (${ptHour} PT)`;
 }
 
 function buildGoogleCalendarUrl(start: Date, durationMin: number): string {
@@ -139,8 +152,6 @@ export function FreeLiveTraining() {
   const scrollToForm = (ctx: string) => {
     trackEvent('freelivetraining_cta_clicked', { context: ctx });
     topFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    // Focus the first empty input after the scroll settles so the
-    // user lands on something keyboard-ready, not just a scroll jump.
     setTimeout(() => {
       const inputs = topFormRef.current?.querySelectorAll<HTMLInputElement>('input');
       if (!inputs) return;
@@ -206,7 +217,6 @@ export function FreeLiveTraining() {
 
     setSubmitting(false);
     setRegistered(true);
-    // Jump to the top so the confirmation state is in view.
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -231,7 +241,7 @@ export function FreeLiveTraining() {
 
           <div className="bg-white border-2 border-orange-200 rounded-2xl p-6 md:p-7 shadow-sm mb-6">
             <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.18em] mb-2">
-              Live masterclass
+              Free live masterclass
             </p>
             <h2 className="text-xl md:text-2xl font-black text-gray-900 leading-tight mb-4">
               {WEBINAR_TITLE}
@@ -372,9 +382,13 @@ export function FreeLiveTraining() {
     );
   }
 
-  /* ───────────── form state (long-form sales letter) ───────────── */
-  const livePill = (
-    <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-[0.15em] text-red-700 mb-4">
+  /* ───────────── OPT-IN STATE ───────────── */
+  const livePill = (color: 'light' | 'dark' = 'light') => (
+    <div className={
+      color === 'dark'
+        ? "inline-flex items-center gap-2 bg-red-500/20 border border-red-400/50 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-[0.15em] text-red-300 mb-4"
+        : "inline-flex items-center gap-2 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-[0.15em] text-red-700 mb-4"
+    }>
       <span className="relative inline-flex items-center justify-center w-2 h-2">
         <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-75"></span>
         <span className="relative inline-block w-2 h-2 rounded-full bg-red-600"></span>
@@ -384,198 +398,239 @@ export function FreeLiveTraining() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50/60 via-white to-white text-gray-900">
-      {/* ───── HERO + FORM ───── */}
-      <section ref={topFormRef} className="pt-10 md:pt-14 pb-10 px-5">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-5 gap-8 md:gap-10 items-start">
-          {/* Copy */}
-          <div className="md:col-span-3">
-            {livePill}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.03] mb-4">
-              Turn Any Passion Into A{' '}
-              <span className="text-orange-600">Profitable Amazon Business</span>
-            </h1>
-            <p className="text-base md:text-lg text-gray-700 leading-snug mb-5">
-              Learn the exact Amazon selling method Travis uses to help regular people with no experience launch their first product and hit their first <span className="font-bold text-gray-900">$100,000 in sales</span>.
+    <div className="min-h-screen bg-white text-gray-900">
+      {/* ═══════════ DARK HERO + SIGN-UP FORM ═══════════ */}
+      <section
+        ref={topFormRef}
+        className="relative px-5 pt-10 pb-14 md:pt-14 md:pb-20"
+        style={{
+          backgroundImage: `linear-gradient(rgba(10, 14, 22, 0.88) 0%, rgba(10, 14, 22, 0.92) 100%), url(${ASSET}/dark-bg.svg)`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        <div className="max-w-5xl mx-auto">
+          {/* Event-starts banner strip */}
+          <div className="text-center mb-7">
+            {livePill('dark')}
+            <p className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-orange-400 mb-1">
+              Your event starts
             </p>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700 mb-6">
-              <span className="flex items-center gap-2 font-semibold">
-                <Calendar className="w-4 h-4 text-orange-600" />
-                {formatShortDate(start)}
-              </span>
-              <span className="flex items-center gap-2 font-semibold">
-                <Clock className="w-4 h-4 text-orange-600" />
-                {WEBINAR_DURATION_MIN} min, live
-              </span>
-            </div>
-            <ul className="space-y-2.5 text-sm md:text-base text-gray-800">
-              <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <span>How Travis picks products that keep selling after launch week</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <span>Why "Amazon is saturated" is wrong, and where the opportunity actually is</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <span>Live Q&amp;A at the end, bring your hardest question</span>
-              </li>
-            </ul>
+            <p className="text-base md:text-lg font-bold text-white">
+              {formatShortET(start)}
+            </p>
           </div>
 
-          {/* Form card */}
-          <form onSubmit={handleSubmit} className="md:col-span-2 bg-white border-2 border-orange-200 rounded-2xl p-6 md:p-7 shadow-xl shadow-orange-100/40 space-y-4">
-            <div className="text-center -mt-1 mb-1">
-              <p className="text-orange-600 text-[11px] font-bold uppercase tracking-[0.18em] mb-1">Let's get you signed up</p>
-              <p className="text-xs text-gray-500">Takes 20 seconds. It's free.</p>
-            </div>
-            <div>
-              <label htmlFor="name" className="block text-xs font-bold text-gray-900 mb-1">Name</label>
-              <input
-                id="name"
-                type="text"
-                required
-                autoComplete="name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="Enter your name"
-              />
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-xs font-bold text-gray-900 mb-1">Email</label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="you@email.com"
-              />
-            </div>
-            <div>
-              <label htmlFor="phone" className="block text-xs font-bold text-gray-900 mb-1">Phone</label>
-              <input
-                id="phone"
-                type="tel"
-                required
-                autoComplete="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="+1 (555) 123-4567"
-              />
-              <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
-                <Phone className="w-3 h-3" /> We'll text you a reminder before we go live.
+          <div className="grid md:grid-cols-5 gap-8 md:gap-10 items-start">
+            {/* Left — form */}
+            <div className="md:col-span-3 order-2 md:order-1">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.02] text-white mb-4">
+                Let's Get You{' '}
+                <span className="text-orange-400">Signed Up</span>
+              </h1>
+              <p className="text-base md:text-lg text-slate-300 leading-snug mb-6 max-w-xl">
+                Save your free spot for the live masterclass. Takes 20 seconds, no payment, no replay.
               </p>
+
+              <form
+                onSubmit={handleSubmit}
+                className="bg-white/95 backdrop-blur border border-white/10 rounded-2xl p-5 md:p-6 shadow-2xl shadow-black/40 space-y-4"
+              >
+                <div>
+                  <input
+                    id="name"
+                    type="text"
+                    required
+                    autoComplete="name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full px-4 py-3.5 bg-white border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Enter Your Name Here..."
+                  />
+                </div>
+                <div>
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3.5 bg-white border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Enter Your Email Here..."
+                  />
+                </div>
+                <div>
+                  <input
+                    id="phone"
+                    type="tel"
+                    required
+                    autoComplete="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full px-4 py-3.5 bg-white border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Enter Your Phone Here..."
+                  />
+                  <p className="text-[11px] text-gray-500 mt-1.5 flex items-center gap-1">
+                    <Phone className="w-3 h-3" /> We'll text you a reminder before we go live.
+                  </p>
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-800">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-4 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-300 text-white font-black rounded-xl text-base md:text-lg uppercase tracking-wide transition-colors shadow-md cursor-pointer"
+                >
+                  {submitting ? 'Saving your spot…' : 'Claim Your Free Spot'}
+                  {!submitting && <ArrowRight className="w-5 h-5" />}
+                </button>
+              </form>
+
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-xs md:text-sm text-slate-400">
+                <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-green-400" /> 100% free</span>
+                <span className="flex items-center gap-1.5"><Video className="w-4 h-4 text-red-400" /> Live - no replay</span>
+                <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-green-400" /> 14,000+ students</span>
+              </div>
             </div>
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-800">
-                {error}
+            {/* Right — hero image */}
+            <div className="md:col-span-2 order-1 md:order-2">
+              <div className="relative">
+                <div className="absolute -inset-4 bg-orange-500/20 blur-3xl rounded-full" />
+                <img
+                  src={`${ASSET}/hero.png`}
+                  alt="Travis Marziani - Free Live Amazon Masterclass"
+                  className="relative w-full h-auto rounded-2xl shadow-2xl shadow-black/50"
+                  loading="eager"
+                  decoding="async"
+                />
               </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-300 text-white font-black rounded-xl text-sm md:text-base uppercase tracking-wide transition-colors shadow-md cursor-pointer"
-            >
-              {submitting ? 'Saving your spot…' : 'Claim your free spot'}
-              {!submitting && <ArrowRight className="w-4 h-4" />}
-            </button>
-            <p className="text-[11px] text-gray-500 text-center leading-relaxed">
-              Join link emailed an hour before. No replay.
-            </p>
-          </form>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ───── 3 PILLARS ───── */}
-      <section className="px-5 py-14 md:py-20 bg-white border-y border-gray-100">
+      {/* ═══════════ FREE LIVE MASTERCLASS BAR ═══════════ */}
+      <section className="bg-orange-600 text-white px-5 py-5 md:py-6 text-center">
+        <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.25em] mb-1 text-orange-100">
+          Free Live Masterclass
+        </p>
+        <p className="text-lg md:text-xl font-black tracking-tight">
+          Starts: {formatShortET(start)}
+        </p>
+      </section>
+
+      {/* ═══════════ MAIN OFFER HEADLINE ═══════════ */}
+      <section className="px-5 py-14 md:py-20 bg-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.03] mb-5">
+            Turn Any Passion Into A{' '}
+            <span className="text-orange-600">Profitable Amazon Business</span>
+          </h2>
+          <p className="text-base md:text-xl text-gray-700 leading-snug max-w-3xl mx-auto mb-7">
+            Learn The Exact Amazon Selling Method I've Used To Help Regular People With No Experience Hit Their First{' '}
+            <span className="font-black text-gray-900">$100,000 In Sales</span>
+          </p>
+          <button
+            onClick={() => scrollToForm('main_headline')}
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl text-base md:text-lg uppercase tracking-wide transition-colors shadow-md cursor-pointer"
+          >
+            Save My Free Spot
+            <ArrowRight className="w-5 h-5" />
+          </button>
+          <p className="text-sm text-gray-500 mt-3">{formatShortET(start)}</p>
+        </div>
+      </section>
+
+      {/* ═══════════ 3 PILLARS ═══════════ */}
+      <section className="px-5 py-14 md:py-20 bg-gradient-to-b from-slate-50 to-white border-y border-gray-100">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10 md:mb-12">
-            <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.18em] mb-3">The only business that has all three</p>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] max-w-3xl mx-auto">
-              Selling on Amazon is the <span className="text-orange-600">only online business</span> you can start that has all 3…
+              Selling On Amazon Is The{' '}
+              <span className="text-orange-600">Only Online Business</span>{' '}
+              You Can Start That Has All 3…
             </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-5 md:gap-6">
             {[
               {
-                icon: <Users className="w-6 h-6" />,
                 title: 'Built-In Traffic',
-                body: 'Millions of active buyers already shopping every day, no need to run cold traffic to a landing page nobody has heard of.',
+                body: 'Millions of active buyers already shopping every day',
               },
               {
-                icon: <ShieldCheck className="w-6 h-6" />,
                 title: 'Built-In Trust',
-                body: 'Over 200 million Prime members already trust Amazon with their credit card, so they trust your product by extension.',
+                body: 'Over 200 million existing Prime members',
               },
               {
-                icon: <Package className="w-6 h-6" />,
-                title: 'Done-For-You Logistics',
-                body: 'Amazon handles storage, shipping, returns and customer service, so you focus on the product and the marketing.',
+                title: 'DFY Logistics',
+                body: 'Amazon handles storage, shipping, and returns for you',
               },
             ].map((p) => (
-              <div key={p.title} className="bg-gradient-to-b from-orange-50 to-white border border-orange-100 rounded-2xl p-6 md:p-7 shadow-sm">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-orange-600 text-white mb-4 shadow-md shadow-orange-200">
-                  {p.icon}
-                </div>
-                <h3 className="text-lg md:text-xl font-black text-gray-900 mb-2">{p.title}</h3>
+              <div
+                key={p.title}
+                className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm text-center"
+              >
+                <img
+                  src={`${ASSET}/feature-icon.png`}
+                  alt=""
+                  className="w-20 h-20 mx-auto mb-4 object-contain"
+                  loading="lazy"
+                />
+                <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-2">{p.title}</h3>
                 <p className="text-sm md:text-base text-gray-700 leading-snug">{p.body}</p>
               </div>
             ))}
           </div>
-          <div className="text-center mt-10">
-            <button
-              onClick={() => scrollToForm('pillars')}
-              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl text-sm md:text-base uppercase tracking-wide transition-colors shadow-md cursor-pointer"
-            >
-              Save my free spot
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
         </div>
       </section>
 
-      {/* ───── STATS ───── */}
-      <section className="px-5 py-14 md:py-20">
+      {/* ═══════════ STATS ═══════════ */}
+      <section className="px-5 py-14 md:py-20 bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10 md:mb-12">
-            <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.18em] mb-3">And that's probably why…</p>
+            <p className="text-orange-600 text-xs md:text-sm font-bold uppercase tracking-[0.18em] mb-3">
+              And that's probably why…
+            </p>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] max-w-3xl mx-auto">
-              Amazon is creating more <span className="text-orange-600">everyday millionaires</span> than any other online business…
+              Amazon Creates More Millionaires Than Any Other Online Business…
             </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-5 md:gap-6">
             {[
               {
                 stat: '60%',
-                label: 'of all Amazon sales come from independent sellers',
+                label: 'Of all Amazon sales come from independent sellers',
                 src: 'Amazon Annual Report, 2025',
-                icon: <TrendingUp className="w-5 h-5" />,
               },
               {
                 stat: '$375K',
-                label: 'average annual sales per US seller on Amazon',
+                label: 'Average annual sales per US seller',
                 src: 'Amazon Seller Report, 2025',
-                icon: <Trophy className="w-5 h-5" />,
               },
               {
                 stat: '75K+',
-                label: 'sellers surpassed $1 million in sales',
+                label: 'Sellers surpassed $1 million in sales',
                 src: 'Amazon Seller Report, 2025',
-                icon: <Zap className="w-5 h-5" />,
               },
             ].map((s) => (
-              <div key={s.stat} className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
-                <div className="flex items-center gap-2 text-orange-600 mb-3">{s.icon}<span className="text-[11px] font-bold uppercase tracking-[0.18em]">Stat</span></div>
-                <p className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight leading-none mb-2">{s.stat}</p>
-                <p className="text-sm md:text-base text-gray-800 leading-snug mb-3">{s.label}</p>
+              <div
+                key={s.stat}
+                className="bg-gradient-to-br from-orange-50 to-white border-2 border-orange-100 rounded-2xl p-6 md:p-8 text-center shadow-sm"
+              >
+                <p className="text-5xl md:text-6xl font-black text-orange-600 tracking-tight leading-none mb-3">
+                  {s.stat}
+                </p>
+                <p className="text-sm md:text-base text-gray-800 leading-snug mb-3 font-semibold">
+                  {s.label}
+                </p>
                 <p className="text-[11px] text-gray-500 italic">Source: {s.src}</p>
               </div>
             ))}
@@ -583,78 +638,89 @@ export function FreeLiveTraining() {
           <div className="text-center mt-10">
             <button
               onClick={() => scrollToForm('stats')}
-              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl text-sm md:text-base uppercase tracking-wide transition-colors shadow-md cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl text-base md:text-lg uppercase tracking-wide transition-colors shadow-md cursor-pointer"
             >
-              Learn how to start selling
-              <ArrowRight className="w-4 h-4" />
+              Learn How To Start Selling
+              <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         </div>
       </section>
 
-      {/* ───── SOCIAL PROOF ───── */}
-      {SHOW_STUDENT_RESULTS && (
-        <section className="px-5 py-14 md:py-20 bg-gradient-to-b from-white to-orange-50/60 border-t border-gray-100">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-10 md:mb-12">
-              <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.18em] mb-3">14,000+ students</p>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05]">
-                Real students. <span className="text-orange-600">Real results.</span>
-              </h2>
-              <p className="text-sm md:text-base text-gray-600 mt-3 max-w-xl mx-auto">A few of the students who've worked through this exact method.</p>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-5 md:gap-6">
-              {[
-                { name: 'Andrew', line: 'Reached $330,000 in his first 12 months on Amazon' },
-                { name: 'Michael', line: 'Restarted on Amazon with this method and crossed six figures in 12 months' },
-                { name: 'Jenny', line: 'Mom-owned brand that reached six figures in year one' },
-                { name: 'Alyssa', line: 'Reached six figures in under a year as a first-time seller' },
-              ].map((t) => (
-                <div key={t.name} className="bg-white border border-gray-200 rounded-2xl p-5 md:p-6 shadow-sm flex gap-4">
-                  <div className="shrink-0 w-12 h-12 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center font-black text-orange-700">
-                    {t.name[0]}
-                  </div>
-                  <div>
-                    <p className="font-black text-gray-900">{t.name}</p>
-                    <p className="text-sm md:text-base text-gray-700 leading-snug">{t.line}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="text-center mt-10">
-              <button
-                onClick={() => scrollToForm('social_proof')}
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl text-sm md:text-base uppercase tracking-wide transition-colors shadow-md cursor-pointer"
-              >
-                Watch the free live training
-                <ArrowRight className="w-4 h-4" />
-              </button>
-              <p className="text-[11px] text-gray-500 mt-3 max-w-md mx-auto">
-                Individual results shown aren't typical, require work and aren't guaranteed. See full disclaimer below.
-              </p>
-            </div>
+      {/* ═══════════ SOCIAL PROOF ═══════════ */}
+      <section className="px-5 py-14 md:py-20 bg-gradient-to-b from-slate-50 to-white border-t border-gray-100">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10 md:mb-12">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05]">
+              Real Students. <span className="text-orange-600">Real Results.</span>
+            </h2>
+            <p className="text-sm md:text-base text-gray-600 mt-3 max-w-xl mx-auto">
+              14,000+ students have seen this system. Here's a breakdown of where some landed.
+            </p>
           </div>
-        </section>
-      )}
+          <div className="grid sm:grid-cols-2 gap-5 md:gap-6">
+            {[
+              { name: 'Andrew', line: 'Hit $330,000 in his first 12 months on Amazon' },
+              { name: 'Michael', line: 'Restarted on Amazon with our method and crossed six figures in sales in 12 months.' },
+              { name: 'Jenny', line: 'Mom-owned brand that hit six figures in year one.' },
+              { name: 'Alyssa', line: 'Six figures in under a year as a first-time seller.' },
+            ].map((t) => (
+              <div
+                key={t.name}
+                className="bg-white border border-gray-200 rounded-2xl p-5 md:p-6 shadow-sm flex gap-4"
+              >
+                <div className="shrink-0 w-14 h-14 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center font-black text-xl text-orange-700">
+                  {t.name[0]}
+                </div>
+                <div>
+                  <p className="font-black text-gray-900 text-lg">{t.name}</p>
+                  <p className="text-sm md:text-base text-gray-700 leading-snug">{t.line}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-10">
+            <button
+              onClick={() => scrollToForm('social_proof')}
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl text-base md:text-lg uppercase tracking-wide transition-colors shadow-md cursor-pointer"
+            >
+              Watch The Free Live Training
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            <p className="text-[11px] text-gray-500 mt-3 max-w-md mx-auto">
+              Individual results shown aren't typical, require work and aren't guaranteed. See full disclaimer below.
+            </p>
+          </div>
+        </div>
+      </section>
 
-      {/* ───── BOTTOM CTA ───── */}
-      <section className="px-5 py-14 md:py-20 bg-white">
-        <div className="max-w-3xl mx-auto text-center">
-          {livePill}
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] mb-4">
-            Save your free spot before it fills up
+      {/* ═══════════ DARK FINAL CTA ═══════════ */}
+      <section
+        className="relative px-5 py-14 md:py-20 text-center"
+        style={{
+          backgroundImage: `linear-gradient(rgba(10, 14, 22, 0.90) 0%, rgba(10, 14, 22, 0.94) 100%), url(${ASSET}/dark-bg.svg)`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        <div className="max-w-3xl mx-auto">
+          {livePill('dark')}
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] text-white mb-4">
+            Turn Any Passion Into A{' '}
+            <span className="text-orange-400">Profitable Amazon Business</span>
           </h2>
-          <p className="text-base md:text-lg text-gray-700 leading-snug mb-6 max-w-xl mx-auto">
-            <span className="font-bold text-gray-900">{formatShortDate(start)}.</span> One hour, live. No replay.
+          <p className="text-base md:text-lg text-slate-300 leading-snug mb-6 max-w-xl mx-auto">
+            <span className="font-bold text-white">{formatShortET(start)}.</span> One hour, live. No replay.
           </p>
           <button
             onClick={() => scrollToForm('bottom_cta')}
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl text-base md:text-lg uppercase tracking-wide transition-colors shadow-lg shadow-orange-200 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl text-base md:text-lg uppercase tracking-wide transition-colors shadow-lg shadow-orange-500/30 cursor-pointer"
           >
-            Claim your free spot
+            Save My Free Spot
             <ArrowRight className="w-5 h-5" />
           </button>
-          <p className="text-xs text-gray-500 mt-4">100% free · Live Q&amp;A · No replay</p>
+          <p className="text-xs text-slate-400 mt-4">100% free · Live Q&amp;A · No replay</p>
         </div>
       </section>
 

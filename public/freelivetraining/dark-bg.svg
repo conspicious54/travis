@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Main gradient: deep black at top into a rich burnt orange at the bottom -->
+    <linearGradient id="baseGradient" x1="0" y1="0" x2="0.25" y2="1">
+      <stop offset="0" stop-color="#231A12"/>
+      <stop offset="0.45" stop-color="#33210F"/>
+      <stop offset="0.75" stop-color="#5C300C"/>
+      <stop offset="1" stop-color="#9A5412"/>
+    </linearGradient>
+
+    <!-- Soft orange glow rising from the bottom center, keeps the middle readable -->
+    <radialGradient id="glow" cx="0.5" cy="1.15" r="0.9">
+      <stop offset="0" stop-color="#E8781E" stop-opacity="0.35"/>
+      <stop offset="0.5" stop-color="#C05A10" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#C05A10" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Subtle vignette so edges stay dark and text pops in the center -->
+    <radialGradient id="vignette" cx="0.5" cy="0.4" r="1.1">
+      <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="0.75" stop-color="#000000" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.22"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Base gradient -->
+  <rect width="1920" height="1080" fill="url(#baseGradient)"/>
+
+  <!-- Subtle geometric blocks, same idea as the reference page: barely-there angular shapes -->
+  <g fill="#FFFFFF" opacity="0.06">
+    <polygon points="0,0 420,0 180,320 0,320"/>
+    <polygon points="1920,140 1920,520 1560,520"/>
+    <polygon points="240,1080 640,700 900,1080"/>
+    <rect x="1100" y="60" width="360" height="360" transform="rotate(12 1280 240)"/>
+    <polygon points="1500,780 1920,700 1920,1080 1620,1080"/>
+  </g>
+  <g fill="#000000" opacity="0.12">
+    <polygon points="620,0 1040,0 780,380"/>
+    <rect x="120" y="420" width="420" height="420" transform="rotate(-14 330 630)"/>
+    <polygon points="1680,0 1920,0 1920,340"/>
+    <polygon points="900,540 1300,460 1180,860"/>
+  </g>
+  <g fill="#F08A2A" opacity="0.08">
+    <polygon points="0,760 380,640 260,1080 0,1080"/>
+    <rect x="1380" y="380" width="300" height="300" transform="rotate(18 1530 530)"/>
+    <polygon points="560,900 940,820 860,1080 520,1080"/>
+  </g>
+
+  <!-- Diagonal sheen for depth -->
+  <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.03"/>
+    <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
+    <stop offset="1" stop-color="#F08A2A" stop-opacity="0.04"/>
+  </linearGradient>
+  <rect width="1920" height="1080" fill="url(#sheen)"/>
+
+  <!-- Bottom orange glow -->
+  <rect width="1920" height="1080" fill="url(#glow)"/>
+
+  <!-- Vignette on top of everything -->
+  <rect width="1920" height="1080" fill="url(#vignette)"/>
+</svg>
