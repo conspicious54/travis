@@ -40,6 +40,31 @@ const STUDENT_RESULTS: Array<{ name: string; line: string; videoId: string }> = 
   { name: 'Alyssa',  line: 'Six figures in under a year as a first-time seller.',                                  videoId: 'TE9uGqS0tt0' },
 ];
 
+// Confirmation-page sidebar videos. Pre-filled with the four student
+// result IDs we lifted from the CF HTML; swap for the real CF
+// confirmation-page video IDs when you have them.
+const CASE_STUDIES_VIDEOS: readonly string[] = [
+  'IRb5EpPGnRU', 'Vw9OrGVTGoI', 'u0uTL3662Ic', 'TE9uGqS0tt0',
+];
+const MORE_FREE_CONTENT_VIDEOS: readonly string[] = [
+  // TODO: replace with the real "More Free Content" video IDs
+  // from the CF confirmation page.
+  'IRb5EpPGnRU', 'Vw9OrGVTGoI', 'u0uTL3662Ic',
+];
+
+interface Countdown { d: number; h: number; m: number; s: number; past: boolean; }
+function calcCountdown(target: Date): Countdown {
+  const diff = target.getTime() - Date.now();
+  if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0, past: true };
+  return {
+    d: Math.floor(diff / 86400000),
+    h: Math.floor((diff % 86400000) / 3600000),
+    m: Math.floor((diff % 3600000) / 60000),
+    s: Math.floor((diff % 60000) / 1000),
+    past: false,
+  };
+}
+
 function emailFromUrl(): string {
   if (typeof window === 'undefined') return '';
   return getCleanIdentity(new URLSearchParams(window.location.search)).email || '';
@@ -162,6 +187,16 @@ export function FreeLiveTraining() {
   const [dialCountry, setDialCountry] = useState<DialCountry>(DEFAULT_DIAL);
   const [dialTouched, setDialTouched] = useState(false);
   const [dialOpen, setDialOpen] = useState(false);
+  const [countdown, setCountdown] = useState<Countdown>(() => calcCountdown(start));
+
+  // Tick the countdown once per second only while the confirmation
+  // state is on screen; before registration it's wasted work.
+  useEffect(() => {
+    if (!registered) return;
+    setCountdown(calcCountdown(start));
+    const id = window.setInterval(() => setCountdown(calcCountdown(start)), 1000);
+    return () => window.clearInterval(id);
+  }, [registered, start]);
 
   useEffect(() => {
     document.title = `Free Live Training - ${WEBINAR_TITLE}`;
@@ -256,74 +291,233 @@ export function FreeLiveTraining() {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  /* ───────────── confirmation state ───────────── */
+  /* ───────────── confirmation state — strict CF replica ───────────── */
   if (registered) {
+    // Weekday for the "Here's What To Do Before <Day>" heading and
+    // the Zoom-prep intro. Auto-matches the viewer's local timezone.
+    const eventWeekday = new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(start);
+    const dateFull = formatDateCaption(start); // "Friday, May 22nd // 1pm EDT (your local time)"
+    const confirmBg: React.CSSProperties = {
+      backgroundImage: `linear-gradient(rgba(35, 33, 33, 0.41) 0%, rgba(35, 33, 33, 0.41) 100%), url(${ASSET}/dark-bg.svg)`,
+      backgroundColor: '#1a0f08',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    };
+
     return (
-      <div className="min-h-screen bg-gradient-to-b from-orange-50/60 via-white to-white text-gray-900">
-        <div className="max-w-2xl mx-auto px-5 pt-12 md:pt-16 pb-16">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-green-100 border-2 border-green-300 mb-5">
-              <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-green-600" strokeWidth={2.5} />
+      <div
+        className="min-h-screen"
+        style={{ backgroundColor: '#1a0f08', color: '#FFFFFF', fontFamily: '"Open Sans", "Helvetica Neue", Arial, sans-serif' }}
+      >
+        <section className="px-4 pt-8 md:pt-10 pb-12 md:pb-16" style={confirmBg}>
+          <div className="w-full max-w-6xl mx-auto">
+            {/* Flame logo */}
+            <div className="flex justify-center mb-5">
+              <img src={`${ASSET}/feature-icon.png`} alt="" className="w-14 h-14 md:w-16 md:h-16 object-contain" />
             </div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-[1.05] mb-3">
-              You're registered.
+
+            {/* Congrats headline */}
+            <h1
+              className="text-center font-black tracking-tight leading-[1.08] mb-6"
+              style={{ color: '#F28000', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(28px, 4.4vw, 54px)' }}
+            >
+              CONGRATULATIONS! YOU'RE IN!
             </h1>
-            <p className="text-base md:text-lg text-gray-700 leading-snug max-w-lg mx-auto">
-              We'll send the join link to{' '}
-              <span className="font-bold text-gray-900 break-all">{email.trim().toLowerCase()}</span>{' '}
-              an hour before we go live.
-            </p>
+
+            {/* Scheduled-for callout */}
+            <div
+              className="mx-auto max-w-2xl rounded-md px-5 py-4 md:px-6 md:py-5 text-center mb-7 md:mb-9"
+              style={{ border: '1px solid #F28000', backgroundColor: 'rgba(0,0,0,0.25)' }}
+            >
+              <p className="text-white font-semibold italic flex items-center justify-center gap-2 flex-wrap" style={{ fontSize: 'clamp(16px, 1.6vw, 20px)' }}>
+                <Calendar className="w-5 h-5 text-orange-500 shrink-0" />
+                <span>Your Live Training Is Scheduled For:</span>
+              </p>
+              <p className="text-white font-bold italic mt-1" style={{ fontSize: 'clamp(16px, 1.6vw, 20px)' }}>
+                {dateFull}
+              </p>
+            </div>
+
+            {/* Countdown */}
+            <div className="mx-auto max-w-3xl grid grid-cols-4 gap-3 md:gap-5 mb-10 md:mb-14">
+              {[
+                { v: countdown.d, label: 'Days' },
+                { v: countdown.h, label: 'Hours' },
+                { v: countdown.m, label: 'Minutes' },
+                { v: countdown.s, label: 'Seconds' },
+              ].map((cell) => (
+                <div
+                  key={cell.label}
+                  className="rounded-md py-4 md:py-5 text-center"
+                  style={{ border: '1px solid rgba(255,255,255,0.35)', backgroundColor: 'rgba(0,0,0,0.25)' }}
+                >
+                  <p
+                    className="font-black text-white leading-none tabular-nums"
+                    style={{ fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(28px, 4vw, 54px)' }}
+                  >
+                    {cell.label === 'Days' ? cell.v : String(cell.v).padStart(2, '0')}
+                  </p>
+                  <p className="text-white/70 mt-1 md:mt-2" style={{ fontSize: 'clamp(12px, 1.1vw, 14px)' }}>
+                    {cell.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Section heading */}
+            <h2
+              className="font-black tracking-tight leading-[1.1] mb-3"
+              style={{ fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(26px, 3.4vw, 42px)' }}
+            >
+              <span className="text-white">Here's What To Do </span>
+              <span style={{ color: '#F28000' }}>Before {eventWeekday}</span>
+            </h2>
+            <hr className="border-0 h-[2px] mb-8 md:mb-10 max-w-lg" style={{ backgroundColor: '#F28000' }} />
+
+            {/* Two-column layout */}
+            <div className="grid lg:grid-cols-12 gap-8 lg:gap-10">
+              {/* Left — actionables */}
+              <div className="lg:col-span-8 space-y-10 md:space-y-12">
+                {/* Add to Calendar */}
+                <section>
+                  <h3
+                    className="font-black text-white mb-5"
+                    style={{ fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(22px, 2.6vw, 32px)' }}
+                  >
+                    Add To Your Calendar…
+                  </h3>
+                  <div className="flex flex-col sm:flex-row gap-3 max-w-xl">
+                    <a
+                      href={buildGoogleCalendarUrl(start, WEBINAR_DURATION_MIN)}
+                      target="_blank" rel="noopener noreferrer"
+                      onClick={() => trackEvent('freelivetraining_calendar_added', { provider: 'google' })}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 font-black rounded-md uppercase tracking-wide transition-colors shadow-md cursor-pointer"
+                      style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(14px, 1.4vw, 18px)' }}
+                    >
+                      <Calendar className="w-5 h-5" /> Add To My Calendar
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => { downloadIcs(start, WEBINAR_DURATION_MIN); trackEvent('freelivetraining_calendar_added', { provider: 'ics' }); }}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 font-bold rounded-md uppercase tracking-wide transition-colors cursor-pointer border"
+                      style={{ borderColor: '#F28000', color: '#F28000', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(14px, 1.4vw, 18px)' }}
+                    >
+                      Apple / Outlook (.ics)
+                    </button>
+                  </div>
+                  <p className="text-white/80 mt-3" style={{ fontSize: 'clamp(14px, 1.3vw, 17px)' }}>
+                    {dateFull}
+                  </p>
+                  <p className="text-white/90 mt-2" style={{ fontSize: 'clamp(14px, 1.3vw, 17px)' }}>
+                    Click it now &amp; set a reminder so you don't miss when we go live.
+                  </p>
+                </section>
+
+                {/* Check Your Email (CF had this titled 'Add To Your
+                    Calendar...' a second time, but the body is about
+                    checking email — kept the body verbatim, fixed the
+                    heading to what it was obviously meant to be.) */}
+                <section>
+                  <h3
+                    className="font-black text-white mb-4"
+                    style={{ fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(22px, 2.6vw, 32px)' }}
+                  >
+                    Check Your Email…
+                  </h3>
+                  <p className="text-white/90 leading-relaxed max-w-2xl" style={{ fontSize: 'clamp(15px, 1.4vw, 18px)' }}>
+                    That's where I'll be sending all the details about the event. Make sure to check your spam or promotions folder if you don't see my email in your primary inbox.
+                  </p>
+                </section>
+
+                {/* Be Prepared On Zoom */}
+                <section>
+                  <h3
+                    className="font-black text-white mb-3"
+                    style={{ fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(22px, 2.6vw, 32px)' }}
+                  >
+                    Be Prepared On Zoom…
+                  </h3>
+                  <p className="text-white/90 leading-relaxed max-w-2xl mb-5" style={{ fontSize: 'clamp(15px, 1.4vw, 18px)' }}>
+                    This upcoming live workshop will be held on Zoom, so a couple things to know before {eventWeekday} night:
+                  </p>
+                  <ul className="space-y-5 max-w-2xl">
+                    {[
+                      { title: 'Watch from a laptop, desktop, or tablet for the best experience:', body: "I'll be sharing my screen, walking through specific examples, and dropping resources in the chat. Trying to follow along on your phone is going to make it a lot harder to see everything and take notes." },
+                      { title: 'Download the Zoom app ahead of time if you can:', body: `It's free, takes about 60 seconds, and makes joining the workshop seamless. If you'd rather not download anything, no worries. When you click the link I send you ${eventWeekday}, you'll see an option that says "Join from your browser" — that works too. Just know the app version tends to run smoother, especially if your internet isn't perfect.` },
+                      { title: 'Block out the full 90 minutes:', body: "Don't tell yourself you'll catch the replay. The people who show up live are the ones who walk away with a plan, and the bonuses I'll be giving away are only for live attendees." },
+                    ].map((bullet, i) => (
+                      <li key={i} className="flex items-start gap-3 text-white/90 leading-relaxed" style={{ fontSize: 'clamp(15px, 1.4vw, 18px)' }}>
+                        <CheckCircle className="w-5 h-5 md:w-6 md:h-6 shrink-0 mt-0.5" style={{ color: '#F28000' }} />
+                        <span>
+                          <span className="font-bold text-white">{bullet.title}</span>{' '}
+                          {bullet.body}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </div>
+
+              {/* Right — sidebar */}
+              <aside className="lg:col-span-4 space-y-8">
+                {CASE_STUDIES_VIDEOS.length > 0 && (
+                  <div className="rounded-md p-4 md:p-5" style={{ border: '1px solid #F28000' }}>
+                    <div
+                      className="rounded-md -mx-4 md:-mx-5 -mt-4 md:-mt-5 mb-5 py-3 text-center font-black uppercase tracking-wide text-white"
+                      style={{ backgroundColor: '#F28000', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(14px, 1.3vw, 17px)' }}
+                    >
+                      Case Studies
+                    </div>
+                    <div className="space-y-4">
+                      {CASE_STUDIES_VIDEOS.map((id, i) => (
+                        <div key={`cs-${i}`} className="relative w-full rounded-md overflow-hidden shadow-lg shadow-black/50" style={{ aspectRatio: '16 / 9' }}>
+                          <iframe
+                            src={`https://www.youtube.com/embed/${id}?modestbranding=1&rel=0`}
+                            title={`Case study ${i + 1}`}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            loading="lazy"
+                            className="absolute inset-0 w-full h-full border-0"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {MORE_FREE_CONTENT_VIDEOS.length > 0 && (
+                  <div className="rounded-md p-4 md:p-5" style={{ border: '1px solid #F28000' }}>
+                    <div
+                      className="rounded-md -mx-4 md:-mx-5 -mt-4 md:-mt-5 mb-5 py-3 text-center font-black uppercase tracking-wide text-white"
+                      style={{ backgroundColor: '#F28000', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(14px, 1.3vw, 17px)' }}
+                    >
+                      More Free Content
+                    </div>
+                    <div className="space-y-4">
+                      {MORE_FREE_CONTENT_VIDEOS.map((id, i) => (
+                        <div key={`mfc-${i}`} className="relative w-full rounded-md overflow-hidden shadow-lg shadow-black/50" style={{ aspectRatio: '16 / 9' }}>
+                          <iframe
+                            src={`https://www.youtube.com/embed/${id}?modestbranding=1&rel=0`}
+                            title={`Free content ${i + 1}`}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            loading="lazy"
+                            className="absolute inset-0 w-full h-full border-0"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </aside>
+            </div>
           </div>
-          <div className="bg-white border-2 border-orange-200 rounded-2xl p-6 md:p-7 shadow-sm mb-6">
-            <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.18em] mb-2">Free live masterclass</p>
-            <h2 className="text-xl md:text-2xl font-black text-gray-900 leading-tight mb-4">{WEBINAR_TITLE}</h2>
-            <div className="flex items-start gap-3 mb-2">
-              <Calendar className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-              <p className="text-gray-900 font-bold">{formatHumanDate(start)}</p>
-            </div>
-            <div className="flex items-start gap-3 mb-4">
-              <Clock className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-              <p className="text-gray-900 font-bold">{formatHumanTime(start)} <span className="text-gray-500 font-normal">({WEBINAR_DURATION_MIN} min)</span></p>
-            </div>
-            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 flex items-start gap-2 text-sm">
-              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              <p className="text-red-800 leading-snug"><span className="font-bold">This is LIVE</span> - there's no replay. If you miss it, you miss it.</p>
-            </div>
-          </div>
-          <section className="bg-white border-2 border-orange-300 rounded-2xl p-6 md:p-7 shadow-lg shadow-orange-100/50 mb-6">
-            <h3 className="text-lg md:text-xl font-black text-gray-900 leading-tight mb-2">Add it to your calendar right now</h3>
-            <p className="text-sm text-gray-600 leading-snug mb-5">Calendar alerts are the #1 reason people actually show up. The invite includes reminders at <span className="font-semibold text-gray-700">1 day, 1 hour, and 15 minutes</span> before.</p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <a href={buildGoogleCalendarUrl(start, WEBINAR_DURATION_MIN)} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('freelivetraining_calendar_added', { provider: 'google' })} className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer">
-                <Calendar className="w-4 h-4" /> Google Calendar
-              </a>
-              <button onClick={() => { downloadIcs(start, WEBINAR_DURATION_MIN); trackEvent('freelivetraining_calendar_added', { provider: 'ics' }); }} className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer">
-                <Calendar className="w-4 h-4" /> Apple / Outlook (.ics)
-              </button>
-            </div>
-          </section>
-          <section className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm mb-6">
-            <h3 className="text-lg md:text-xl font-black text-gray-900 leading-tight mb-3">Where you'll watch</h3>
-            <a href={WEBINAR_JOIN_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('freelivetraining_youtube_link_clicked', { context: 'confirmation' })} className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 hover:text-red-800 rounded-lg text-sm font-semibold transition-colors mb-3 break-all">
-              <Youtube className="w-4 h-4 shrink-0" /><span className="truncate">{WEBINAR_JOIN_URL}</span>
-            </a>
-            <p className="text-sm text-gray-700 leading-relaxed"><span className="font-bold">Open it now and hit the bell icon</span> - YouTube will ping you the moment Travis goes live.{phone.trim() ? ` We'll also text ${phone.trim()} an hour before.` : " We'll also email you an hour before."}</p>
-          </section>
-          <section className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm mb-6">
-            <h3 className="text-lg md:text-xl font-black text-gray-900 leading-tight mb-4">How to show up ready</h3>
-            <ul className="space-y-3 text-sm md:text-base text-gray-800 leading-relaxed">
-              <li className="flex items-start gap-3"><MonitorSmartphone className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" /><span>Use a <span className="font-semibold">desktop or laptop</span> if you can - easier to follow along and take notes.</span></li>
-              <li className="flex items-start gap-3"><Wifi className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" /><span>Be on a <span className="font-semibold">stable internet connection</span> - YouTube live can buffer on cellular.</span></li>
-              <li className="flex items-start gap-3"><Video className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" /><span>Have a <span className="font-semibold">notepad ready</span> - Travis moves fast and the actionable stuff comes early.</span></li>
-              <li className="flex items-start gap-3"><Clock className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" /><span>Block the <span className="font-semibold">full hour</span> on your calendar - no half-attention, no multitasking.</span></li>
-            </ul>
-          </section>
-          <p className="text-xs text-gray-500 text-center leading-relaxed mb-10 flex items-center justify-center gap-2">
-            <BookmarkPlus className="w-4 h-4 text-gray-400" />
-            Bookmark this page (<span className="font-mono font-semibold text-gray-700">Ctrl/Cmd + D</span>) so you can come back when it's time.
-          </p>
+        </section>
+
+        <div style={{ backgroundColor: '#1a0f08' }} className="pt-2">
+          <LegalDisclaimer />
         </div>
-        <LegalDisclaimer />
       </div>
     );
   }
