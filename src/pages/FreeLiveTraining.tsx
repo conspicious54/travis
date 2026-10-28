@@ -310,10 +310,16 @@ export function FreeLiveTraining() {
   const topBanner = formatTopBanner(start);
   const dateCaption = formatDateCaption(start);
 
-  // Section-level dark background with the CF decorative SVG baked in.
+  // CF's actual recipe (lifted from the raw CF HTML):
+  //   linear-gradient(rgba(35,33,33,0.41) 0%, rgba(35,33,33,0.41) 100%),
+  //   url(dark-bg.svg),
+  //   rgba(255,255,255,0)
+  // The SVG is a deep-black-to-burnt-orange gradient with subtle
+  // angular shapes; the 41% warm-gray overlay darkens it just
+  // enough to keep headline contrast without hiding the pattern.
   const darkSectionBg: React.CSSProperties = {
-    backgroundImage: `linear-gradient(rgba(10, 10, 10, 0.92) 0%, rgba(10, 10, 10, 0.95) 100%), url(${ASSET}/dark-bg.svg)`,
-    backgroundColor: '#0A0A0A',
+    backgroundImage: `linear-gradient(rgba(35, 33, 33, 0.41) 0%, rgba(35, 33, 33, 0.41) 100%), url(${ASSET}/dark-bg.svg)`,
+    backgroundColor: '#1a0f08',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
@@ -330,7 +336,7 @@ export function FreeLiveTraining() {
          viewport and the content won't blow past the fold. */}
       <section
         ref={topFormRef}
-        className="min-h-screen flex items-center px-4 py-6 md:py-8"
+        className="px-4 pt-4 md:pt-6 pb-6 md:pb-8"
         style={darkSectionBg}
       >
         <div className="w-full max-w-xl mx-auto">
