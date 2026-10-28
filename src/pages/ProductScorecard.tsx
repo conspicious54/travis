@@ -100,7 +100,9 @@ interface Keyword {
 }
 
 const MAX_KEYWORDS = 20;
-const DEFAULT_CONVERSION_RATE = 0.10;
+// PPF Sales Estimator uses 33% as the "clicks that convert" baseline (see
+// the Reference tab in Sales Estimator - PPF.xlsx). Matches Travis's template.
+const DEFAULT_CONVERSION_RATE = 0.33;
 
 const emptyKeyword = (): Keyword => ({
   id: `kw-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -110,33 +112,36 @@ const emptyKeyword = (): Keyword => ({
   relevancy: 3,
 });
 
-/** Rough Amazon organic CTR by rank position (page 1 = pos 1–16). Values compiled from
- *  public click-share studies; use as directional, not surgical. */
+/** Amazon organic CTR by rank. Matches the Reference tab in the PPF
+ *  Sales Estimator template. */
 function ctrAtPosition(pos: number): number {
-  if (pos <= 1) return 0.28;
-  if (pos === 2) return 0.14;
-  if (pos === 3) return 0.09;
-  if (pos === 4) return 0.06;
-  if (pos === 5) return 0.045;
-  if (pos <= 10) return 0.025;
-  if (pos <= 15) return 0.012;
-  if (pos <= 20) return 0.007;
-  if (pos <= 30) return 0.004;
-  if (pos <= 50) return 0.002;
-  return 0.001;
+  if (pos <= 1) return 0.35;
+  if (pos === 2) return 0.17;
+  if (pos === 3) return 0.12;
+  if (pos === 4) return 0.08;
+  if (pos === 5) return 0.07;
+  if (pos === 6) return 0.06;
+  if (pos === 7) return 0.05;
+  if (pos === 8) return 0.04;
+  if (pos === 9) return 0.04;
+  if (pos === 10) return 0.03;
+  if (pos <= 16) return 0.02;
+  if (pos <= 25) return 0.01;
+  if (pos <= 40) return 0.005;
+  return 0.002;
 }
 
 /** Estimate the organic rank a listing can realistically land at.
- *  Blends ratio (your "opportunity / volume" bar) with relevancy (1–5).
- *  Quality ∈ [0,1]: 1 = 3x ratio AND perfect relevancy → pos ~3;
+ *  Blends ratio (opportunity / volume) with relevancy (1–5).
+ *  Quality ∈ [0,1]: 1 = 3x+ ratio AND relevancy 5 → pos 1.
  *  Quality 0 → page-two territory. */
 function estimatePosition(ratio: number, relevancy: number): number {
-  if (!isFinite(ratio) || ratio <= 0) return 60;
+  if (!isFinite(ratio) || ratio <= 0) return 50;
   const ratioQuality = Math.min(ratio / 3, 1);
   const relQuality = Math.max(1, Math.min(5, relevancy)) / 5;
   const quality = ratioQuality * relQuality;
-  const pos = 3 + Math.pow(1 - quality, 1.5) * 60;
-  return Math.round(pos);
+  const pos = 1 + Math.pow(1 - quality, 1.5) * 50;
+  return Math.max(1, Math.round(pos));
 }
 
 function estimateMonthlySales(sv: number, pos: number, conversionRate = DEFAULT_CONVERSION_RATE): number {
@@ -363,7 +368,7 @@ function KeywordRow({
 }) {
   const ratio = keyword.searchVolume > 0 ? keyword.opportunityScore / keyword.searchVolume : 0;
   const tier = keyword.searchVolume > 0 && keyword.opportunityScore > 0 ? ratioTier(ratio) : null;
-  const oppLabel = researchTool === 'smartscout' ? 'Opportunity Score' : 'Cerebro IQ Score';
+  const oppLabel = researchTool === 'smartscout' ? 'Opportunity Score' : 'Magnet IQ Score';
   const relTier = relevancyTier(keyword.relevancy);
   const hasData = keyword.searchVolume > 0 && keyword.opportunityScore > 0;
   const estPos = hasData ? estimatePosition(ratio, keyword.relevancy) : null;
@@ -513,27 +518,59 @@ function KeywordResearch({
       const XLSX = await import('xlsx');
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: 'array' });
-      // Prefer the 2nd sheet (where the sales-estimator template keeps keywords); fall back to the 1st.
-      const sheetName = wb.SheetNames[1] || wb.SheetNames[0];
+
+      // Pick the keyword sheet by name if present (PPF template), else the 2nd tab, else the 1st.
+      const byName = wb.SheetNames.find(n => /keyword/i.test(n) && !/example|competitor|reference/i.test(n));
+      const sheetName = byName || wb.SheetNames[1] || wb.SheetNames[0];
       if (!sheetName) {
         setUploadStatus({ kind: 'err', msg: 'No sheets found in that file.' });
         return;
       }
       const rows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[sheetName], { header: 1, blankrows: false });
 
-      const parsed: Keyword[] = [];
-      for (const row of rows) {
+      // Find the header row by scanning for one that contains "Keyword" in col A.
+      let headerIdx = -1;
+      for (let i = 0; i < Math.min(rows.length, 15); i++) {
+        const row = rows[i];
         if (!Array.isArray(row)) continue;
-        const name = String(row[0] ?? '').trim();
-        const svRaw = row[1];
-        const oppRaw = row[2];
-        const relRaw = row[3];
-        const sv = typeof svRaw === 'number' ? svRaw : parseInt(String(svRaw).replace(/[,\s]/g, ''), 10);
-        const opp = typeof oppRaw === 'number' ? oppRaw : parseInt(String(oppRaw).replace(/[,\s]/g, ''), 10);
+        const first = String(row[0] ?? '').trim().toLowerCase();
+        if (first === 'keyword' || first === 'keywords') { headerIdx = i; break; }
+      }
+
+      // Build a positional map from headers; fall back to pure positional (A=keyword, B=sv, C=opp, D=rel).
+      const colMap = { name: 0, sv: 1, opp: 2, rel: 3 };
+      if (headerIdx >= 0) {
+        const header = rows[headerIdx] as unknown[];
+        for (let c = 0; c < header.length; c++) {
+          const h = String(header[c] ?? '').trim().toLowerCase();
+          if (!h) continue;
+          if (h === 'keyword' || h === 'keywords') colMap.name = c;
+          else if (h.includes('search volume')) colMap.sv = c;
+          else if (h.includes('iq score') || h.includes('opportunity') || h.includes('magnet iq') || h.includes('cerebro iq')) colMap.opp = c;
+          else if (h.includes('relevanc')) colMap.rel = c;
+        }
+      }
+      const dataStart = headerIdx >= 0 ? headerIdx + 1 : 0;
+
+      const toNum = (v: unknown): number => {
+        if (typeof v === 'number') return v;
+        if (v === null || v === undefined) return NaN;
+        const n = parseFloat(String(v).replace(/[,\s$]/g, ''));
+        return n;
+      };
+
+      const parsed: Keyword[] = [];
+      for (let i = dataStart; i < rows.length; i++) {
+        const row = rows[i];
+        if (!Array.isArray(row)) continue;
+        const name = String(row[colMap.name] ?? '').trim();
+        const sv = toNum(row[colMap.sv]);
+        const opp = toNum(row[colMap.opp]);
         if (!name || !isFinite(sv) || !isFinite(opp) || sv <= 0) continue;
         let rel = 3;
+        const relRaw = row[colMap.rel];
         if (relRaw !== undefined && relRaw !== null && String(relRaw).trim() !== '') {
-          const r = typeof relRaw === 'number' ? relRaw : parseFloat(String(relRaw));
+          const r = toNum(relRaw);
           if (isFinite(r)) rel = Math.max(1, Math.min(5, Math.round(r)));
         }
         parsed.push({
@@ -547,7 +584,7 @@ function KeywordResearch({
       }
 
       if (parsed.length === 0) {
-        setUploadStatus({ kind: 'err', msg: `No usable rows found on "${sheetName}". Expected columns: keyword, search volume, opportunity/IQ, relevancy.` });
+        setUploadStatus({ kind: 'err', msg: `No usable rows found on "${sheetName}". Expected a Keyword / Search Volume / IQ Score / Relevancy header row.` });
         return;
       }
       setKeywords(parsed);
@@ -603,7 +640,7 @@ function KeywordResearch({
           <div>
             <div className="text-sm font-semibold text-blue-900">Upload your sales estimator</div>
             <div className="text-xs text-blue-800 mt-0.5">
-              We read tab 2 and pull the first four columns: keyword, search volume, opportunity (or Cerebro IQ), relevancy (1 to 5). .xlsx, .xls, or .csv.
+              We detect the keyword tab and read keyword, search volume, IQ or opportunity score, and relevancy (1 to 5) by header. Works with the PPF Sales Estimator template. .xlsx, .xls, or .csv.
             </div>
           </div>
           <label className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap">
