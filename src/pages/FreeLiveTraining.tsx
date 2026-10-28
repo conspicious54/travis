@@ -322,68 +322,63 @@ export function FreeLiveTraining() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0A0A0A', color: '#FFFFFF', fontFamily: '"Open Sans", "Helvetica Neue", Arial, sans-serif' }}>
       {/* ═══════════ TOP BAR + HERO ═══════════ */}
-      <section ref={topFormRef} className="px-5 pt-6 md:pt-10 pb-10 md:pb-14" style={darkSectionBg}>
-        <div className="max-w-xl mx-auto">
+      <section ref={topFormRef} className="px-5 pt-8 md:pt-12 pb-12 md:pb-16" style={darkSectionBg}>
+        <div className="max-w-2xl mx-auto">
           {/* Top banner strip */}
-          <div className="text-center mb-7 md:mb-10 pb-6 border-b border-white/10">
-            <p className="text-base md:text-lg font-black uppercase tracking-wide text-orange-500 mb-1" style={{ fontFamily: '"Oswald", sans-serif' }}>
+          <div className="text-center mb-8 md:mb-10 pb-6 border-b-2" style={{ borderColor: '#F28000' }}>
+            <p className="text-xl md:text-3xl font-black uppercase tracking-wide mb-2" style={{ color: '#F28000', fontFamily: '"Montserrat", sans-serif' }}>
               FREE LIVE MASTERCLASS
             </p>
-            <p className="text-base md:text-lg font-black uppercase tracking-wide text-orange-500" style={{ fontFamily: '"Oswald", sans-serif' }}>
+            <p className="text-xl md:text-3xl font-black uppercase tracking-wide" style={{ color: '#F28000', fontFamily: '"Montserrat", sans-serif' }}>
               STARTS: {topBanner}
             </p>
           </div>
 
-          {/* Avatar */}
-          <div className="flex justify-center mb-6">
-            <div
-              className="w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden"
-              style={{ backgroundColor: '#F28000', boxShadow: '0 0 0 4px #F28000' }}
-            >
-              <img
-                src={`${ASSET}/hero.png`}
-                alt=""
-                className="w-full h-full object-cover object-top"
-                loading="eager"
-                decoding="async"
-              />
-            </div>
+          {/* Avatar — the source image IS the orange circle, don't wrap it */}
+          <div className="flex justify-center mb-6 md:mb-8">
+            <img
+              src={`${ASSET}/hero.png`}
+              alt=""
+              className="w-56 md:w-72 h-auto"
+              loading="eager"
+              decoding="async"
+            />
           </div>
 
           {/* Headline */}
-          <h1 className="text-center font-black tracking-tight leading-[1.1] mb-5" style={{ fontFamily: '"Oswald", sans-serif' }}>
-            <span className="block text-3xl md:text-5xl text-white">Turn Any Passion Into A</span>
-            <span className="block text-3xl md:text-5xl mt-1" style={{ color: '#F28000' }}>Profitable Amazon Business</span>
+          <h1 className="text-center font-black tracking-tight leading-[1.1] mb-6 md:mb-7" style={{ fontFamily: '"Montserrat", sans-serif' }}>
+            <span className="block text-4xl md:text-6xl text-white">Turn Any Passion Into A</span>
+            <span className="block text-4xl md:text-6xl mt-1" style={{ color: '#F28000' }}>Profitable Amazon Business</span>
           </h1>
 
           {/* Subhead */}
-          <p className="text-center text-base md:text-lg leading-snug text-white/90 mb-7 md:mb-8 max-w-lg mx-auto">
+          <p className="text-center text-xl md:text-2xl leading-snug text-white font-medium mb-8 md:mb-10 max-w-xl mx-auto">
             Learn The Exact Amazon Selling Method I've Used To Help Regular People With No Experience Hit Their First $100,000 In Sales
           </p>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-3 max-w-md mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-3 max-w-xl mx-auto">
             <input
               type="text" required autoComplete="name" value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-4 py-3.5 bg-white border border-white rounded-md text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-5 py-4 bg-white rounded-md text-lg md:text-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="Enter Your Name Here..."
             />
             <input
               type="email" required autoComplete="email" value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3.5 bg-white border border-white rounded-md text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-5 py-4 bg-white rounded-md text-lg md:text-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="Enter Your Email Here..."
             />
-            <div className="flex items-center bg-white rounded-md border border-white overflow-hidden">
-              <div className="flex items-center gap-1.5 px-3 py-3.5 bg-white border-r border-gray-200 shrink-0">
-                <span className="text-xl leading-none" aria-hidden>🇺🇸</span>
-                <span className="text-gray-500 text-sm">-</span>
+            <div className="flex items-center bg-white rounded-md overflow-hidden">
+              <div className="flex items-center gap-1.5 pl-4 pr-2 py-4 bg-white border-r border-gray-200 shrink-0">
+                <span className="text-2xl leading-none" aria-hidden>🇺🇸</span>
+                <span className="text-gray-500 text-sm">▾</span>
               </div>
               <input
                 type="tel" required autoComplete="tel" value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="flex-1 px-3 py-3.5 bg-white text-base text-gray-900 placeholder-gray-500 focus:outline-none"
+                className="flex-1 px-3 py-4 bg-white text-lg md:text-xl text-gray-900 placeholder-gray-500 focus:outline-none"
                 placeholder="Enter Your Phone Number Here..."
               />
             </div>
@@ -396,14 +391,14 @@ export function FreeLiveTraining() {
 
             <button
               type="submit" disabled={submitting}
-              className="w-full inline-flex items-center justify-center gap-2 px-5 py-4 font-black rounded-md text-lg md:text-xl uppercase tracking-wide transition-colors shadow-md cursor-pointer disabled:opacity-60"
-              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Oswald", sans-serif' }}
+              className="w-full inline-flex items-center justify-center gap-2 px-6 py-5 font-black rounded-md text-2xl md:text-3xl uppercase tracking-wide transition-colors shadow-md cursor-pointer disabled:opacity-60"
+              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Montserrat", sans-serif' }}
             >
               {submitting ? 'SAVING YOUR SPOT…' : <>SAVE MY FREE SPOT <span aria-hidden>»</span></>}
             </button>
 
-            <p className="text-center text-sm md:text-base text-white/80 mt-3 flex items-center justify-center gap-2">
-              <Calendar className="w-4 h-4 text-orange-500" />
+            <p className="text-center text-base md:text-lg text-white mt-4 flex items-center justify-center gap-2">
+              <Calendar className="w-5 h-5 text-orange-500" />
               <span>{dateCaption}</span>
             </p>
           </form>
@@ -413,7 +408,7 @@ export function FreeLiveTraining() {
       {/* ═══════════ 3 PILLARS ═══════════ */}
       <section className="px-5 py-14 md:py-20" style={{ backgroundColor: '#1a1a1a' }}>
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-center font-black tracking-tight leading-[1.15] mb-10 md:mb-12 text-3xl md:text-5xl" style={{ fontFamily: '"Oswald", sans-serif' }}>
+          <h2 className="text-center font-black tracking-tight leading-[1.15] mb-10 md:mb-12 text-3xl md:text-5xl" style={{ fontFamily: '"Montserrat", sans-serif' }}>
             <span className="text-white">Selling On Amazon Is The </span>
             <span style={{ color: '#F28000' }}>Only Online Business</span>
             <span className="text-white"> You Can Start That Has All 3…</span>
@@ -436,7 +431,7 @@ export function FreeLiveTraining() {
                   className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 object-contain"
                   loading="lazy"
                 />
-                <h3 className="text-xl md:text-2xl font-black text-white mb-3" style={{ fontFamily: '"Oswald", sans-serif' }}>
+                <h3 className="text-xl md:text-2xl font-black text-white mb-3" style={{ fontFamily: '"Montserrat", sans-serif' }}>
                   {p.title}
                 </h3>
                 <p className="text-base md:text-lg leading-snug font-semibold" style={{ color: '#F28000' }}>
@@ -454,7 +449,7 @@ export function FreeLiveTraining() {
           <p className="text-center text-base md:text-lg text-white/90 italic mb-3">
             And that's probably why…
           </p>
-          <h2 className="text-center font-black tracking-tight leading-[1.15] mb-10 md:mb-12 text-3xl md:text-5xl text-white" style={{ fontFamily: '"Oswald", sans-serif' }}>
+          <h2 className="text-center font-black tracking-tight leading-[1.15] mb-10 md:mb-12 text-3xl md:text-5xl text-white" style={{ fontFamily: '"Montserrat", sans-serif' }}>
             Amazon Creates More Millionaires Than Any Other Online Business…
           </h2>
 
@@ -469,7 +464,7 @@ export function FreeLiveTraining() {
                 className="rounded-md p-6 md:p-8 text-center"
                 style={{ backgroundColor: '#0D0D0D', border: '1px solid #F28000' }}
               >
-                <p className="text-5xl md:text-6xl font-black tracking-tight leading-none mb-4" style={{ color: '#F28000', fontFamily: '"Oswald", sans-serif' }}>
+                <p className="text-5xl md:text-6xl font-black tracking-tight leading-none mb-4" style={{ color: '#F28000', fontFamily: '"Montserrat", sans-serif' }}>
                   {s.stat}
                 </p>
                 <p className="text-xs md:text-sm text-white font-bold uppercase tracking-[0.08em] leading-snug mb-3">
@@ -486,7 +481,7 @@ export function FreeLiveTraining() {
             <button
               onClick={() => scrollToForm('stats')}
               className="inline-flex items-center justify-center gap-2 px-7 py-4 font-black rounded-md text-base md:text-xl uppercase tracking-wide transition-colors shadow-md cursor-pointer"
-              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Oswald", sans-serif' }}
+              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Montserrat", sans-serif' }}
             >
               LEARN HOW TO START SELLING <span aria-hidden>»</span>
             </button>
@@ -500,7 +495,7 @@ export function FreeLiveTraining() {
         style={{ background: 'linear-gradient(180deg, #3A1F08 0%, #1F0F03 100%)' }}
       >
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-center font-black tracking-tight leading-[1.15] mb-3 text-3xl md:text-5xl" style={{ fontFamily: '"Oswald", sans-serif' }}>
+          <h2 className="text-center font-black tracking-tight leading-[1.15] mb-3 text-3xl md:text-5xl" style={{ fontFamily: '"Montserrat", sans-serif' }}>
             <span className="text-white">Real Students. </span>
             <span style={{ color: '#F28000' }}>Real Results.</span>
           </h2>
@@ -533,7 +528,7 @@ export function FreeLiveTraining() {
             <button
               onClick={() => scrollToForm('social_proof')}
               className="inline-flex items-center justify-center gap-2 px-7 py-4 font-black rounded-md text-base md:text-xl uppercase tracking-wide transition-colors shadow-md cursor-pointer"
-              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Oswald", sans-serif' }}
+              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Montserrat", sans-serif' }}
             >
               WATCH THE FREE LIVE TRAINING <span aria-hidden>»</span>
             </button>
