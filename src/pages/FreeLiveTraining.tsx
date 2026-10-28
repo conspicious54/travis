@@ -16,7 +16,15 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 ──────────────────────────────────────────────────────────────────── */
 
 const WEBINAR_TITLE = 'Turn Any Passion Into A Profitable Amazon Business';
-const WEBINAR_START_ISO = '2026-05-22T13:00:00-04:00';
+// Specify the event in whatever timezone is most natural, as an ISO
+// 8601 string with its UTC offset. Every visitor on the page will see
+// this converted to their own local timezone automatically.
+//   Pacific  → "2026-05-22T10:00:00-07:00"
+//   Eastern  → "2026-05-22T13:00:00-04:00"
+//   UK (BST) → "2026-05-22T18:00:00+01:00"
+//   UTC      → "2026-05-22T17:00:00Z"
+// All four of the above describe the exact same instant.
+const WEBINAR_START_ISO = '2026-05-22T10:00:00-07:00';
 const WEBINAR_DURATION_MIN = 60;
 const WEBINAR_JOIN_URL = 'https://www.youtube.com/watch?v=2Wx_YWBCiHo';
 const WEBINAR_DESCRIPTION =
@@ -53,33 +61,35 @@ function formatHumanTime(d: Date): string {
   });
 }
 
-// "MONDAY AUGUST 24TH @4PM PT" (uppercase, hour in PT)
+// Browser Intl defaults to the visitor's local timezone when no
+// `timeZone` is passed, so these two formatters auto-convert the
+// shared WEBINAR_START_ISO instant for whoever is viewing.
+
+// "FRIDAY MAY 22ND @1PM EDT" — uppercase banner, viewer-local
 function formatTopBanner(d: Date): string {
-  const ptParts = new Intl.DateTimeFormat('en-US', {
+  const parts = new Intl.DateTimeFormat('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric',
-    timeZone: 'America/Los_Angeles',
+    timeZoneName: 'short',
   }).formatToParts(d);
-  const get = (t: string) => ptParts.find((p) => p.type === t)?.value || '';
-  return `${get('weekday').toUpperCase()} ${get('month').toUpperCase()} ${ordinal(Number(get('day')))} @${(get('hour') + get('dayPeriod')).toUpperCase()} PT`;
+  const get = (t: string) => parts.find((p) => p.type === t)?.value || '';
+  const hour = (get('hour') + get('dayPeriod')).replace(/\s/g, '');
+  return `${get('weekday').toUpperCase()} ${get('month').toUpperCase()} ${ordinal(Number(get('day')))} @${hour.toUpperCase()} ${get('timeZoneName')}`;
 }
 
-// "Monday, August 24th // 7pm EST (4pm PST)"
+// "Friday, May 22nd // 1pm EDT (your local time)" — viewer-local caption
 function formatDateCaption(d: Date): string {
-  const et = new Intl.DateTimeFormat('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric',
-    timeZone: 'America/New_York',
+  const parts = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+    timeZoneName: 'short',
   }).formatToParts(d);
-  const pt = new Intl.DateTimeFormat('en-US', {
-    hour: 'numeric', timeZone: 'America/Los_Angeles',
-  }).formatToParts(d);
-  const g = (parts: Intl.DateTimeFormatPart[], t: string) =>
-    parts.find((p) => p.type === t)?.value || '';
-  const weekday = g(et, 'weekday');
-  const month = g(et, 'month');
-  const day = ordinal(Number(g(et, 'day')));
-  const etHour = (g(et, 'hour') + g(et, 'dayPeriod')).toLowerCase();
-  const ptHour = (g(pt, 'hour') + g(pt, 'dayPeriod')).toLowerCase();
-  return `${weekday}, ${month} ${day} // ${etHour} EST (${ptHour} PST)`;
+  const get = (t: string) => parts.find((p) => p.type === t)?.value || '';
+  const minute = get('minute');
+  const timeStr = (minute === '00'
+    ? get('hour') + get('dayPeriod')
+    : get('hour') + ':' + minute + get('dayPeriod')
+  ).replace(/\s/g, '').toLowerCase();
+  return `${get('weekday')}, ${get('month')} ${ordinal(Number(get('day')))} // ${timeStr} ${get('timeZoneName')} (your local time)`;
 }
 
 function buildGoogleCalendarUrl(start: Date, durationMin: number): string {
