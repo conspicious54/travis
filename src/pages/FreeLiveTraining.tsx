@@ -396,8 +396,8 @@ export function FreeLiveTraining() {
 
           {/* Subhead */}
           <p
-            className="text-center leading-snug text-white font-medium mb-6 md:mb-7 max-w-2xl mx-auto"
-            style={{ fontSize: 'clamp(16px, 1.7vw, 22px)' }}
+            className="text-center leading-snug text-white font-medium mb-6 md:mb-7 max-w-3xl mx-auto"
+            style={{ fontSize: 'clamp(20px, 2.4vw, 32px)' }}
           >
             Learn The Exact Amazon Selling Method I've Used To Help Regular People With No Experience Hit Their First $100,000 In Sales
           </p>
