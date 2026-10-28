@@ -95,6 +95,50 @@ export function buildGoogleCalendarUrl(start: Date, durationMin: number): string
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
+// Outlook.com / Outlook on the web deep-link. Takes ISO datetimes
+// directly (Microsoft prefers these) and opens the "new event" view
+// with the fields prefilled.
+export function buildOutlookLiveUrl(start: Date, durationMin: number): string {
+  const end = new Date(start.getTime() + durationMin * 60_000);
+  const params = new URLSearchParams({
+    path: '/calendar/0/action/compose',
+    rru: 'addevent',
+    subject: WEBINAR_TITLE,
+    body: [WEBINAR_DESCRIPTION, WEBINAR_JOIN_URL ? `Join: ${WEBINAR_JOIN_URL}` : ''].filter(Boolean).join('\n\n'),
+    startdt: start.toISOString(),
+    enddt: end.toISOString(),
+    location: WEBINAR_JOIN_URL || 'Online',
+    allday: 'false',
+  });
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
+
+/* ───── Email → calendar provider detection ──────────────────────
+   Returns which provider to send the person to based on the domain
+   of their email address. 'unknown' means we should show the full
+   dropdown (Gmail / Apple / Outlook.com / .ics) instead.
+──────────────────────────────────────────────────────────────────── */
+export type CalProvider = 'google' | 'outlook' | 'apple' | 'unknown';
+
+export function detectCalProvider(email: string | null | undefined): CalProvider {
+  if (!email) return 'unknown';
+  const m = email.toLowerCase().trim().match(/@([^@\s]+)$/);
+  if (!m) return 'unknown';
+  const domain = m[1];
+  if (/^(gmail\.com|googlemail\.com)$/.test(domain)) return 'google';
+  if (
+    /^(outlook|hotmail|live|msn)\./.test(domain) ||
+    domain === 'outlook.com' ||
+    domain === 'hotmail.com' ||
+    domain === 'live.com' ||
+    domain === 'msn.com' ||
+    domain === 'office.com' ||
+    domain.endsWith('.onmicrosoft.com')
+  ) return 'outlook';
+  if (/^(icloud\.com|me\.com|mac\.com)$/.test(domain)) return 'apple';
+  return 'unknown';
+}
+
 export function buildIcs(start: Date, durationMin: number): string {
   const end = new Date(start.getTime() + durationMin * 60_000);
   const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');

@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Calendar, CheckCircle } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Calendar, CheckCircle, ChevronDown } from 'lucide-react';
 import { trackEvent } from '../lib/posthog';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import {
   WEBINAR_TITLE, WEBINAR_START_ISO, WEBINAR_DURATION_MIN, ASSET_PREFIX,
   CASE_STUDIES_VIDEOS, MORE_FREE_CONTENT_VIDEOS,
-  formatDateCaption, buildGoogleCalendarUrl, downloadIcs,
+  formatDateCaption, buildGoogleCalendarUrl, buildOutlookLiveUrl,
+  downloadIcs, detectCalProvider, type CalProvider,
   calcCountdown, type Countdown,
 } from '../lib/freeLiveTraining';
 
@@ -16,17 +17,162 @@ import {
    back from the URL; the page itself doesn't need it to work.
 ──────────────────────────────────────────────────────────────────── */
 
+/* ───── Add-to-calendar button w/ auto-detect + hover dropdown ───
+   - If `provider` is 'google' | 'outlook' | 'apple', the button is
+     a single direct action that opens that provider's add-event
+     flow. No dropdown.
+   - If `provider` is 'unknown', the button opens a dropdown with
+     all four options (desktop: hover; mobile & keyboard: click/
+     focus). An outside click or an item selection closes it.
+──────────────────────────────────────────────────────────────────── */
+interface AddToCalendarButtonProps {
+  provider: CalProvider;
+  openGoogle: () => void;
+  openOutlook: () => void;
+  openApple: () => void;
+  openIcs: () => void;
+}
+
+const PROVIDER_LABEL: Record<Exclude<CalProvider, 'unknown'>, string> = {
+  google: 'Add To Google Calendar',
+  outlook: 'Add To Outlook Calendar',
+  apple: 'Add To Apple Calendar',
+};
+
+function AddToCalendarButton({
+  provider, openGoogle, openOutlook, openApple, openIcs,
+}: AddToCalendarButtonProps) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // Close on outside click / Escape.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  // Auto-detected path: single button, direct action, no dropdown.
+  if (provider !== 'unknown') {
+    const action =
+      provider === 'google' ? openGoogle :
+      provider === 'outlook' ? openOutlook :
+      openApple;
+    return (
+      <button
+        type="button"
+        onClick={action}
+        className="inline-flex items-center justify-center gap-3 w-full max-w-xl px-6 py-4 font-black rounded-md uppercase tracking-wide transition-colors shadow-md cursor-pointer"
+        style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(16px, 1.6vw, 22px)' }}
+      >
+        <Calendar className="w-6 h-6" />
+        {PROVIDER_LABEL[provider]}
+      </button>
+    );
+  }
+
+  // Unknown provider: dropdown.
+  const items: Array<{ label: string; onClick: () => void }> = [
+    { label: 'Google Calendar',               onClick: () => { openGoogle();  setOpen(false); } },
+    { label: 'Apple Calendar',                onClick: () => { openApple();   setOpen(false); } },
+    { label: 'Outlook.com',                   onClick: () => { openOutlook(); setOpen(false); } },
+    { label: 'Outlook Desktop / Other (.ics)', onClick: () => { openIcs();   setOpen(false); } },
+  ];
+
+  return (
+    <div
+      ref={rootRef}
+      className="relative inline-block w-full max-w-xl"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center justify-center gap-3 w-full px-6 py-4 font-black rounded-md uppercase tracking-wide transition-colors shadow-md cursor-pointer"
+        style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(16px, 1.6vw, 22px)' }}
+      >
+        <Calendar className="w-6 h-6" />
+        Add To My Calendar
+        <ChevronDown className={`w-5 h-5 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute left-0 right-0 top-full mt-2 rounded-md overflow-hidden shadow-2xl shadow-black/60 z-20"
+          style={{ backgroundColor: '#1a0f08', border: '1px solid #F28000' }}
+        >
+          {items.map((it, i) => (
+            <button
+              key={it.label}
+              role="menuitem"
+              type="button"
+              onClick={it.onClick}
+              className={`w-full text-left px-5 py-3.5 text-white font-bold hover:text-black transition-colors cursor-pointer ${i > 0 ? 'border-t border-white/10' : ''}`}
+              style={{ fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(14px, 1.3vw, 17px)' }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F28000')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              {it.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function readEmailFromUrl(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    return (new URLSearchParams(window.location.search).get('email') || '').trim().toLowerCase();
+  } catch { return ''; }
+}
+
 export function TrainingRegistered() {
   const start = new Date(WEBINAR_START_ISO);
   const [countdown, setCountdown] = useState<Countdown>(() => calcCountdown(start));
+  const [email] = useState<string>(() => readEmailFromUrl());
+  const provider: CalProvider = detectCalProvider(email);
 
   useEffect(() => {
     document.title = `You're In - ${WEBINAR_TITLE}`;
-    trackEvent('trainingregistered_page_viewed');
+    trackEvent('trainingregistered_page_viewed', { cal_provider_detected: provider });
     const id = window.setInterval(() => setCountdown(calcCountdown(start)), 1000);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Direct-action handlers for each calendar provider — called from
+  // both the auto-detect single button and the dropdown items.
+  const openGoogle = () => {
+    trackEvent('trainingregistered_calendar_added', { provider: 'google', auto: provider === 'google' });
+    window.open(buildGoogleCalendarUrl(start, WEBINAR_DURATION_MIN), '_blank', 'noopener,noreferrer');
+  };
+  const openOutlook = () => {
+    trackEvent('trainingregistered_calendar_added', { provider: 'outlook', auto: provider === 'outlook' });
+    window.open(buildOutlookLiveUrl(start, WEBINAR_DURATION_MIN), '_blank', 'noopener,noreferrer');
+  };
+  const openApple = () => {
+    // Apple Calendar reads .ics files natively on macOS / iOS.
+    trackEvent('trainingregistered_calendar_added', { provider: 'apple', auto: provider === 'apple' });
+    downloadIcs(start, WEBINAR_DURATION_MIN);
+  };
+  const openIcs = () => {
+    trackEvent('trainingregistered_calendar_added', { provider: 'ics' });
+    downloadIcs(start, WEBINAR_DURATION_MIN);
+  };
 
   const eventWeekday = new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(start);
   const dateFull = formatDateCaption(start);
@@ -120,25 +266,13 @@ export function TrainingRegistered() {
                 >
                   Add To Your Calendar…
                 </h3>
-                <div className="flex flex-col sm:flex-row gap-3 max-w-xl">
-                  <a
-                    href={buildGoogleCalendarUrl(start, WEBINAR_DURATION_MIN)}
-                    target="_blank" rel="noopener noreferrer"
-                    onClick={() => trackEvent('trainingregistered_calendar_added', { provider: 'google' })}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 font-black rounded-md uppercase tracking-wide transition-colors shadow-md cursor-pointer"
-                    style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(14px, 1.4vw, 18px)' }}
-                  >
-                    <Calendar className="w-5 h-5" /> Add To My Calendar
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => { downloadIcs(start, WEBINAR_DURATION_MIN); trackEvent('trainingregistered_calendar_added', { provider: 'ics' }); }}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 font-bold rounded-md uppercase tracking-wide transition-colors cursor-pointer border"
-                    style={{ borderColor: '#F28000', color: '#F28000', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(14px, 1.4vw, 18px)' }}
-                  >
-                    Apple / Outlook (.ics)
-                  </button>
-                </div>
+                <AddToCalendarButton
+                  provider={provider}
+                  openGoogle={openGoogle}
+                  openOutlook={openOutlook}
+                  openApple={openApple}
+                  openIcs={openIcs}
+                />
                 <p className="text-white/80 mt-3" style={{ fontSize: 'clamp(14px, 1.3vw, 17px)' }}>
                   {dateFull}
                 </p>
