@@ -199,12 +199,36 @@ function volumeTier(total: number): { label: string; color: string; bg: string; 
 /* ───── storage helpers ──────────────────────────────────────── */
 
 const STORAGE_KEY = 'productScorecardState_v2';
+const IDEAS_KEY = 'productScorecardIdeas_v1';
 
 interface SavedState {
   productIdea?: string;
   researchTool?: ResearchTool;
   keywords?: Keyword[];
   scores?: Record<string, number>;
+}
+
+interface IdeaSnapshot {
+  productIdea: string;
+  researchTool: ResearchTool;
+  keywords: Keyword[];
+  scores: Record<string, number>;
+}
+
+interface SavedIdea {
+  id: string;
+  name: string;
+  savedAt: string; // ISO
+  state: IdeaSnapshot;
+  computed: {
+    totalScore: number;
+    totalVolume: number;
+    weightedRatio: number;
+    volumePoints: number;
+    opportunityPoints: number;
+    totalMonthlySales: number;
+    keywordCount: number;
+  };
 }
 
 function loadSaved(): SavedState | null {
@@ -215,6 +239,45 @@ function loadSaved(): SavedState | null {
   } catch {
     return null;
   }
+}
+
+function loadIdeas(): SavedIdea[] {
+  try {
+    const raw = localStorage.getItem(IDEAS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveIdeas(ideas: SavedIdea[]) {
+  try {
+    localStorage.setItem(IDEAS_KEY, JSON.stringify(ideas));
+  } catch (e) {
+    console.error('Could not save ideas', e);
+  }
+}
+
+function computeMetrics(state: IdeaSnapshot) {
+  const totalVolume = state.keywords.reduce((s, k) => s + (k.searchVolume || 0), 0);
+  const totalOpportunity = state.keywords.reduce((s, k) => s + (k.opportunityScore || 0), 0);
+  const weightedRatio = totalVolume > 0 ? totalOpportunity / totalVolume : 0;
+  const volumePoints = volumeScore(totalVolume);
+  const opportunityPoints = opportunityScoreFromRatio(weightedRatio);
+  const totalMonthlySales = state.keywords.reduce((sum, k) => {
+    if (k.searchVolume <= 0 || k.opportunityScore <= 0) return sum;
+    const r = k.opportunityScore / k.searchVolume;
+    const pos = estimatePosition(r, k.relevancy);
+    return sum + estimateMonthlySales(k.searchVolume, pos);
+  }, 0);
+  const subjective = Object.values(state.scores).reduce((s, v) => s + v, 0);
+  const combined = subjective + volumePoints + opportunityPoints;
+  const maxPossible = categories.length * 10 + 20;
+  const totalScore = (combined / maxPossible) * 100;
+  const keywordCount = state.keywords.filter(k => k.searchVolume > 0 && k.opportunityScore > 0).length;
+  return { totalScore, totalVolume, weightedRatio, volumePoints, opportunityPoints, totalMonthlySales, keywordCount };
 }
 
 /* ───── login (unchanged behavior) ───────────────────────────── */
@@ -701,9 +764,260 @@ function ScoreDisplay({ score, productIdea }: { score: number; productIdea: stri
   );
 }
 
+/* ───── save-idea modal ──────────────────────────────────────── */
+
+function SaveIdeaModal({
+  open,
+  defaultName,
+  existingNames,
+  onCancel,
+  onSave,
+}: {
+  open: boolean;
+  defaultName: string;
+  existingNames: string[];
+  onCancel: () => void;
+  onSave: (name: string) => void;
+}) {
+  const [name, setName] = useState('');
+
+  useEffect(() => {
+    if (open) setName(defaultName || '');
+  }, [open, defaultName]);
+
+  if (!open) return null;
+
+  const trimmed = name.trim();
+  const willOverwrite = existingNames.includes(trimmed) && trimmed.length > 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onCancel}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Save this idea</h3>
+        <p className="text-sm text-gray-600 mb-4">Give it a name so you can compare it to other ideas later.</p>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. silicone cooking tongs"
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && trimmed) onSave(trimmed);
+            if (e.key === 'Escape') onCancel();
+          }}
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-3"
+        />
+        {willOverwrite && (
+          <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
+            An idea named "{trimmed}" already exists. Saving will overwrite it.
+          </div>
+        )}
+        <div className="flex gap-3 justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-5 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => trimmed && onSave(trimmed)}
+            disabled={!trimmed}
+            className="px-5 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {willOverwrite ? 'Overwrite' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───── compare view ─────────────────────────────────────────── */
+
+function recommendation(score: number): { text: string; color: string; bg: string; emoji: string } {
+  if (score >= 90) return { text: 'Amazing', color: 'text-green-800', bg: 'bg-green-100', emoji: '🔥' };
+  if (score >= 80) return { text: 'Great', color: 'text-green-700', bg: 'bg-green-50', emoji: '✨' };
+  if (score >= 70) return { text: 'Winner', color: 'text-blue-700', bg: 'bg-blue-50', emoji: '🚀' };
+  if (score >= 60) return { text: 'Average', color: 'text-yellow-700', bg: 'bg-yellow-50', emoji: '🤔' };
+  return { text: 'Avoid', color: 'text-red-700', bg: 'bg-red-50', emoji: '⚠️' };
+}
+
+function CompareView({
+  savedIdeas,
+  onLoad,
+  onDelete,
+  onBack,
+}: {
+  savedIdeas: SavedIdea[];
+  onLoad: (idea: SavedIdea) => void;
+  onDelete: (id: string) => void;
+  onBack: () => void;
+}) {
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(savedIdeas.map(i => i.id)));
+
+  const toggle = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toShow = savedIdeas.filter(i => selected.has(i.id));
+  const bestScore = toShow.reduce((max, i) => Math.max(max, i.computed.totalScore), 0);
+
+  if (savedIdeas.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl shadow-md border-2 border-gray-200 p-10 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">No saved ideas yet</h2>
+        <p className="text-gray-600 mb-6">Go back and score an idea, then save it. You'll be able to compare them here.</p>
+        <button
+          onClick={onBack}
+          className="bg-blue-600 text-white font-bold px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Back to scoring
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* selector */}
+      <div className="bg-white rounded-2xl shadow-md border-2 border-gray-200 p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Select ideas to compare</h2>
+          <div className="text-sm text-gray-600">{toShow.length} of {savedIdeas.length} selected</div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+          {savedIdeas.map(idea => {
+            const isSelected = selected.has(idea.id);
+            return (
+              <label
+                key={idea.id}
+                className={`flex items-center gap-3 border-2 rounded-lg px-3 py-2 cursor-pointer transition-colors ${
+                  isSelected ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => toggle(idea.id)}
+                  className="w-4 h-4 accent-blue-600"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-gray-900 text-sm truncate">{idea.name}</div>
+                  <div className="text-xs text-gray-500">Score {Math.round(idea.computed.totalScore)}</div>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* side-by-side cards */}
+      {toShow.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-md border-2 border-gray-200 p-10 text-center text-gray-600">
+          Pick at least one idea above to see its scorecard.
+        </div>
+      ) : (
+        <div className="overflow-x-auto -mx-4 px-4 pb-2">
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: `repeat(${toShow.length}, minmax(240px, 1fr))` }}
+          >
+            {toShow.map(idea => {
+              const isBest = toShow.length > 1 && idea.computed.totalScore === bestScore && bestScore > 0;
+              const rec = recommendation(idea.computed.totalScore);
+              return (
+                <div
+                  key={idea.id}
+                  className={`relative bg-white rounded-2xl shadow-md border-2 p-5 ${
+                    isBest ? 'border-yellow-400 ring-2 ring-yellow-200' : 'border-gray-200'
+                  }`}
+                >
+                  {isBest && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full shadow">
+                      🏆 Top score
+                    </div>
+                  )}
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    {new Date(idea.savedAt).toLocaleDateString()}
+                  </div>
+                  <div className="font-bold text-gray-900 text-base mb-3 truncate" title={idea.name}>
+                    {idea.name}
+                  </div>
+
+                  <div className="text-center mb-4">
+                    <div className="text-5xl font-bold text-blue-600 tabular-nums">
+                      {Math.round(idea.computed.totalScore)}
+                    </div>
+                    <div className={`inline-block mt-2 text-xs font-semibold px-2 py-1 rounded ${rec.bg} ${rec.color}`}>
+                      <span className="mr-1">{rec.emoji}</span>{rec.text}
+                    </div>
+                  </div>
+
+                  <dl className="space-y-2 text-sm">
+                    <Metric label="Keywords" value={String(idea.computed.keywordCount)} />
+                    <Metric label="Search volume" value={idea.computed.totalVolume.toLocaleString()} />
+                    <Metric
+                      label="Opp ratio"
+                      value={idea.computed.weightedRatio > 0 ? `${idea.computed.weightedRatio.toFixed(2)}x` : '—'}
+                    />
+                    <Metric
+                      label="Est sales / mo"
+                      value={idea.computed.totalMonthlySales > 0 ? Math.round(idea.computed.totalMonthlySales).toLocaleString() : '—'}
+                    />
+                    <Metric label="Volume score" value={`${idea.computed.volumePoints.toFixed(1)} / 10`} />
+                    <Metric label="Opportunity score" value={`${idea.computed.opportunityPoints.toFixed(1)} / 10`} />
+                    <Metric label="Research tool" value={idea.state.researchTool === 'smartscout' ? 'SmartScout' : 'Helium10'} />
+                  </dl>
+
+                  <div className="flex gap-2 mt-5">
+                    <button
+                      onClick={() => onLoad(idea)}
+                      className="flex-1 bg-blue-600 text-white font-semibold text-sm py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Load
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Delete "${idea.name}"?`)) onDelete(idea.id);
+                      }}
+                      className="px-3 bg-gray-100 text-gray-700 font-semibold text-sm py-2 rounded-lg hover:bg-red-50 hover:text-red-700 transition-colors"
+                      aria-label="Delete idea"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-1 border-b border-gray-100 last:border-0">
+      <dt className="text-xs text-gray-500">{label}</dt>
+      <dd className="text-sm font-semibold text-gray-900 tabular-nums">{value}</dd>
+    </div>
+  );
+}
+
 /* ───── page ─────────────────────────────────────────────────── */
 
+type View = 'score' | 'compare';
+
 export function ProductScorecard() {
+  const [view, setView] = useState<View>('score');
   const [productIdea, setProductIdea] = useState('');
   const [researchTool, setResearchTool] = useState<ResearchTool>('smartscout');
   const [keywords, setKeywords] = useState<Keyword[]>([emptyKeyword()]);
@@ -713,6 +1027,8 @@ export function ProductScorecard() {
     return initial;
   });
   const [, setUserEmail] = useState('');
+  const [savedIdeas, setSavedIdeas] = useState<SavedIdea[]>([]);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
 
   // Hydrate from storage (new key first, then legacy fallback for old slider state).
   useEffect(() => {
@@ -744,6 +1060,11 @@ export function ProductScorecard() {
     const payload: SavedState = { productIdea, researchTool, keywords, scores };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [productIdea, researchTool, keywords, scores]);
+
+  // Load the saved-ideas list once.
+  useEffect(() => {
+    setSavedIdeas(loadIdeas());
+  }, []);
 
   const handleScoreChange = (categoryId: string, value: number) => {
     setScores(prev => ({ ...prev, [categoryId]: value }));
@@ -791,20 +1112,145 @@ export function ProductScorecard() {
     localStorage.removeItem('productScorecardScores');
   };
 
+  const clearForm = () => {
+    const resetScores: Record<string, number> = {};
+    categories.forEach(cat => { resetScores[cat.id] = 5; });
+    setScores(resetScores);
+    setKeywords([emptyKeyword()]);
+    setProductIdea('');
+    setResearchTool('smartscout');
+  };
+
+  const handleNewIdea = () => {
+    const hasAnything = productIdea.trim() || keywords.some(k => k.name || k.searchVolume > 0);
+    if (hasAnything && !window.confirm('Clear the current form to start a new idea? Save it first if you want to compare later.')) return;
+    clearForm();
+  };
+
+  const handleSaveIdea = (name: string) => {
+    const snapshot: IdeaSnapshot = { productIdea, researchTool, keywords, scores };
+    const computed = computeMetrics(snapshot);
+    const existingIdx = savedIdeas.findIndex(i => i.name.toLowerCase() === name.toLowerCase());
+    const idea: SavedIdea = {
+      id: existingIdx >= 0 ? savedIdeas[existingIdx].id : `idea-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name,
+      savedAt: new Date().toISOString(),
+      state: snapshot,
+      computed: {
+        totalScore: computed.totalScore,
+        totalVolume: computed.totalVolume,
+        weightedRatio: computed.weightedRatio,
+        volumePoints: computed.volumePoints,
+        opportunityPoints: computed.opportunityPoints,
+        totalMonthlySales: computed.totalMonthlySales,
+        keywordCount: computed.keywordCount,
+      },
+    };
+    const next = existingIdx >= 0
+      ? savedIdeas.map((it, i) => (i === existingIdx ? idea : it))
+      : [...savedIdeas, idea];
+    setSavedIdeas(next);
+    saveIdeas(next);
+    setSaveModalOpen(false);
+  };
+
+  const handleLoadIdea = (idea: SavedIdea) => {
+    const snap = idea.state;
+    setProductIdea(snap.productIdea || '');
+    setResearchTool(snap.researchTool || 'smartscout');
+    setKeywords(
+      (snap.keywords && snap.keywords.length > 0 ? snap.keywords : [emptyKeyword()]).map(k => ({
+        ...k,
+        relevancy: typeof k.relevancy === 'number' && k.relevancy >= 1 && k.relevancy <= 5 ? k.relevancy : 3,
+      }))
+    );
+    const nextScores: Record<string, number> = {};
+    categories.forEach(cat => { nextScores[cat.id] = 5; });
+    setScores({ ...nextScores, ...(snap.scores || {}) });
+    setView('score');
+  };
+
+  const handleDeleteIdea = (id: string) => {
+    const next = savedIdeas.filter(i => i.id !== id);
+    setSavedIdeas(next);
+    saveIdeas(next);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 text-gray-900">
       <HeaderLight />
+
+      <SaveIdeaModal
+        open={saveModalOpen}
+        defaultName={productIdea}
+        existingNames={savedIdeas.map(i => i.name)}
+        onCancel={() => setSaveModalOpen(false)}
+        onSave={handleSaveIdea}
+      />
 
       <div className="max-w-5xl mx-auto px-4 py-10">
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">Product Scorecard</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Score your idea on real keyword data plus 15 fundamentals. Watch the number move as you go.
+            Score your idea on real keyword data plus 15 fundamentals. Save it, then compare side by side.
           </p>
         </div>
 
         <LoginSection onLogin={setUserEmail} />
 
+        {/* view toggle + save/new */}
+        <div className="bg-white rounded-2xl shadow-md border-2 border-gray-200 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="inline-flex rounded-lg bg-gray-100 p-1 self-start">
+              <button
+                type="button"
+                onClick={() => setView('score')}
+                className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
+                  view === 'score' ? 'bg-white text-blue-700 shadow' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Score an idea
+              </button>
+              <button
+                type="button"
+                onClick={() => setView('compare')}
+                className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
+                  view === 'compare' ? 'bg-white text-blue-700 shadow' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Compare ({savedIdeas.length})
+              </button>
+            </div>
+            {view === 'score' && (
+              <div className="flex gap-2 self-end sm:self-auto">
+                <button
+                  type="button"
+                  onClick={handleNewIdea}
+                  className="px-4 py-2 bg-gray-100 text-gray-800 font-semibold text-sm rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  + New idea
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSaveModalOpen(true)}
+                  className="px-4 py-2 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Save this idea
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {view === 'compare' ? (
+          <CompareView
+            savedIdeas={savedIdeas}
+            onLoad={handleLoadIdea}
+            onDelete={handleDeleteIdea}
+            onBack={() => setView('score')}
+          />
+        ) : (
+        <>
         <StickyScore score={totalScore} />
 
         {/* product idea */}
@@ -886,6 +1332,8 @@ export function ProductScorecard() {
         </div>
 
         <ScoreDisplay score={totalScore} productIdea={productIdea} />
+        </>
+        )}
       </div>
       <LegalDisclaimer />
     </div>
