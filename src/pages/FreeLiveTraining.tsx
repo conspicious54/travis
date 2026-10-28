@@ -339,29 +339,29 @@ export function FreeLiveTraining() {
         className="px-4 pt-4 md:pt-6 pb-6 md:pb-8"
         style={darkSectionBg}
       >
-        <div className="w-full max-w-xl mx-auto">
+        <div className="w-full max-w-3xl mx-auto">
           {/* Top banner strip */}
-          <div className="text-center mb-4 pb-3 border-b-2" style={{ borderColor: '#F28000' }}>
+          <div className="text-center mb-5 md:mb-6 pb-4 border-b-2" style={{ borderColor: '#F28000' }}>
             <p
               className="font-black uppercase tracking-wide leading-tight"
-              style={{ color: '#F28000', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(14px, 2.2vw, 22px)' }}
+              style={{ color: '#F28000', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(18px, 2.8vw, 30px)' }}
             >
               FREE LIVE MASTERCLASS
             </p>
             <p
-              className="font-black uppercase tracking-wide leading-tight mt-0.5"
-              style={{ color: '#F28000', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(14px, 2.2vw, 22px)' }}
+              className="font-black uppercase tracking-wide leading-tight mt-1"
+              style={{ color: '#F28000', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(18px, 2.8vw, 30px)' }}
             >
               STARTS: {topBanner}
             </p>
           </div>
 
           {/* Avatar — the source image IS the orange circle crop. */}
-          <div className="flex justify-center mb-3 md:mb-4">
+          <div className="flex justify-center mb-5 md:mb-6">
             <img
               src={`${ASSET}/hero.png`}
               alt=""
-              style={{ width: 'clamp(100px, 15vh, 150px)', height: 'auto' }}
+              style={{ width: 'clamp(140px, 20vh, 220px)', height: 'auto' }}
               loading="eager"
               decoding="async"
             />
@@ -369,68 +369,74 @@ export function FreeLiveTraining() {
 
           {/* Headline */}
           <h1
-            className="text-center font-black tracking-tight leading-[1.08] mb-3"
+            className="text-center font-black tracking-tight leading-[1.08] mb-5"
             style={{ fontFamily: '"Montserrat", sans-serif' }}
           >
-            <span className="block text-white" style={{ fontSize: 'clamp(26px, 4.2vw, 44px)' }}>
+            <span className="block text-white" style={{ fontSize: 'clamp(32px, 5.2vw, 58px)' }}>
               Turn Any Passion Into A
             </span>
-            <span className="block mt-0.5" style={{ color: '#F28000', fontSize: 'clamp(26px, 4.2vw, 44px)' }}>
+            <span className="block mt-1" style={{ color: '#F28000', fontSize: 'clamp(32px, 5.2vw, 58px)' }}>
               Profitable Amazon Business
             </span>
           </h1>
 
           {/* Subhead */}
           <p
-            className="text-center leading-snug text-white font-normal mb-5 max-w-lg mx-auto"
-            style={{ fontSize: 'clamp(14px, 1.4vw, 17px)' }}
+            className="text-center leading-snug text-white font-medium mb-6 md:mb-7 max-w-2xl mx-auto"
+            style={{ fontSize: 'clamp(16px, 1.7vw, 22px)' }}
           >
             Learn The Exact Amazon Selling Method I've Used To Help Regular People With No Experience Hit Their First $100,000 In Sales
           </p>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-2.5 max-w-md mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-3 max-w-xl mx-auto">
             <input
               type="text" required autoComplete="name" value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-4 py-3 bg-white rounded-md text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-5 py-3.5 bg-white rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              style={{ fontSize: 'clamp(16px, 1.5vw, 20px)' }}
               placeholder="Enter Your Name Here..."
             />
             <input
               type="email" required autoComplete="email" value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-white rounded-md text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-5 py-3.5 bg-white rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              style={{ fontSize: 'clamp(16px, 1.5vw, 20px)' }}
               placeholder="Enter Your Email Here..."
             />
             <div className="flex items-center bg-white rounded-md overflow-hidden">
-              <div className="flex items-center gap-1 pl-3 pr-1.5 py-3 bg-white border-r border-gray-200 shrink-0">
-                <span className="text-lg leading-none" aria-hidden>🇺🇸</span>
+              <div className="flex items-center gap-1 pl-4 pr-2 py-3.5 bg-white border-r border-gray-200 shrink-0">
+                <span className="text-xl leading-none" aria-hidden>🇺🇸</span>
                 <span className="text-gray-500 text-xs">▾</span>
               </div>
               <input
                 type="tel" required autoComplete="tel" value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="flex-1 px-3 py-3 bg-white text-base text-gray-900 placeholder-gray-500 focus:outline-none"
+                className="flex-1 px-3 py-3.5 bg-white text-gray-900 placeholder-gray-500 focus:outline-none"
+                style={{ fontSize: 'clamp(16px, 1.5vw, 20px)' }}
                 placeholder="Enter Your Phone Number Here..."
               />
             </div>
 
             {error && (
-              <div className="bg-red-900/40 border border-red-500/50 rounded-md px-3 py-2 text-xs text-red-200">
+              <div className="bg-red-900/40 border border-red-500/50 rounded-md px-3 py-2 text-sm text-red-200">
                 {error}
               </div>
             )}
 
             <button
               type="submit" disabled={submitting}
-              className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 font-black rounded-md uppercase tracking-wide transition-colors shadow-md cursor-pointer disabled:opacity-60"
-              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(16px, 1.8vw, 22px)' }}
+              className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 font-black rounded-md uppercase tracking-wide transition-colors shadow-md cursor-pointer disabled:opacity-60"
+              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(20px, 2.4vw, 30px)' }}
             >
               {submitting ? 'SAVING YOUR SPOT…' : <>SAVE MY FREE SPOT <span aria-hidden>»</span></>}
             </button>
 
-            <p className="text-center text-sm text-white mt-2 flex items-center justify-center gap-2">
-              <Calendar className="w-4 h-4 text-orange-500" />
+            <p
+              className="text-center text-white mt-3 flex items-center justify-center gap-2"
+              style={{ fontSize: 'clamp(14px, 1.3vw, 17px)' }}
+            >
+              <Calendar className="w-5 h-5 text-orange-500" />
               <span>{dateCaption}</span>
             </p>
           </form>
