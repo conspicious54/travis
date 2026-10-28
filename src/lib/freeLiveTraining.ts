@@ -5,17 +5,40 @@
 ──────────────────────────────────────────────────────────────────── */
 
 export const WEBINAR_TITLE = 'Turn Any Passion Into A Profitable Amazon Business';
-
-// Specify the event in whatever timezone is most natural, as an ISO
-// 8601 string with its UTC offset. Every visitor sees it converted
-// to their own local timezone automatically.
-//   Pacific  → "2026-05-22T10:00:00-07:00"
-//   Eastern  → "2026-05-22T13:00:00-04:00"
-//   UK (BST) → "2026-05-22T18:00:00+01:00"
-//   UTC      → "2026-05-22T17:00:00Z"
-// All four of the above describe the exact same instant.
-export const WEBINAR_START_ISO = '2026-05-22T10:00:00-07:00';
 export const WEBINAR_DURATION_MIN = 60;
+
+/* ───── Session schedule ─────────────────────────────────────────
+   Upcoming sessions as ISO 8601 strings in whatever timezone is
+   most natural to you. Keep them in ascending order. Every visitor
+   sees the time converted to their own local timezone automatically.
+
+   The page displays the FIRST session whose end time (start +
+   WEBINAR_DURATION_MIN) is still in the future, so a visitor who
+   opens the page while a session is live still sees that one,
+   not the next one. Once it ends, the page rolls to the next
+   date on the next load.
+
+   Timezone cheat sheet (US Pacific):
+     PT during DST  (Mar-Nov):  "-07:00"  (PDT)
+     PT standard   (Nov-Mar):   "-08:00"  (PST)
+   DST ends in the US on the first Sunday of November, so Nov 2+
+   is PST.
+──────────────────────────────────────────────────────────────────── */
+export const WEBINAR_SCHEDULE: readonly string[] = [
+  '2026-11-02T15:30:00-08:00', // Monday,   Nov 2 2026, 3:30 PM PT
+  '2026-11-05T15:30:00-08:00', // Thursday, Nov 5 2026, 3:30 PM PT
+];
+
+export function getNextWebinarStartIso(): string {
+  const now = Date.now();
+  const cushion = WEBINAR_DURATION_MIN * 60_000;
+  const future = WEBINAR_SCHEDULE.find(
+    (iso) => new Date(iso).getTime() + cushion > now,
+  );
+  return future ?? WEBINAR_SCHEDULE[WEBINAR_SCHEDULE.length - 1];
+}
+
+export const WEBINAR_START_ISO = getNextWebinarStartIso();
 export const WEBINAR_JOIN_URL = 'https://www.youtube.com/watch?v=2Wx_YWBCiHo';
 export const WEBINAR_DESCRIPTION =
   "Travis Marziani's live training: how he picks winning products, the launch playbook he uses, and how to avoid the most common mistakes new sellers make.";
