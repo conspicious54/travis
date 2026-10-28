@@ -149,6 +149,21 @@ export function TrainingRegistered() {
   useEffect(() => {
     document.title = `You're In - ${WEBINAR_TITLE}`;
     trackEvent('trainingregistered_page_viewed', { cal_provider_detected: provider });
+
+    // Meta Pixel: the loader in index.html head already defined
+    // window.fbq. Fire a SPA-level PageView (the pixel only
+    // auto-fires on full document load, so route-nav from
+    // /freelivetraining doesn't get one otherwise), and the
+    // standard Lead conversion event since reaching this page
+    // means the opt-in form submitted successfully.
+    // GTM is also global and tracks SPA navigations via its own
+    // triggers, so nothing extra needed on that side.
+    try {
+      const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq;
+      fbq?.('track', 'PageView');
+      fbq?.('track', 'Lead');
+    } catch { /* no-op */ }
+
     const id = window.setInterval(() => setCountdown(calcCountdown(start)), 1000);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
