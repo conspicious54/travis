@@ -1,25 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Calendar, Clock, CheckCircle, ArrowRight, BookmarkPlus,
-  Phone, Youtube, Video, AlertTriangle, Wifi, MonitorSmartphone,
+  Calendar, CheckCircle, ArrowRight, BookmarkPlus,
+  Youtube, Video, AlertTriangle, Wifi, MonitorSmartphone, Clock,
 } from 'lucide-react';
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
-/* ───── /freelivetraining — webinar opt-in ───────────────────────
-   Faithful port of the ClickFunnels source Travis is moving off:
-     dark SVG-overlay hero (banner + sign-up form)
-     3-pillar value prop block ("…has all 3…")
-     Amazon ecosystem stat block (60% / $375K / 75K+)
-     Student results social proof (Andrew / Michael / Jenny / Alyssa)
-     Dark bottom CTA.
-   Submits through the shared /register-webinar Zapier bridge so
-   leads flow into the same list as /live-training.
-
-   Dates mirror /live-training by design — update both constants
-   together when the real event date is locked.
+/* ───── /freelivetraining — strict ClickFunnels port ─────────────
+   Word-for-word, section-for-section replica of the CF webinar
+   opt-in Travis is moving off. Submits through the shared
+   /register-webinar bridge, same as /live-training.
 ──────────────────────────────────────────────────────────────────── */
 
 const WEBINAR_TITLE = 'Turn Any Passion Into A Profitable Amazon Business';
@@ -31,9 +23,22 @@ const WEBINAR_DESCRIPTION =
 
 const ASSET = '/freelivetraining';
 
+// Student result YouTube IDs lifted verbatim from the CF HTML.
+const STUDENT_RESULTS: Array<{ name: string; line: string; videoId: string }> = [
+  { name: 'Andrew',  line: 'Hit $330,000 in his first 12 months on Amazon',                                        videoId: 'IRb5EpPGnRU' },
+  { name: 'Michael', line: 'Restated on Amazon with our method and crossed six figures in sales in 12 months.',    videoId: 'Vw9OrGVTGoI' },
+  { name: 'Jenny',   line: 'Mom-owned brand that hit six figures in year one.',                                    videoId: 'u0uTL3662Ic' },
+  { name: 'Alyssa',  line: 'Six figures in under a year as a first-time seller.',                                  videoId: 'TE9uGqS0tt0' },
+];
+
 function emailFromUrl(): string {
   if (typeof window === 'undefined') return '';
   return getCleanIdentity(new URLSearchParams(window.location.search)).email || '';
+}
+
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd']; const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
 function formatHumanDate(d: Date): string {
@@ -46,23 +51,34 @@ function formatHumanTime(d: Date): string {
     hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
   });
 }
-function formatShortET(d: Date): string {
-  // "Wednesday, July 29th // 7pm EST (4pm PST)" style, auto-derived
+
+// "MONDAY AUGUST 24TH @4PM PT" (uppercase, hour in PT)
+function formatTopBanner(d: Date): string {
+  const ptParts = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric',
+    timeZone: 'America/Los_Angeles',
+  }).formatToParts(d);
+  const get = (t: string) => ptParts.find((p) => p.type === t)?.value || '';
+  return `${get('weekday').toUpperCase()} ${get('month').toUpperCase()} ${ordinal(Number(get('day')))} @${(get('hour') + get('dayPeriod')).toUpperCase()} PT`;
+}
+
+// "Monday, August 24th // 7pm EST (4pm PST)"
+function formatDateCaption(d: Date): string {
   const et = new Intl.DateTimeFormat('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric',
-    hour: 'numeric', timeZone: 'America/New_York',
+    weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric',
+    timeZone: 'America/New_York',
   }).formatToParts(d);
   const pt = new Intl.DateTimeFormat('en-US', {
     hour: 'numeric', timeZone: 'America/Los_Angeles',
   }).formatToParts(d);
-  const get = (parts: Intl.DateTimeFormatPart[], type: string) =>
-    parts.find((p) => p.type === type)?.value || '';
-  const weekday = get(et, 'weekday');
-  const month = get(et, 'month');
-  const day = get(et, 'day');
-  const etHour = (get(et, 'hour') + get(et, 'dayPeriod')).toLowerCase();
-  const ptHour = (get(pt, 'hour') + get(pt, 'dayPeriod')).toLowerCase();
-  return `${weekday}, ${month} ${day} // ${etHour} ET (${ptHour} PT)`;
+  const g = (parts: Intl.DateTimeFormatPart[], t: string) =>
+    parts.find((p) => p.type === t)?.value || '';
+  const weekday = g(et, 'weekday');
+  const month = g(et, 'month');
+  const day = ordinal(Number(g(et, 'day')));
+  const etHour = (g(et, 'hour') + g(et, 'dayPeriod')).toLowerCase();
+  const ptHour = (g(pt, 'hour') + g(pt, 'dayPeriod')).toLowerCase();
+  return `${weekday}, ${month} ${day} // ${etHour} EST (${ptHour} PST)`;
 }
 
 function buildGoogleCalendarUrl(start: Date, durationMin: number): string {
@@ -135,9 +151,7 @@ export function FreeLiveTraining() {
 
   useEffect(() => {
     document.title = `Free Live Training - ${WEBINAR_TITLE}`;
-    trackEvent('freelivetraining_page_viewed', {
-      email_prefilled: !!emailFromUrl(),
-    });
+    trackEvent('freelivetraining_page_viewed', { email_prefilled: !!emailFromUrl() });
     getCountry().then((info) => {
       setCountry(info);
       trackEvent('freelivetraining_country_detected', {
@@ -238,354 +252,196 @@ export function FreeLiveTraining() {
               an hour before we go live.
             </p>
           </div>
-
           <div className="bg-white border-2 border-orange-200 rounded-2xl p-6 md:p-7 shadow-sm mb-6">
-            <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.18em] mb-2">
-              Free live masterclass
-            </p>
-            <h2 className="text-xl md:text-2xl font-black text-gray-900 leading-tight mb-4">
-              {WEBINAR_TITLE}
-            </h2>
+            <p className="text-orange-600 text-xs font-bold uppercase tracking-[0.18em] mb-2">Free live masterclass</p>
+            <h2 className="text-xl md:text-2xl font-black text-gray-900 leading-tight mb-4">{WEBINAR_TITLE}</h2>
             <div className="flex items-start gap-3 mb-2">
               <Calendar className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
               <p className="text-gray-900 font-bold">{formatHumanDate(start)}</p>
             </div>
             <div className="flex items-start gap-3 mb-4">
               <Clock className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-              <p className="text-gray-900 font-bold">
-                {formatHumanTime(start)}{' '}
-                <span className="text-gray-500 font-normal">({WEBINAR_DURATION_MIN} min)</span>
-              </p>
+              <p className="text-gray-900 font-bold">{formatHumanTime(start)} <span className="text-gray-500 font-normal">({WEBINAR_DURATION_MIN} min)</span></p>
             </div>
             <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 flex items-start gap-2 text-sm">
               <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              <p className="text-red-800 leading-snug">
-                <span className="font-bold">This is LIVE</span> - there's no replay. If you miss it, you miss it.
-              </p>
+              <p className="text-red-800 leading-snug"><span className="font-bold">This is LIVE</span> - there's no replay. If you miss it, you miss it.</p>
             </div>
           </div>
-
           <section className="bg-white border-2 border-orange-300 rounded-2xl p-6 md:p-7 shadow-lg shadow-orange-100/50 mb-6">
-            <h3 className="text-lg md:text-xl font-black text-gray-900 leading-tight mb-2">
-              Add it to your calendar right now
-            </h3>
-            <p className="text-sm text-gray-600 leading-snug mb-5">
-              Calendar alerts are the #1 reason people actually show up. The invite includes reminders at <span className="font-semibold text-gray-700">1 day, 1 hour, and 15 minutes</span> before.
-            </p>
+            <h3 className="text-lg md:text-xl font-black text-gray-900 leading-tight mb-2">Add it to your calendar right now</h3>
+            <p className="text-sm text-gray-600 leading-snug mb-5">Calendar alerts are the #1 reason people actually show up. The invite includes reminders at <span className="font-semibold text-gray-700">1 day, 1 hour, and 15 minutes</span> before.</p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <a
-                href={buildGoogleCalendarUrl(start, WEBINAR_DURATION_MIN)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackEvent('freelivetraining_calendar_added', { provider: 'google' })}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
-              >
-                <Calendar className="w-4 h-4" />
-                Google Calendar
+              <a href={buildGoogleCalendarUrl(start, WEBINAR_DURATION_MIN)} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('freelivetraining_calendar_added', { provider: 'google' })} className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer">
+                <Calendar className="w-4 h-4" /> Google Calendar
               </a>
-              <button
-                onClick={() => {
-                  downloadIcs(start, WEBINAR_DURATION_MIN);
-                  trackEvent('freelivetraining_calendar_added', { provider: 'ics' });
-                }}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer"
-              >
-                <Calendar className="w-4 h-4" />
-                Apple / Outlook (.ics)
+              <button onClick={() => { downloadIcs(start, WEBINAR_DURATION_MIN); trackEvent('freelivetraining_calendar_added', { provider: 'ics' }); }} className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-md cursor-pointer">
+                <Calendar className="w-4 h-4" /> Apple / Outlook (.ics)
               </button>
             </div>
           </section>
-
           <section className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm mb-6">
-            <h3 className="text-lg md:text-xl font-black text-gray-900 leading-tight mb-3">
-              Where you'll watch
-            </h3>
-            <a
-              href={WEBINAR_JOIN_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackEvent('freelivetraining_youtube_link_clicked', { context: 'confirmation' })}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 hover:text-red-800 rounded-lg text-sm font-semibold transition-colors mb-3 break-all"
-            >
-              <Youtube className="w-4 h-4 shrink-0" />
-              <span className="truncate">{WEBINAR_JOIN_URL}</span>
+            <h3 className="text-lg md:text-xl font-black text-gray-900 leading-tight mb-3">Where you'll watch</h3>
+            <a href={WEBINAR_JOIN_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackEvent('freelivetraining_youtube_link_clicked', { context: 'confirmation' })} className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 hover:text-red-800 rounded-lg text-sm font-semibold transition-colors mb-3 break-all">
+              <Youtube className="w-4 h-4 shrink-0" /><span className="truncate">{WEBINAR_JOIN_URL}</span>
             </a>
-            <p className="text-sm text-gray-700 leading-relaxed">
-              <span className="font-bold">Open it now and hit the bell icon</span> - YouTube will ping you the moment Travis goes live.
-              {phone.trim()
-                ? ` We'll also text ${phone.trim()} an hour before.`
-                : " We'll also email you an hour before."}
-            </p>
+            <p className="text-sm text-gray-700 leading-relaxed"><span className="font-bold">Open it now and hit the bell icon</span> - YouTube will ping you the moment Travis goes live.{phone.trim() ? ` We'll also text ${phone.trim()} an hour before.` : " We'll also email you an hour before."}</p>
           </section>
-
           <section className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm mb-6">
-            <h3 className="text-lg md:text-xl font-black text-gray-900 leading-tight mb-4">
-              How to show up ready
-            </h3>
+            <h3 className="text-lg md:text-xl font-black text-gray-900 leading-tight mb-4">How to show up ready</h3>
             <ul className="space-y-3 text-sm md:text-base text-gray-800 leading-relaxed">
-              <li className="flex items-start gap-3">
-                <MonitorSmartphone className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <span>Use a <span className="font-semibold">desktop or laptop</span> if you can - easier to follow along and take notes.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Wifi className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <span>Be on a <span className="font-semibold">stable internet connection</span> - YouTube live can buffer on cellular.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Video className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <span>Have a <span className="font-semibold">notepad ready</span> - Travis moves fast and the actionable stuff comes early.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <span>Block the <span className="font-semibold">full hour</span> on your calendar - no half-attention, no multitasking.</span>
-              </li>
+              <li className="flex items-start gap-3"><MonitorSmartphone className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" /><span>Use a <span className="font-semibold">desktop or laptop</span> if you can - easier to follow along and take notes.</span></li>
+              <li className="flex items-start gap-3"><Wifi className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" /><span>Be on a <span className="font-semibold">stable internet connection</span> - YouTube live can buffer on cellular.</span></li>
+              <li className="flex items-start gap-3"><Video className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" /><span>Have a <span className="font-semibold">notepad ready</span> - Travis moves fast and the actionable stuff comes early.</span></li>
+              <li className="flex items-start gap-3"><Clock className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" /><span>Block the <span className="font-semibold">full hour</span> on your calendar - no half-attention, no multitasking.</span></li>
             </ul>
           </section>
-
           <p className="text-xs text-gray-500 text-center leading-relaxed mb-10 flex items-center justify-center gap-2">
             <BookmarkPlus className="w-4 h-4 text-gray-400" />
-            Bookmark this page (
-            <span className="font-mono font-semibold text-gray-700">Ctrl/Cmd + D</span>
-            ) so you can come back when it's time.
+            Bookmark this page (<span className="font-mono font-semibold text-gray-700">Ctrl/Cmd + D</span>) so you can come back when it's time.
           </p>
-
-          <section className="bg-gradient-to-br from-gray-950 via-slate-900 to-orange-950 rounded-3xl p-7 md:p-8 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-orange-900/30 via-transparent to-transparent" />
-            <div className="relative">
-              <p className="text-orange-300 text-[10px] md:text-xs font-bold uppercase tracking-[0.18em] mb-3">
-                Don't want to wait until the live training?
-              </p>
-              <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-tight mb-3">
-                Ready to take action <span className="text-orange-400">right now?</span>
-              </h3>
-              <p className="text-slate-300 text-sm md:text-base leading-relaxed mb-6 max-w-md mx-auto">
-                If you already know you're serious about building your Amazon brand, you can book a call with my team to discuss working together - no need to wait for the webinar.
-              </p>
-              <a
-                href="https://start.travismarziani.com/?utm_source=freelivetraining&utm_medium=webinar_confirmation"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackEvent('freelivetraining_book_call_clicked')}
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm md:text-base transition-colors shadow-lg shadow-orange-500/30 cursor-pointer"
-              >
-                Book a call with my team
-                <ArrowRight className="w-4 h-4" />
-              </a>
-              <p className="text-slate-500 text-xs mt-4">
-                Personalized 1-on-1 strategy call · no pressure, no obligation
-              </p>
-            </div>
-          </section>
         </div>
         <LegalDisclaimer />
       </div>
     );
   }
 
-  /* ───────────── OPT-IN STATE ───────────── */
-  const livePill = (color: 'light' | 'dark' = 'light') => (
-    <div className={
-      color === 'dark'
-        ? "inline-flex items-center gap-2 bg-red-500/20 border border-red-400/50 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-[0.15em] text-red-300 mb-4"
-        : "inline-flex items-center gap-2 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-[0.15em] text-red-700 mb-4"
-    }>
-      <span className="relative inline-flex items-center justify-center w-2 h-2">
-        <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-75"></span>
-        <span className="relative inline-block w-2 h-2 rounded-full bg-red-600"></span>
-      </span>
-      Free live masterclass
-    </div>
-  );
+  /* ───────────── OPT-IN STATE — strict CF replica ───────────── */
+  const topBanner = formatTopBanner(start);
+  const dateCaption = formatDateCaption(start);
+
+  // Section-level dark background with the CF decorative SVG baked in.
+  const darkSectionBg: React.CSSProperties = {
+    backgroundImage: `linear-gradient(rgba(10, 10, 10, 0.92) 0%, rgba(10, 10, 10, 0.95) 100%), url(${ASSET}/dark-bg.svg)`,
+    backgroundColor: '#0A0A0A',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      {/* ═══════════ DARK HERO + SIGN-UP FORM ═══════════ */}
-      <section
-        ref={topFormRef}
-        className="relative px-5 pt-10 pb-14 md:pt-14 md:pb-20"
-        style={{
-          backgroundImage: `linear-gradient(rgba(10, 14, 22, 0.88) 0%, rgba(10, 14, 22, 0.92) 100%), url(${ASSET}/dark-bg.svg)`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
-        <div className="max-w-5xl mx-auto">
-          {/* Event-starts banner strip */}
-          <div className="text-center mb-7">
-            {livePill('dark')}
-            <p className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-orange-400 mb-1">
-              Your event starts
+    <div className="min-h-screen" style={{ backgroundColor: '#0A0A0A', color: '#FFFFFF', fontFamily: '"Open Sans", "Helvetica Neue", Arial, sans-serif' }}>
+      {/* ═══════════ TOP BAR + HERO ═══════════ */}
+      <section ref={topFormRef} className="px-5 pt-6 md:pt-10 pb-10 md:pb-14" style={darkSectionBg}>
+        <div className="max-w-xl mx-auto">
+          {/* Top banner strip */}
+          <div className="text-center mb-7 md:mb-10 pb-6 border-b border-white/10">
+            <p className="text-base md:text-lg font-black uppercase tracking-wide text-orange-500 mb-1" style={{ fontFamily: '"Oswald", sans-serif' }}>
+              FREE LIVE MASTERCLASS
             </p>
-            <p className="text-base md:text-lg font-bold text-white">
-              {formatShortET(start)}
+            <p className="text-base md:text-lg font-black uppercase tracking-wide text-orange-500" style={{ fontFamily: '"Oswald", sans-serif' }}>
+              STARTS: {topBanner}
             </p>
           </div>
 
-          <div className="grid md:grid-cols-5 gap-8 md:gap-10 items-start">
-            {/* Left — form */}
-            <div className="md:col-span-3 order-2 md:order-1">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.02] text-white mb-4">
-                Let's Get You{' '}
-                <span className="text-orange-400">Signed Up</span>
-              </h1>
-              <p className="text-base md:text-lg text-slate-300 leading-snug mb-6 max-w-xl">
-                Save your free spot for the live masterclass. Takes 20 seconds, no payment, no replay.
-              </p>
-
-              <form
-                onSubmit={handleSubmit}
-                className="bg-white/95 backdrop-blur border border-white/10 rounded-2xl p-5 md:p-6 shadow-2xl shadow-black/40 space-y-4"
-              >
-                <div>
-                  <input
-                    id="name"
-                    type="text"
-                    required
-                    autoComplete="name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full px-4 py-3.5 bg-white border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Enter Your Name Here..."
-                  />
-                </div>
-                <div>
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3.5 bg-white border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Enter Your Email Here..."
-                  />
-                </div>
-                <div>
-                  <input
-                    id="phone"
-                    type="tel"
-                    required
-                    autoComplete="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-4 py-3.5 bg-white border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    placeholder="Enter Your Phone Here..."
-                  />
-                  <p className="text-[11px] text-gray-500 mt-1.5 flex items-center gap-1">
-                    <Phone className="w-3 h-3" /> We'll text you a reminder before we go live.
-                  </p>
-                </div>
-
-                {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-800">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-4 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-300 text-white font-black rounded-xl text-base md:text-lg uppercase tracking-wide transition-colors shadow-md cursor-pointer"
-                >
-                  {submitting ? 'Saving your spot…' : 'Claim Your Free Spot'}
-                  {!submitting && <ArrowRight className="w-5 h-5" />}
-                </button>
-              </form>
-
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-xs md:text-sm text-slate-400">
-                <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-green-400" /> 100% free</span>
-                <span className="flex items-center gap-1.5"><Video className="w-4 h-4 text-red-400" /> Live - no replay</span>
-                <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-green-400" /> 14,000+ students</span>
-              </div>
-            </div>
-
-            {/* Right — hero image */}
-            <div className="md:col-span-2 order-1 md:order-2">
-              <div className="relative">
-                <div className="absolute -inset-4 bg-orange-500/20 blur-3xl rounded-full" />
-                <img
-                  src={`${ASSET}/hero.png`}
-                  alt="Travis Marziani - Free Live Amazon Masterclass"
-                  className="relative w-full h-auto rounded-2xl shadow-2xl shadow-black/50"
-                  loading="eager"
-                  decoding="async"
-                />
-              </div>
+          {/* Avatar */}
+          <div className="flex justify-center mb-6">
+            <div
+              className="w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden"
+              style={{ backgroundColor: '#F28000', boxShadow: '0 0 0 4px #F28000' }}
+            >
+              <img
+                src={`${ASSET}/hero.png`}
+                alt=""
+                className="w-full h-full object-cover object-top"
+                loading="eager"
+                decoding="async"
+              />
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* ═══════════ FREE LIVE MASTERCLASS BAR ═══════════ */}
-      <section className="bg-orange-600 text-white px-5 py-5 md:py-6 text-center">
-        <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.25em] mb-1 text-orange-100">
-          Free Live Masterclass
-        </p>
-        <p className="text-lg md:text-xl font-black tracking-tight">
-          Starts: {formatShortET(start)}
-        </p>
-      </section>
+          {/* Headline */}
+          <h1 className="text-center font-black tracking-tight leading-[1.1] mb-5" style={{ fontFamily: '"Oswald", sans-serif' }}>
+            <span className="block text-3xl md:text-5xl text-white">Turn Any Passion Into A</span>
+            <span className="block text-3xl md:text-5xl mt-1" style={{ color: '#F28000' }}>Profitable Amazon Business</span>
+          </h1>
 
-      {/* ═══════════ MAIN OFFER HEADLINE ═══════════ */}
-      <section className="px-5 py-14 md:py-20 bg-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.03] mb-5">
-            Turn Any Passion Into A{' '}
-            <span className="text-orange-600">Profitable Amazon Business</span>
-          </h2>
-          <p className="text-base md:text-xl text-gray-700 leading-snug max-w-3xl mx-auto mb-7">
-            Learn The Exact Amazon Selling Method I've Used To Help Regular People With No Experience Hit Their First{' '}
-            <span className="font-black text-gray-900">$100,000 In Sales</span>
+          {/* Subhead */}
+          <p className="text-center text-base md:text-lg leading-snug text-white/90 mb-7 md:mb-8 max-w-lg mx-auto">
+            Learn The Exact Amazon Selling Method I've Used To Help Regular People With No Experience Hit Their First $100,000 In Sales
           </p>
-          <button
-            onClick={() => scrollToForm('main_headline')}
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl text-base md:text-lg uppercase tracking-wide transition-colors shadow-md cursor-pointer"
-          >
-            Save My Free Spot
-            <ArrowRight className="w-5 h-5" />
-          </button>
-          <p className="text-sm text-gray-500 mt-3">{formatShortET(start)}</p>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-3 max-w-md mx-auto">
+            <input
+              type="text" required autoComplete="name" value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-full px-4 py-3.5 bg-white border border-white rounded-md text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder="Enter Your Name Here..."
+            />
+            <input
+              type="email" required autoComplete="email" value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3.5 bg-white border border-white rounded-md text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder="Enter Your Email Here..."
+            />
+            <div className="flex items-center bg-white rounded-md border border-white overflow-hidden">
+              <div className="flex items-center gap-1.5 px-3 py-3.5 bg-white border-r border-gray-200 shrink-0">
+                <span className="text-xl leading-none" aria-hidden>🇺🇸</span>
+                <span className="text-gray-500 text-sm">-</span>
+              </div>
+              <input
+                type="tel" required autoComplete="tel" value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="flex-1 px-3 py-3.5 bg-white text-base text-gray-900 placeholder-gray-500 focus:outline-none"
+                placeholder="Enter Your Phone Number Here..."
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-900/40 border border-red-500/50 rounded-md px-3 py-2 text-xs text-red-200">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit" disabled={submitting}
+              className="w-full inline-flex items-center justify-center gap-2 px-5 py-4 font-black rounded-md text-lg md:text-xl uppercase tracking-wide transition-colors shadow-md cursor-pointer disabled:opacity-60"
+              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Oswald", sans-serif' }}
+            >
+              {submitting ? 'SAVING YOUR SPOT…' : <>SAVE MY FREE SPOT <span aria-hidden>»</span></>}
+            </button>
+
+            <p className="text-center text-sm md:text-base text-white/80 mt-3 flex items-center justify-center gap-2">
+              <Calendar className="w-4 h-4 text-orange-500" />
+              <span>{dateCaption}</span>
+            </p>
+          </form>
         </div>
       </section>
 
       {/* ═══════════ 3 PILLARS ═══════════ */}
-      <section className="px-5 py-14 md:py-20 bg-gradient-to-b from-slate-50 to-white border-y border-gray-100">
+      <section className="px-5 py-14 md:py-20" style={{ backgroundColor: '#1a1a1a' }}>
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10 md:mb-12">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] max-w-3xl mx-auto">
-              Selling On Amazon Is The{' '}
-              <span className="text-orange-600">Only Online Business</span>{' '}
-              You Can Start That Has All 3…
-            </h2>
-          </div>
+          <h2 className="text-center font-black tracking-tight leading-[1.15] mb-10 md:mb-12 text-3xl md:text-5xl" style={{ fontFamily: '"Oswald", sans-serif' }}>
+            <span className="text-white">Selling On Amazon Is The </span>
+            <span style={{ color: '#F28000' }}>Only Online Business</span>
+            <span className="text-white"> You Can Start That Has All 3…</span>
+          </h2>
+
           <div className="grid md:grid-cols-3 gap-5 md:gap-6">
             {[
-              {
-                title: 'Built-In Traffic',
-                body: 'Millions of active buyers already shopping every day',
-              },
-              {
-                title: 'Built-In Trust',
-                body: 'Over 200 million existing Prime members',
-              },
-              {
-                title: 'DFY Logistics',
-                body: 'Amazon handles storage, shipping, and returns for you',
-              },
+              { title: 'Built-In Traffic', body: 'Millions of buyers already shopping every day' },
+              { title: 'Built-In Trust',   body: 'Over 200 million existing Prime members' },
+              { title: 'DFY Logistics',    body: 'Amazon handles storage, shipping, and returns for you' },
             ].map((p) => (
               <div
                 key={p.title}
-                className="bg-white border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm text-center"
+                className="rounded-md p-6 md:p-8 text-center"
+                style={{ backgroundColor: '#111111', border: '1px solid #F28000' }}
               >
                 <img
                   src={`${ASSET}/feature-icon.png`}
                   alt=""
-                  className="w-20 h-20 mx-auto mb-4 object-contain"
+                  className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 object-contain"
                   loading="lazy"
                 />
-                <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-2">{p.title}</h3>
-                <p className="text-sm md:text-base text-gray-700 leading-snug">{p.body}</p>
+                <h3 className="text-xl md:text-2xl font-black text-white mb-3" style={{ fontFamily: '"Oswald", sans-serif' }}>
+                  {p.title}
+                </h3>
+                <p className="text-base md:text-lg leading-snug font-semibold" style={{ color: '#F28000' }}>
+                  {p.body}
+                </p>
               </div>
             ))}
           </div>
@@ -593,138 +449,102 @@ export function FreeLiveTraining() {
       </section>
 
       {/* ═══════════ STATS ═══════════ */}
-      <section className="px-5 py-14 md:py-20 bg-white">
+      <section className="px-5 py-14 md:py-20" style={darkSectionBg}>
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10 md:mb-12">
-            <p className="text-orange-600 text-xs md:text-sm font-bold uppercase tracking-[0.18em] mb-3">
-              And that's probably why…
-            </p>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] max-w-3xl mx-auto">
-              Amazon Creates More Millionaires Than Any Other Online Business…
-            </h2>
-          </div>
+          <p className="text-center text-base md:text-lg text-white/90 italic mb-3">
+            And that's probably why…
+          </p>
+          <h2 className="text-center font-black tracking-tight leading-[1.15] mb-10 md:mb-12 text-3xl md:text-5xl text-white" style={{ fontFamily: '"Oswald", sans-serif' }}>
+            Amazon Creates More Millionaires Than Any Other Online Business…
+          </h2>
+
           <div className="grid md:grid-cols-3 gap-5 md:gap-6">
             {[
-              {
-                stat: '60%',
-                label: 'Of all Amazon sales come from independent sellers',
-                src: 'Amazon Annual Report, 2025',
-              },
-              {
-                stat: '$375K',
-                label: 'Average annual sales per US seller',
-                src: 'Amazon Seller Report, 2025',
-              },
-              {
-                stat: '75K+',
-                label: 'Sellers surpassed $1 million in sales',
-                src: 'Amazon Seller Report, 2025',
-              },
+              { stat: '60%',   label: 'OF ALL AMAZON SALES COME FROM INDEPENDENT SELLERS', src: 'Amazon Annual Report, 2025' },
+              { stat: '$375K', label: 'AVERAGE ANNUAL SALES PER US SELLER',                src: 'Amazon Seller Report, 2025' },
+              { stat: '75K+',  label: 'SELLERS SURPASSED $1 MILLION IN SALES',             src: 'Amazon Seller Report, 2025' },
             ].map((s) => (
               <div
                 key={s.stat}
-                className="bg-gradient-to-br from-orange-50 to-white border-2 border-orange-100 rounded-2xl p-6 md:p-8 text-center shadow-sm"
+                className="rounded-md p-6 md:p-8 text-center"
+                style={{ backgroundColor: '#0D0D0D', border: '1px solid #F28000' }}
               >
-                <p className="text-5xl md:text-6xl font-black text-orange-600 tracking-tight leading-none mb-3">
+                <p className="text-5xl md:text-6xl font-black tracking-tight leading-none mb-4" style={{ color: '#F28000', fontFamily: '"Oswald", sans-serif' }}>
                   {s.stat}
                 </p>
-                <p className="text-sm md:text-base text-gray-800 leading-snug mb-3 font-semibold">
+                <p className="text-xs md:text-sm text-white font-bold uppercase tracking-[0.08em] leading-snug mb-3">
                   {s.label}
                 </p>
-                <p className="text-[11px] text-gray-500 italic">Source: {s.src}</p>
+                <p className="text-[11px] md:text-xs text-white/50 italic">
+                  {s.src}
+                </p>
               </div>
             ))}
           </div>
-          <div className="text-center mt-10">
+
+          <div className="text-center mt-10 md:mt-12">
             <button
               onClick={() => scrollToForm('stats')}
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl text-base md:text-lg uppercase tracking-wide transition-colors shadow-md cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-7 py-4 font-black rounded-md text-base md:text-xl uppercase tracking-wide transition-colors shadow-md cursor-pointer"
+              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Oswald", sans-serif' }}
             >
-              Learn How To Start Selling
-              <ArrowRight className="w-5 h-5" />
+              LEARN HOW TO START SELLING <span aria-hidden>»</span>
             </button>
           </div>
         </div>
       </section>
 
       {/* ═══════════ SOCIAL PROOF ═══════════ */}
-      <section className="px-5 py-14 md:py-20 bg-gradient-to-b from-slate-50 to-white border-t border-gray-100">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10 md:mb-12">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05]">
-              Real Students. <span className="text-orange-600">Real Results.</span>
-            </h2>
-            <p className="text-sm md:text-base text-gray-600 mt-3 max-w-xl mx-auto">
-              14,000+ students have seen this system. Here's a breakdown of where some landed.
-            </p>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-5 md:gap-6">
-            {[
-              { name: 'Andrew', line: 'Hit $330,000 in his first 12 months on Amazon' },
-              { name: 'Michael', line: 'Restarted on Amazon with our method and crossed six figures in sales in 12 months.' },
-              { name: 'Jenny', line: 'Mom-owned brand that hit six figures in year one.' },
-              { name: 'Alyssa', line: 'Six figures in under a year as a first-time seller.' },
-            ].map((t) => (
-              <div
-                key={t.name}
-                className="bg-white border border-gray-200 rounded-2xl p-5 md:p-6 shadow-sm flex gap-4"
-              >
-                <div className="shrink-0 w-14 h-14 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center font-black text-xl text-orange-700">
-                  {t.name[0]}
+      <section
+        className="px-5 py-14 md:py-20"
+        style={{ background: 'linear-gradient(180deg, #3A1F08 0%, #1F0F03 100%)' }}
+      >
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-center font-black tracking-tight leading-[1.15] mb-3 text-3xl md:text-5xl" style={{ fontFamily: '"Oswald", sans-serif' }}>
+            <span className="text-white">Real Students. </span>
+            <span style={{ color: '#F28000' }}>Real Results.</span>
+          </h2>
+          <p className="text-center text-base md:text-lg text-white/90 leading-snug mb-10 md:mb-12 max-w-xl mx-auto">
+            14,000+ students have seen this system. Here's a breakdown of where some landed.
+          </p>
+
+          <div className="space-y-8 md:space-y-10">
+            {STUDENT_RESULTS.map((s) => (
+              <div key={s.name}>
+                <div className="relative w-full rounded-md overflow-hidden shadow-xl shadow-black/50" style={{ aspectRatio: '16 / 9' }}>
+                  <iframe
+                    src={`https://www.youtube.com/embed/${s.videoId}?modestbranding=1&rel=0`}
+                    title={`${s.name} - student result`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full border-0"
+                  />
                 </div>
-                <div>
-                  <p className="font-black text-gray-900 text-lg">{t.name}</p>
-                  <p className="text-sm md:text-base text-gray-700 leading-snug">{t.line}</p>
-                </div>
+                <p className="mt-4 text-base md:text-lg leading-snug text-white">
+                  <span className="font-black" style={{ color: '#F28000' }}>{s.name} - </span>
+                  {s.line}
+                </p>
               </div>
             ))}
           </div>
-          <div className="text-center mt-10">
+
+          <div className="text-center mt-12">
             <button
               onClick={() => scrollToForm('social_proof')}
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl text-base md:text-lg uppercase tracking-wide transition-colors shadow-md cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-7 py-4 font-black rounded-md text-base md:text-xl uppercase tracking-wide transition-colors shadow-md cursor-pointer"
+              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Oswald", sans-serif' }}
             >
-              Watch The Free Live Training
-              <ArrowRight className="w-5 h-5" />
+              WATCH THE FREE LIVE TRAINING <span aria-hidden>»</span>
             </button>
-            <p className="text-[11px] text-gray-500 mt-3 max-w-md mx-auto">
-              Individual results shown aren't typical, require work and aren't guaranteed. See full disclaimer below.
-            </p>
           </div>
         </div>
       </section>
 
-      {/* ═══════════ DARK FINAL CTA ═══════════ */}
-      <section
-        className="relative px-5 py-14 md:py-20 text-center"
-        style={{
-          backgroundImage: `linear-gradient(rgba(10, 14, 22, 0.90) 0%, rgba(10, 14, 22, 0.94) 100%), url(${ASSET}/dark-bg.svg)`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
-        <div className="max-w-3xl mx-auto">
-          {livePill('dark')}
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] text-white mb-4">
-            Turn Any Passion Into A{' '}
-            <span className="text-orange-400">Profitable Amazon Business</span>
-          </h2>
-          <p className="text-base md:text-lg text-slate-300 leading-snug mb-6 max-w-xl mx-auto">
-            <span className="font-bold text-white">{formatShortET(start)}.</span> One hour, live. No replay.
-          </p>
-          <button
-            onClick={() => scrollToForm('bottom_cta')}
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl text-base md:text-lg uppercase tracking-wide transition-colors shadow-lg shadow-orange-500/30 cursor-pointer"
-          >
-            Save My Free Spot
-            <ArrowRight className="w-5 h-5" />
-          </button>
-          <p className="text-xs text-slate-400 mt-4">100% free · Live Q&amp;A · No replay</p>
-        </div>
-      </section>
-
-      <LegalDisclaimer />
+      {/* ═══════════ LEGAL ═══════════ */}
+      <div style={{ backgroundColor: '#0A0A0A' }} className="pt-2">
+        <LegalDisclaimer />
+      </div>
     </div>
   );
 }
