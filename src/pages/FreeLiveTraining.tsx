@@ -339,7 +339,7 @@ export function FreeLiveTraining() {
         className="px-4 pt-4 md:pt-6 pb-6 md:pb-8"
         style={darkSectionBg}
       >
-        <div className="w-full max-w-3xl mx-auto">
+        <div className="w-full max-w-5xl mx-auto">
           {/* Top banner strip */}
           <div className="text-center mb-5 md:mb-6 pb-4 border-b-2" style={{ borderColor: '#F28000' }}>
             <p
@@ -367,15 +367,17 @@ export function FreeLiveTraining() {
             />
           </div>
 
-          {/* Headline */}
+          {/* Headline — nowrap so 'Profitable Amazon Business'
+              never breaks onto two lines; the container is wide
+              enough (max-w-5xl) to hold it at the clamp ceiling. */}
           <h1
             className="text-center font-black tracking-tight leading-[1.08] mb-5"
             style={{ fontFamily: '"Montserrat", sans-serif' }}
           >
-            <span className="block text-white" style={{ fontSize: 'clamp(32px, 5.2vw, 58px)' }}>
+            <span className="block whitespace-nowrap text-white" style={{ fontSize: 'clamp(28px, 5vw, 60px)' }}>
               Turn Any Passion Into A
             </span>
-            <span className="block mt-1" style={{ color: '#F28000', fontSize: 'clamp(32px, 5.2vw, 58px)' }}>
+            <span className="block whitespace-nowrap mt-1" style={{ color: '#F28000', fontSize: 'clamp(28px, 5vw, 60px)' }}>
               Profitable Amazon Business
             </span>
           </h1>
