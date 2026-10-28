@@ -1,18 +1,3 @@
-<<<<<<< HEAD
-node_modules/
-dist/
-build/
-.next/
-.out/
-coverage/
-.vscode/
-.DS_Store
-.env
-.env.*
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-=======
 # Logs
 logs
 *.log
@@ -22,12 +7,21 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dependencies & builds
+node_modules/
+dist/
+dist-ssr/
+build/
+.next/
+.out/
+coverage/
 *.local
 
-# Editor directories and files
+# Env & secrets
+.env
+.env.*
+
+# Editor / OS
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -37,4 +31,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
->>>>>>> de124c96e04b3b44b958f56e55f27a30cb880119
+
+# Local tooling output
+.playwright-mcp/
