@@ -246,27 +246,33 @@ export function FreeLiveTraining() {
               style={{ fontSize: 'clamp(16px, 1.5vw, 20px)' }}
               placeholder="Enter Your Email Here..."
             />
-            <div className="relative flex items-stretch bg-white rounded-md overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setDialOpen((v) => !v)}
-                aria-haspopup="listbox"
-                aria-expanded={dialOpen}
-                className="shrink-0 flex items-center gap-1.5 pl-4 pr-3 py-3.5 bg-white border-r border-gray-200 text-gray-800 hover:bg-gray-50 cursor-pointer font-medium"
-              >
-                <span className="text-xl leading-none" aria-hidden>{dialCountry.flag}</span>
-                <span className="tabular-nums text-sm text-gray-700">{dialCountry.dial}</span>
-                <svg className={`w-3.5 h-3.5 text-gray-500 transition-transform ${dialOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.4a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                </svg>
-              </button>
-              <input
-                type="tel" required autoComplete="tel" inputMode="tel" value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="flex-1 min-w-0 px-3 py-3.5 bg-white text-gray-900 placeholder-gray-500 focus:outline-none"
-                style={{ fontSize: 'clamp(16px, 1.5vw, 20px)' }}
-                placeholder="Enter Your Phone Number Here..."
-              />
+            {/* Outer relative wrapper intentionally has NO overflow-hidden
+                so the dialOpen dropdown isn't clipped by the inner input
+                group. The inner flex div still gets rounded + clipped so
+                the input and the flag button look like one pill. */}
+            <div className="relative">
+              <div className="flex items-stretch bg-white rounded-md overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setDialOpen((v) => !v)}
+                  aria-haspopup="listbox"
+                  aria-expanded={dialOpen}
+                  className="shrink-0 flex items-center gap-1.5 pl-4 pr-3 py-3.5 bg-white border-r border-gray-200 text-gray-800 hover:bg-gray-50 cursor-pointer font-medium"
+                >
+                  <span className="text-xl leading-none" aria-hidden>{dialCountry.flag}</span>
+                  <span className="tabular-nums text-sm text-gray-700">{dialCountry.dial}</span>
+                  <svg className={`w-3.5 h-3.5 text-gray-500 transition-transform ${dialOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.4a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                <input
+                  type="tel" required autoComplete="tel" inputMode="tel" value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="flex-1 min-w-0 px-3 py-3.5 bg-white text-gray-900 placeholder-gray-500 focus:outline-none"
+                  style={{ fontSize: 'clamp(16px, 1.5vw, 20px)' }}
+                  placeholder="Enter Your Phone Number Here..."
+                />
+              </div>
 
               {dialOpen && (
                 <>
