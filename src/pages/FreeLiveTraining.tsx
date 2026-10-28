@@ -6,6 +6,7 @@ import {
 import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
+import { COUNTRY_DIAL, DEFAULT_DIAL, findDialByCountryCode, composePhone, type DialCountry } from '../lib/dialCountries';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /freelivetraining — strict ClickFunnels port ─────────────
@@ -148,12 +149,18 @@ export function FreeLiveTraining() {
   const [error, setError] = useState('');
   const [registered, setRegistered] = useState(false);
   const [country, setCountry] = useState<CountryInfo | null>(null);
+  const [dialCountry, setDialCountry] = useState<DialCountry>(DEFAULT_DIAL);
+  const [dialTouched, setDialTouched] = useState(false);
+  const [dialOpen, setDialOpen] = useState(false);
 
   useEffect(() => {
     document.title = `Free Live Training - ${WEBINAR_TITLE}`;
     trackEvent('freelivetraining_page_viewed', { email_prefilled: !!emailFromUrl() });
     getCountry().then((info) => {
       setCountry(info);
+      // Auto-match the dial code to the detected country unless the
+      // visitor has already picked one themselves.
+      setDialCountry((cur) => (dialTouched ? cur : findDialByCountryCode(info.code)));
       trackEvent('freelivetraining_country_detected', {
         country_code: info.code || 'unknown',
         country_name: info.name || 'unknown',
@@ -161,6 +168,7 @@ export function FreeLiveTraining() {
         source: info.source,
       });
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const scrollToForm = (ctx: string) => {
@@ -206,14 +214,18 @@ export function FreeLiveTraining() {
     });
 
     try {
+      const composedPhone = composePhone(phone, dialCountry.dial);
       const res = await fetch('/.netlify/functions/register-webinar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: cleanEmail,
-          phone: phone.trim() || undefined,
+          phone: composedPhone || undefined,
           firstname,
           lastname,
+          dial_country: dialCountry.code,
+          dial_code: dialCountry.dial,
+          dial_touched: dialTouched,
           country_code: countryInfo?.code || '',
           country_name: countryInfo?.name || '',
           audience,
@@ -406,18 +418,70 @@ export function FreeLiveTraining() {
               style={{ fontSize: 'clamp(16px, 1.5vw, 20px)' }}
               placeholder="Enter Your Email Here..."
             />
-            <div className="flex items-center bg-white rounded-md overflow-hidden">
-              <div className="flex items-center gap-1 pl-4 pr-2 py-3.5 bg-white border-r border-gray-200 shrink-0">
-                <span className="text-xl leading-none" aria-hidden>🇺🇸</span>
-                <span className="text-gray-500 text-xs">▾</span>
-              </div>
+            <div className="relative flex items-stretch bg-white rounded-md overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setDialOpen((v) => !v)}
+                aria-haspopup="listbox"
+                aria-expanded={dialOpen}
+                className="shrink-0 flex items-center gap-1.5 pl-4 pr-3 py-3.5 bg-white border-r border-gray-200 text-gray-800 hover:bg-gray-50 cursor-pointer font-medium"
+              >
+                <span className="text-xl leading-none" aria-hidden>{dialCountry.flag}</span>
+                <span className="tabular-nums text-sm text-gray-700">{dialCountry.dial}</span>
+                <svg className={`w-3.5 h-3.5 text-gray-500 transition-transform ${dialOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.4a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              </button>
               <input
-                type="tel" required autoComplete="tel" value={phone}
+                type="tel" required autoComplete="tel" inputMode="tel" value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="flex-1 px-3 py-3.5 bg-white text-gray-900 placeholder-gray-500 focus:outline-none"
+                className="flex-1 min-w-0 px-3 py-3.5 bg-white text-gray-900 placeholder-gray-500 focus:outline-none"
                 style={{ fontSize: 'clamp(16px, 1.5vw, 20px)' }}
                 placeholder="Enter Your Phone Number Here..."
               />
+
+              {dialOpen && (
+                <>
+                  {/* Click-outside overlay */}
+                  <button
+                    type="button"
+                    aria-label="Close country selector"
+                    onClick={() => setDialOpen(false)}
+                    className="fixed inset-0 z-30 cursor-default"
+                  />
+                  <ul
+                    role="listbox"
+                    className="absolute z-40 top-full left-0 mt-1 w-72 max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl py-1 text-left"
+                  >
+                    {COUNTRY_DIAL.map((c) => {
+                      const selected = c.code === dialCountry.code;
+                      return (
+                        <li key={c.code}>
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={selected}
+                            onClick={() => {
+                              setDialCountry(c);
+                              setDialTouched(true);
+                              setDialOpen(false);
+                              trackEvent('freelivetraining_dial_country_changed', {
+                                from: dialCountry.code,
+                                to: c.code,
+                              });
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-orange-50 cursor-pointer ${selected ? 'bg-orange-50 font-semibold' : ''}`}
+                          >
+                            <span className="text-lg leading-none shrink-0">{c.flag}</span>
+                            <span className="flex-1 min-w-0 truncate text-gray-900">{c.name}</span>
+                            <span className="tabular-nums text-gray-500 shrink-0">{c.dial}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
             </div>
 
             {error && (
