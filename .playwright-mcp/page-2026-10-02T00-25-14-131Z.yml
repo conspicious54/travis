@@ -1,0 +1,72 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic: 
+    - generic [ref=e5]:
+      - generic [ref=e7]:
+        - img "logo png" [ref=e12]
+        - generic [ref=e15]:
+          - heading "Last Year, First Time Amazon Sellers Made Over $140 Billion In Sales" [level=1] [ref=e17]
+          - heading "Learn the Exact Process I Use to Help Sellers Reach $100K on Amazon in 2026" [level=1] [ref=e22]
+          - generic [ref=e27]:
+            - generic [ref=e30]:
+              - textbox "Your First Name..." [ref=e31]
+              - generic: Your First Name...
+              - text: 
+            - generic [ref=e34]:
+              - textbox "Your Last Name..." [ref=e35]
+              - generic: Your Last Name...
+              - text: 
+          - generic [ref=e36]:
+            - textbox "Your Email Address Here..." [ref=e37]
+            - generic: Your Email Address Here...
+            - text: 
+          - generic [ref=e38]:
+            - generic [ref=e39]:
+              - combobox "Selected country" [ref=e41]:
+                - generic [ref=e42]: United States +1
+              - textbox "Your Phone Number Here..." [ref=e46]
+            - generic: Your Phone Number Here...
+            - text: 
+          - text:           
+          - paragraph [ref=e48]:
+            - generic [ref=e50]:
+              - text: Fill in the form above so we can send you your
+              - generic [ref=e51]: FREE "AMAZON FBA PASSION PRODUCT" BONUSES
+              - text: "!"
+          - link " SIGN UP TO WATCH NOW" [ref=e53] [cursor=pointer]:
+            - /url: "#submit-form"
+            - generic [ref=e54]:
+              - text: 
+              - generic [ref=e55]:
+                - generic [ref=e56]: 
+                - text: SIGN UP TO WATCH NOW
+          - paragraph [ref=e58]:
+            - generic [ref=e59]: By submitting this form, you agree to receive SMS messages from Passion Product, including appointment reminders and notifications. Message frequency varies. Message and data rates may apply. Reply OUT to unsubscribe. Reply HELP for help. Consent is not a condition of purchase.
+          - paragraph [ref=e61]:
+            - generic [ref=e62]: "Bonus training expires in:"
+          - generic [ref=e65]:
+            - generic [ref=e66]:
+              - generic [ref=e67]: "00"
+              - generic [ref=e69]: Hours
+            - generic [ref=e70]:
+              - generic [ref=e71]: "05"
+              - generic [ref=e73]: Minutes
+            - generic [ref=e74]:
+              - generic [ref=e75]: "00"
+              - generic [ref=e77]: Seconds
+      - generic [ref=e82]:
+        - img "Two-Comma-Club-X_logow png" [ref=e84]
+        - paragraph [ref=e86]:
+          - generic [ref=e88]:
+            - text: Copyright © 2026 Passion Product LLC |
+            - link "Privacy Policy" [ref=e89] [cursor=pointer]:
+              - /url: https://travisfba.com/privacypolicy
+            - text: "|"
+            - link "Terms of Service" [ref=e90] [cursor=pointer]:
+              - /url: https://travisfba.com/termsofservice
+            - text: "|Earnings Disclaimer"
+            - link:
+              - /url: https://www.clickfunnels.com/privacy-policy
+        - paragraph [ref=e92]:
+          - generic [ref=e93]: "This website operates independently and is not affiliated with YouTube, Google, or Facebook. We are not endorsed by or connected to YouTube, Google Inc., or Facebook Inc. in any capacity. FACEBOOK is a registered trademark of Facebook, Inc. YOUTUBE is a registered trademark of Google Inc.In the spirit of full disclosure, we present an optional opportunity at the conclusion for those interested in receiving hands-on assistance with implementing these digital advertising methods and techniques. Is participation mandatory? Not at all. Will you gain valuable knowledge and actionable insights regardless of whether you choose to work with us directly? Absolutely. Many participants will complete this workshop, apply the strategies independently, and achieve significant success. Others will recognize the potential and decide that collaborative guidance is the fastest path to their desired outcomes. The choice is entirely yours, though we encourage you to join the complimentary workshop, apply what you learn, and share your feedback with us!By clicking Register Now, you agree to allow Passion Product and our authorized partners to reach out to you with relevant marketing communications. This consent is optional and not required for any purchase.IMPORTANT NOTICE: The revenue figures and outcomes referenced in this workshop represent our personal achievements and, in certain instances, the results obtained by current or former clients. Please note that these outcomes are not standard or guaranteed. We do not suggest that you will replicate these results (or achieve any specific outcome). Most individuals who consume educational webinar content see minimal to no results. These examples serve illustrative purposes only. Your success will differ and depends on numerous variables including your experience, dedication, and effort level. All business ventures involve risk and require substantial, ongoing commitment and action. If you cannot accept this reality, please do not register for this workshop."
+  - text: 

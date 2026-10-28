@@ -96,16 +96,61 @@ interface Keyword {
   name: string;
   searchVolume: number;
   opportunityScore: number;
+  relevancy: number; // 1–5
 }
 
-const MAX_KEYWORDS = 6;
+const MAX_KEYWORDS = 20;
+const DEFAULT_CONVERSION_RATE = 0.10;
 
 const emptyKeyword = (): Keyword => ({
   id: `kw-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
   name: '',
   searchVolume: 0,
   opportunityScore: 0,
+  relevancy: 3,
 });
+
+/** Rough Amazon organic CTR by rank position (page 1 = pos 1–16). Values compiled from
+ *  public click-share studies; use as directional, not surgical. */
+function ctrAtPosition(pos: number): number {
+  if (pos <= 1) return 0.28;
+  if (pos === 2) return 0.14;
+  if (pos === 3) return 0.09;
+  if (pos === 4) return 0.06;
+  if (pos === 5) return 0.045;
+  if (pos <= 10) return 0.025;
+  if (pos <= 15) return 0.012;
+  if (pos <= 20) return 0.007;
+  if (pos <= 30) return 0.004;
+  if (pos <= 50) return 0.002;
+  return 0.001;
+}
+
+/** Estimate the organic rank a listing can realistically land at.
+ *  Blends ratio (your "opportunity / volume" bar) with relevancy (1–5).
+ *  Quality ∈ [0,1]: 1 = 3x ratio AND perfect relevancy → pos ~3;
+ *  Quality 0 → page-two territory. */
+function estimatePosition(ratio: number, relevancy: number): number {
+  if (!isFinite(ratio) || ratio <= 0) return 60;
+  const ratioQuality = Math.min(ratio / 3, 1);
+  const relQuality = Math.max(1, Math.min(5, relevancy)) / 5;
+  const quality = ratioQuality * relQuality;
+  const pos = 3 + Math.pow(1 - quality, 1.5) * 60;
+  return Math.round(pos);
+}
+
+function estimateMonthlySales(sv: number, pos: number, conversionRate = DEFAULT_CONVERSION_RATE): number {
+  if (sv <= 0) return 0;
+  return sv * ctrAtPosition(pos) * conversionRate;
+}
+
+function relevancyTier(r: number): { label: string; color: string; bg: string } {
+  if (r <= 1) return { label: 'Barely related', color: 'text-red-700', bg: 'bg-red-100' };
+  if (r === 2) return { label: 'Weak match', color: 'text-orange-700', bg: 'bg-orange-100' };
+  if (r === 3) return { label: 'OK match', color: 'text-yellow-700', bg: 'bg-yellow-100' };
+  if (r === 4) return { label: 'Strong match', color: 'text-blue-700', bg: 'bg-blue-100' };
+  return { label: 'Bullseye', color: 'text-green-700', bg: 'bg-green-100' };
+}
 
 /** 0 → 0, 1,000 → 5, 5,000+ → 10 (linear between). */
 function volumeScore(totalVolume: number): number {
@@ -256,6 +301,10 @@ function KeywordRow({
   const ratio = keyword.searchVolume > 0 ? keyword.opportunityScore / keyword.searchVolume : 0;
   const tier = keyword.searchVolume > 0 && keyword.opportunityScore > 0 ? ratioTier(ratio) : null;
   const oppLabel = researchTool === 'smartscout' ? 'Opportunity Score' : 'Cerebro IQ Score';
+  const relTier = relevancyTier(keyword.relevancy);
+  const hasData = keyword.searchVolume > 0 && keyword.opportunityScore > 0;
+  const estPos = hasData ? estimatePosition(ratio, keyword.relevancy) : null;
+  const estSales = estPos !== null ? estimateMonthlySales(keyword.searchVolume, estPos) : 0;
 
   return (
     <div
@@ -268,7 +317,7 @@ function KeywordRow({
           {index + 1}
         </div>
 
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_140px_160px] gap-3">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_120px_140px_140px] gap-3">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Keyword</label>
             <input
@@ -281,7 +330,7 @@ function KeywordRow({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Search Volume</label>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Search Vol</label>
             <input
               type="number"
               min="0"
@@ -303,6 +352,21 @@ function KeywordRow({
               className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Relevancy</label>
+            <select
+              value={keyword.relevancy}
+              onChange={(e) => onChange({ relevancy: parseInt(e.target.value, 10) })}
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            >
+              <option value={1}>1 — Barely related</option>
+              <option value={2}>2 — Weak match</option>
+              <option value={3}>3 — OK match</option>
+              <option value={4}>4 — Strong match</option>
+              <option value={5}>5 — Bullseye</option>
+            </select>
+          </div>
         </div>
 
         {removable && (
@@ -317,10 +381,22 @@ function KeywordRow({
         )}
       </div>
 
-      {tier && (
-        <div className={`mt-3 flex items-center justify-between text-xs ${tier.bg} ${tier.color} rounded-lg px-3 py-2`}>
-          <span className="font-semibold">{tier.label}</span>
-          <span>Ratio: <span className="font-bold">{ratio.toFixed(2)}x</span> ({oppLabel.toLowerCase()} / volume)</span>
+      {hasData && tier && estPos !== null && (
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className={`text-xs ${tier.bg} ${tier.color} rounded-lg px-3 py-2 flex items-center justify-between`}>
+            <span className="font-semibold">{tier.label}</span>
+            <span>{ratio.toFixed(2)}x</span>
+          </div>
+          <div className={`text-xs ${relTier.bg} ${relTier.color} rounded-lg px-3 py-2 flex items-center justify-between`}>
+            <span className="font-semibold">{relTier.label}</span>
+            <span>Rank ~#{estPos}</span>
+          </div>
+          <div className="text-xs bg-indigo-50 text-indigo-700 rounded-lg px-3 py-2 flex items-center justify-between">
+            <span className="font-semibold">Est. sales / mo</span>
+            <span className="font-bold">
+              {estSales >= 1 ? Math.round(estSales).toLocaleString() : estSales.toFixed(1)}
+            </span>
+          </div>
         </div>
       )}
     </div>
@@ -338,6 +414,7 @@ function KeywordResearch({
   weightedRatio,
   volumePoints,
   opportunityPoints,
+  totalMonthlySales,
 }: {
   researchTool: ResearchTool;
   setResearchTool: (t: ResearchTool) => void;
@@ -347,7 +424,12 @@ function KeywordResearch({
   weightedRatio: number;
   volumePoints: number;
   opportunityPoints: number;
+  totalMonthlySales: number;
 }) {
+  const [uploadStatus, setUploadStatus] = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const addKeyword = () => {
     if (keywords.length >= MAX_KEYWORDS) return;
     setKeywords(prev => [...prev, emptyKeyword()]);
@@ -359,6 +441,61 @@ function KeywordResearch({
 
   const removeKeyword = (id: string) => {
     setKeywords(prev => prev.filter(k => k.id !== id));
+  };
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    setUploadStatus(null);
+    try {
+      const XLSX = await import('xlsx');
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      // Prefer the 2nd sheet (where the sales-estimator template keeps keywords); fall back to the 1st.
+      const sheetName = wb.SheetNames[1] || wb.SheetNames[0];
+      if (!sheetName) {
+        setUploadStatus({ kind: 'err', msg: 'No sheets found in that file.' });
+        return;
+      }
+      const rows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[sheetName], { header: 1, blankrows: false });
+
+      const parsed: Keyword[] = [];
+      for (const row of rows) {
+        if (!Array.isArray(row)) continue;
+        const name = String(row[0] ?? '').trim();
+        const svRaw = row[1];
+        const oppRaw = row[2];
+        const relRaw = row[3];
+        const sv = typeof svRaw === 'number' ? svRaw : parseInt(String(svRaw).replace(/[,\s]/g, ''), 10);
+        const opp = typeof oppRaw === 'number' ? oppRaw : parseInt(String(oppRaw).replace(/[,\s]/g, ''), 10);
+        if (!name || !isFinite(sv) || !isFinite(opp) || sv <= 0) continue;
+        let rel = 3;
+        if (relRaw !== undefined && relRaw !== null && String(relRaw).trim() !== '') {
+          const r = typeof relRaw === 'number' ? relRaw : parseFloat(String(relRaw));
+          if (isFinite(r)) rel = Math.max(1, Math.min(5, Math.round(r)));
+        }
+        parsed.push({
+          id: `kw-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${parsed.length}`,
+          name,
+          searchVolume: Math.max(0, Math.round(sv)),
+          opportunityScore: Math.max(0, Math.round(opp)),
+          relevancy: rel,
+        });
+        if (parsed.length >= MAX_KEYWORDS) break;
+      }
+
+      if (parsed.length === 0) {
+        setUploadStatus({ kind: 'err', msg: `No usable rows found on "${sheetName}". Expected columns: keyword, search volume, opportunity/IQ, relevancy.` });
+        return;
+      }
+      setKeywords(parsed);
+      setUploadStatus({ kind: 'ok', msg: `Imported ${parsed.length} keyword${parsed.length === 1 ? '' : 's'} from "${sheetName}".` });
+    } catch (err) {
+      console.error(err);
+      setUploadStatus({ kind: 'err', msg: 'Could not parse that file. Try an .xlsx, .xls, or .csv export.' });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const vTier = volumeTier(totalVolume);
@@ -397,6 +534,39 @@ function KeywordResearch({
         </div>
       </div>
 
+      {/* uploader */}
+      <div className="rounded-xl border-2 border-dashed border-blue-200 bg-blue-50 p-4 mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-blue-900">Upload your sales estimator</div>
+            <div className="text-xs text-blue-800 mt-0.5">
+              We read tab 2 and pull the first four columns: keyword, search volume, opportunity (or Cerebro IQ), relevancy (1 to 5). .xlsx, .xls, or .csv.
+            </div>
+          </div>
+          <label className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleUpload(f);
+              }}
+              disabled={uploading}
+              className="hidden"
+            />
+            {uploading ? 'Parsing…' : 'Choose file'}
+          </label>
+        </div>
+        {uploadStatus && (
+          <div className={`mt-3 text-sm px-3 py-2 rounded-lg ${
+            uploadStatus.kind === 'ok' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {uploadStatus.msg}
+          </div>
+        )}
+      </div>
+
       <div className="space-y-3 mb-4">
         {keywords.map((kw, i) => (
           <KeywordRow
@@ -421,7 +591,7 @@ function KeywordResearch({
       </button>
 
       {/* live totals */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
         <div className={`rounded-xl border-2 ${vTier.border} ${vTier.bg} p-4`}>
           <div className="flex items-center justify-between">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Search Volume</div>
@@ -429,7 +599,7 @@ function KeywordResearch({
           </div>
           <div className="mt-1 flex items-baseline gap-2">
             <div className="text-2xl font-bold text-gray-900">{totalVolume.toLocaleString()}</div>
-            <div className="text-xs text-gray-500">target 1,000 to 5,000+</div>
+            <div className="text-xs text-gray-500">target 1k to 5k+</div>
           </div>
           <div className="mt-2 h-2 rounded-full bg-white/70 overflow-hidden">
             <div
@@ -456,6 +626,22 @@ function KeywordResearch({
             />
           </div>
           <div className="mt-2 text-xs text-gray-600">Scores <span className="font-bold">{opportunityPoints.toFixed(1)} / 10</span></div>
+        </div>
+
+        <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Est. Sales / Month</div>
+            <div className="text-xs font-bold text-indigo-700">Modeled</div>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <div className="text-2xl font-bold text-gray-900">
+              {totalMonthlySales > 0 ? Math.round(totalMonthlySales).toLocaleString() : '—'}
+            </div>
+            <div className="text-xs text-gray-500">across all keywords</div>
+          </div>
+          <div className="mt-2 text-xs text-gray-600 leading-tight">
+            Volume × Amazon CTR by rank × {Math.round(DEFAULT_CONVERSION_RATE * 100)}% conversion. Rough estimate.
+          </div>
         </div>
       </div>
     </div>
@@ -534,7 +720,13 @@ export function ProductScorecard() {
     if (saved) {
       if (saved.productIdea) setProductIdea(saved.productIdea);
       if (saved.researchTool) setResearchTool(saved.researchTool);
-      if (saved.keywords && saved.keywords.length > 0) setKeywords(saved.keywords);
+      if (saved.keywords && saved.keywords.length > 0) {
+        // backfill relevancy for state saved before the field existed
+        setKeywords(saved.keywords.map(k => ({
+          ...k,
+          relevancy: typeof k.relevancy === 'number' && k.relevancy >= 1 && k.relevancy <= 5 ? k.relevancy : 3,
+        })));
+      }
       if (saved.scores) setScores(prev => ({ ...prev, ...saved.scores }));
       return;
     }
@@ -570,6 +762,15 @@ export function ProductScorecard() {
   const weightedRatio = totalVolume > 0 ? totalOpportunity / totalVolume : 0;
   const volumePoints = volumeScore(totalVolume);
   const opportunityPoints = opportunityScoreFromRatio(weightedRatio);
+
+  const totalMonthlySales = useMemo(() => {
+    return keywords.reduce((sum, k) => {
+      if (k.searchVolume <= 0 || k.opportunityScore <= 0) return sum;
+      const r = k.opportunityScore / k.searchVolume;
+      const pos = estimatePosition(r, k.relevancy);
+      return sum + estimateMonthlySales(k.searchVolume, pos);
+    }, 0);
+  }, [keywords]);
 
   const totalScore = useMemo(() => {
     const subjective = Object.values(scores).reduce((sum, s) => sum + s, 0);
@@ -631,6 +832,7 @@ export function ProductScorecard() {
           weightedRatio={weightedRatio}
           volumePoints={volumePoints}
           opportunityPoints={opportunityPoints}
+          totalMonthlySales={totalMonthlySales}
         />
 
         {/* fundamentals */}

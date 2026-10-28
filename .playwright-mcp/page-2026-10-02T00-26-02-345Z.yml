@@ -1,0 +1,53 @@
+- generic [ref=f2e3]:
+  - main [ref=f2e4]:
+    - img "Passion Product" [ref=f2e6]
+    - generic [ref=f2e7]:
+      - paragraph [ref=f2e8]: Last Year, First Time Amazon Sellers Made Over $140 Billion In Sales
+      - heading "Learn the Exact Process I Use to Help Sellers Reach $100K on Amazon in 2026" [level=1] [ref=f2e9]
+    - generic [ref=f2e13]:
+      - generic [aria-hidden]:
+        - text: Website
+        - textbox
+      - generic [ref=f2e14]:
+        - generic [ref=f2e15]:
+          - generic [ref=f2e16]: First Name
+          - textbox "First Name" [ref=f2e17]:
+            - /placeholder: Your First Name...
+        - generic [ref=f2e18]:
+          - generic [ref=f2e19]: Last Name
+          - textbox "Last Name" [ref=f2e20]:
+            - /placeholder: Your Last Name...
+      - generic [ref=f2e21]:
+        - generic [ref=f2e22]: Email
+        - textbox "Email" [ref=f2e23]:
+          - /placeholder: Your Email Address Here...
+      - generic [ref=f2e24]:
+        - generic [ref=f2e25]: Phone
+        - textbox "Phone" [ref=f2e26]:
+          - /placeholder: Your Phone Number Here...
+      - paragraph [ref=f2e27]: Fill in the form above so we can send you your FREE "AMAZON FBA PASSION PRODUCT" BONUSES!
+      - button "SIGN UP TO WATCH NOW" [ref=f2e28] [cursor=pointer]
+      - paragraph [ref=f2e29]: By submitting this form, you agree to receive SMS messages from Passion Product, including appointment reminders and notifications. Message frequency varies. Message and data rates may apply. Reply OUT to unsubscribe. Reply HELP for help. Consent is not a condition of purchase.
+    - generic [ref=f2e30]:
+      - paragraph [ref=f2e31]: "Bonus training expires in:"
+      - generic [ref=f2e32]:
+        - generic [ref=f2e33]:
+          - generic [ref=f2e34]: "03"
+          - generic [ref=f2e35]: MINUTES
+        - generic [ref=f2e36]:
+          - generic [ref=f2e37]: "59"
+          - generic [ref=f2e38]: SECONDS
+  - contentinfo [ref=f2e39]:
+    - paragraph [ref=f2e45]:
+      - text: Copyright © 2026 Passion Product LLC |
+      - link "Privacy Policy" [ref=f2e46] [cursor=pointer]:
+        - /url: /privacypolicy
+      - text: "|"
+      - link "Terms of Service" [ref=f2e47] [cursor=pointer]:
+        - /url: /termsofservice
+      - text: "| Earnings Disclaimer"
+  - generic [ref=f2e49]:
+    - paragraph [ref=f2e50]: This website operates independently and is not affiliated with YouTube, Google, or Facebook. We are not endorsed by or connected to YouTube, Google Inc., or Facebook Inc. in any capacity. FACEBOOK is a registered trademark of Facebook, Inc. YOUTUBE is a registered trademark of Google Inc.
+    - paragraph [ref=f2e51]: In the spirit of full disclosure, we present an optional opportunity at the conclusion for those interested in receiving hands-on assistance with implementing these digital advertising methods and techniques. Is participation mandatory? Not at all. Will you gain valuable knowledge and actionable insights regardless of whether you choose to work with us directly? Absolutely. Many participants will complete this workshop, apply the strategies independently, and achieve significant success. Others will recognize the potential and decide that collaborative guidance is the fastest path to their desired outcomes. The choice is entirely yours, though we encourage you to join the complimentary workshop, apply what you learn, and share your feedback with us!
+    - paragraph [ref=f2e52]: By clicking Register Now, you agree to allow Passion Product and our authorized partners to reach out to you with relevant marketing communications. This consent is optional and not required for any purchase.
+    - paragraph [ref=f2e53]: "IMPORTANT NOTICE: The revenue figures and outcomes referenced in this workshop represent our personal achievements and, in certain instances, the results obtained by current or former clients. Please note that these outcomes are not standard or guaranteed. We do not suggest that you will replicate these results (or achieve any specific outcome). Most individuals who consume educational webinar content see minimal to no results. These examples serve illustrative purposes only. Your success will differ and depends on numerous variables including your experience, dedication, and effort level. All business ventures involve risk and require substantial, ongoing commitment and action. If you cannot accept this reality, please do not register for this workshop."
