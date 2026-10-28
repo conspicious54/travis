@@ -321,64 +321,90 @@ export function FreeLiveTraining() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0A0A0A', color: '#FFFFFF', fontFamily: '"Open Sans", "Helvetica Neue", Arial, sans-serif' }}>
-      {/* ═══════════ TOP BAR + HERO ═══════════ */}
-      <section ref={topFormRef} className="px-5 pt-8 md:pt-12 pb-12 md:pb-16" style={darkSectionBg}>
-        <div className="max-w-2xl mx-auto">
+      {/* ═══════════ TOP BAR + HERO ═══════════
+         Must sit above the fold on standard desktop viewports.
+         All sizing is tuned so the full banner → avatar → headline
+         → subhead → form → CTA → date caption fits in ~820px of
+         vertical content. On taller monitors flex centers it
+         vertically; on shorter ones min-h-screen still fills the
+         viewport and the content won't blow past the fold. */}
+      <section
+        ref={topFormRef}
+        className="min-h-screen flex items-center px-4 py-6 md:py-8"
+        style={darkSectionBg}
+      >
+        <div className="w-full max-w-xl mx-auto">
           {/* Top banner strip */}
-          <div className="text-center mb-8 md:mb-10 pb-6 border-b-2" style={{ borderColor: '#F28000' }}>
-            <p className="text-xl md:text-3xl font-black uppercase tracking-wide mb-2" style={{ color: '#F28000', fontFamily: '"Montserrat", sans-serif' }}>
+          <div className="text-center mb-4 pb-3 border-b-2" style={{ borderColor: '#F28000' }}>
+            <p
+              className="font-black uppercase tracking-wide leading-tight"
+              style={{ color: '#F28000', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(14px, 2.2vw, 22px)' }}
+            >
               FREE LIVE MASTERCLASS
             </p>
-            <p className="text-xl md:text-3xl font-black uppercase tracking-wide" style={{ color: '#F28000', fontFamily: '"Montserrat", sans-serif' }}>
+            <p
+              className="font-black uppercase tracking-wide leading-tight mt-0.5"
+              style={{ color: '#F28000', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(14px, 2.2vw, 22px)' }}
+            >
               STARTS: {topBanner}
             </p>
           </div>
 
-          {/* Avatar — the source image IS the orange circle, don't wrap it */}
-          <div className="flex justify-center mb-6 md:mb-8">
+          {/* Avatar — the source image IS the orange circle crop. */}
+          <div className="flex justify-center mb-3 md:mb-4">
             <img
               src={`${ASSET}/hero.png`}
               alt=""
-              className="w-56 md:w-72 h-auto"
+              style={{ width: 'clamp(100px, 15vh, 150px)', height: 'auto' }}
               loading="eager"
               decoding="async"
             />
           </div>
 
           {/* Headline */}
-          <h1 className="text-center font-black tracking-tight leading-[1.1] mb-6 md:mb-7" style={{ fontFamily: '"Montserrat", sans-serif' }}>
-            <span className="block text-4xl md:text-6xl text-white">Turn Any Passion Into A</span>
-            <span className="block text-4xl md:text-6xl mt-1" style={{ color: '#F28000' }}>Profitable Amazon Business</span>
+          <h1
+            className="text-center font-black tracking-tight leading-[1.08] mb-3"
+            style={{ fontFamily: '"Montserrat", sans-serif' }}
+          >
+            <span className="block text-white" style={{ fontSize: 'clamp(26px, 4.2vw, 44px)' }}>
+              Turn Any Passion Into A
+            </span>
+            <span className="block mt-0.5" style={{ color: '#F28000', fontSize: 'clamp(26px, 4.2vw, 44px)' }}>
+              Profitable Amazon Business
+            </span>
           </h1>
 
           {/* Subhead */}
-          <p className="text-center text-xl md:text-2xl leading-snug text-white font-medium mb-8 md:mb-10 max-w-xl mx-auto">
+          <p
+            className="text-center leading-snug text-white font-normal mb-5 max-w-lg mx-auto"
+            style={{ fontSize: 'clamp(14px, 1.4vw, 17px)' }}
+          >
             Learn The Exact Amazon Selling Method I've Used To Help Regular People With No Experience Hit Their First $100,000 In Sales
           </p>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-3 max-w-xl mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-2.5 max-w-md mx-auto">
             <input
               type="text" required autoComplete="name" value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-5 py-4 bg-white rounded-md text-lg md:text-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 bg-white rounded-md text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="Enter Your Name Here..."
             />
             <input
               type="email" required autoComplete="email" value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-5 py-4 bg-white rounded-md text-lg md:text-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 bg-white rounded-md text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="Enter Your Email Here..."
             />
             <div className="flex items-center bg-white rounded-md overflow-hidden">
-              <div className="flex items-center gap-1.5 pl-4 pr-2 py-4 bg-white border-r border-gray-200 shrink-0">
-                <span className="text-2xl leading-none" aria-hidden>🇺🇸</span>
-                <span className="text-gray-500 text-sm">▾</span>
+              <div className="flex items-center gap-1 pl-3 pr-1.5 py-3 bg-white border-r border-gray-200 shrink-0">
+                <span className="text-lg leading-none" aria-hidden>🇺🇸</span>
+                <span className="text-gray-500 text-xs">▾</span>
               </div>
               <input
                 type="tel" required autoComplete="tel" value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="flex-1 px-3 py-4 bg-white text-lg md:text-xl text-gray-900 placeholder-gray-500 focus:outline-none"
+                className="flex-1 px-3 py-3 bg-white text-base text-gray-900 placeholder-gray-500 focus:outline-none"
                 placeholder="Enter Your Phone Number Here..."
               />
             </div>
@@ -391,14 +417,14 @@ export function FreeLiveTraining() {
 
             <button
               type="submit" disabled={submitting}
-              className="w-full inline-flex items-center justify-center gap-2 px-6 py-5 font-black rounded-md text-2xl md:text-3xl uppercase tracking-wide transition-colors shadow-md cursor-pointer disabled:opacity-60"
-              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Montserrat", sans-serif' }}
+              className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 font-black rounded-md uppercase tracking-wide transition-colors shadow-md cursor-pointer disabled:opacity-60"
+              style={{ backgroundColor: '#F28000', color: '#FFFFFF', fontFamily: '"Montserrat", sans-serif', fontSize: 'clamp(16px, 1.8vw, 22px)' }}
             >
               {submitting ? 'SAVING YOUR SPOT…' : <>SAVE MY FREE SPOT <span aria-hidden>»</span></>}
             </button>
 
-            <p className="text-center text-base md:text-lg text-white mt-4 flex items-center justify-center gap-2">
-              <Calendar className="w-5 h-5 text-orange-500" />
+            <p className="text-center text-sm text-white mt-2 flex items-center justify-center gap-2">
+              <Calendar className="w-4 h-4 text-orange-500" />
               <span>{dateCaption}</span>
             </p>
           </form>
