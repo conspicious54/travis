@@ -53,6 +53,7 @@ const TermsOfService         = lz(() => import('./pages/TermsOfService'),       
 const RefundPolicy           = lz(() => import('./pages/RefundPolicy'),           'RefundPolicy');
 const PrivacyPolicy          = lz(() => import('./pages/PrivacyPolicy'),          'PrivacyPolicy');
 const LiveTraining           = lz(() => import('./pages/LiveTraining'),           'LiveTraining');
+const FreeLiveTraining       = lz(() => import('./pages/FreeLiveTraining'),       'FreeLiveTraining');
 const PassionProductMethodRedirect = lz(() => import('./pages/AnchorRedirect'),   'PassionProductMethodRedirect');
 const AcceleratorOverviewRedirect  = lz(() => import('./pages/AnchorRedirect'),   'AcceleratorOverviewRedirect');
 const FaqRedirect                  = lz(() => import('./pages/AnchorRedirect'),   'FaqRedirect');
@@ -157,6 +158,7 @@ function AppWrapper() {
                   <Route path="/refundpolicy" element={<RefundPolicy />} />
                   <Route path="/privacypolicy" element={<PrivacyPolicy />} />
                   <Route path="/live-training" element={<LiveTraining />} />
+                  <Route path="/freelivetraining" element={<FreeLiveTraining />} />
                   <Route path="/passionproductmethod" element={<PassionProductMethodRedirect />} />
                   <Route path="/acceleratoroverview" element={<AcceleratorOverviewRedirect />} />
                   <Route path="/faq" element={<FaqRedirect />} />
