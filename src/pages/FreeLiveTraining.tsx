@@ -14,8 +14,11 @@ import {
 
 /* ───── /freelivetraining — strict ClickFunnels port ─────────────
    Word-for-word, section-for-section replica of the CF webinar
-   opt-in Travis is moving off. Submits through the shared
-   /register-webinar bridge, same as /live-training.
+   opt-in Travis is moving off. Submits to its own dedicated
+   Netlify function (/.netlify/functions/register-freelivetraining)
+   so the webinar flow has zero shared surface with the main-funnel
+   opt-in path (NewForm → /register-webinar). Each has its own
+   Zapier Catch Hook via its own env var.
 ──────────────────────────────────────────────────────────────────── */
 
 // Constants, formatters, and calendar helpers are all in
@@ -112,7 +115,7 @@ export function FreeLiveTraining() {
 
     try {
       const composedPhone = composePhone(phone, dialCountry.dial);
-      const res = await fetch('/.netlify/functions/register-webinar', {
+      const res = await fetch('/.netlify/functions/register-freelivetraining', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
