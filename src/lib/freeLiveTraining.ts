@@ -39,7 +39,12 @@ export function getNextWebinarStartIso(): string {
 }
 
 export const WEBINAR_START_ISO = getNextWebinarStartIso();
-export const WEBINAR_JOIN_URL = 'https://www.youtube.com/watch?v=2Wx_YWBCiHo';
+// Zoom webinar registration link. Carries ?tk= (per-registrant token)
+// and ?uuid= (webinar instance) as query params; URLSearchParams
+// encodes them correctly when the URL is embedded in the Google /
+// Outlook calendar deep links, and the ICS LOCATION field renders it
+// as-is (no commas/semicolons/backslashes to escape).
+export const WEBINAR_JOIN_URL = 'https://us06web.zoom.us/w/82940955460?tk=CSfu7TE1iaTYi-n66jiAPZ5dcu6wDXhTgdoMPgXo5nk.DQkAAAATT6qLRBYybkxhV0FPclREUzVEVHFNblZlSHBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&uuid=WN_NuNaiVpLSn6PlmcZlUghhA';
 export const WEBINAR_DESCRIPTION =
   "Travis Marziani's live training: how he picks winning products, the launch playbook he uses, and how to avoid the most common mistakes new sellers make.";
 
