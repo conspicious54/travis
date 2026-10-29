@@ -45,6 +45,14 @@ interface RegisterPayload {
   dial_code?: string;
   dial_touched?: boolean;
   page_path?: string;
+  // Ad-click attribution. Always forwarded to Zapier (empty string
+  // when absent) so Zap filters / routing / Google Ads + Meta CAPI
+  // steps can map them regardless of whether a given test record
+  // happened to carry a value.
+  gclid?: string;
+  fbclid?: string;
+  _fbp?: string;
+  _fbc?: string;
 }
 
 const TARGET_COUNTRIES = new Set(['US', 'CA', 'GB', 'AU', 'NZ', 'IE']);
@@ -104,6 +112,12 @@ export const handler: Handler = async (event: HandlerEvent) => {
     dial_touched: body.dial_touched === true,
     page_path: s(body.page_path),
     ip_address: extractClientIp(event.headers) || '',
+    // Attribution — always emitted, empty string when the client
+    // didn't carry one. Lets Zapier map every field in sample view.
+    gclid:  s(body.gclid),
+    fbclid: s(body.fbclid),
+    _fbp:   s(body._fbp),
+    _fbc:   s(body._fbc),
   });
 
   console.log(
@@ -143,6 +157,10 @@ interface ZapierPayload {
   dial_touched: boolean;
   page_path: string;
   ip_address: string;
+  gclid: string;
+  fbclid: string;
+  _fbp: string;
+  _fbc: string;
 }
 
 async function forwardToZapier(

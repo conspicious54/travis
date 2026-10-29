@@ -5,6 +5,7 @@ import { identifyUser, trackEvent } from '../lib/posthog';
 import { getCleanIdentity } from '../lib/urlParams';
 import { getCountry, type CountryInfo } from '../lib/detectCountry';
 import { COUNTRY_DIAL, DEFAULT_DIAL, findDialByCountryCode, composePhone, type DialCountry } from '../lib/dialCountries';
+import { persistUtmsFromUrl, readAttribution } from '../lib/syncUtm';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import {
   WEBINAR_TITLE, WEBINAR_START_ISO, ASSET_PREFIX as ASSET,
@@ -55,6 +56,11 @@ export function FreeLiveTraining() {
 
   useEffect(() => {
     document.title = `Free Live Training - ${WEBINAR_TITLE}`;
+    // Capture ad-click attribution on first mount so a visitor who
+    // lands with ?gclid / ?fbclid / etc. keeps those values even if
+    // they bounce around the page before submitting. readAttribution
+    // at submit time will then pull from URL + sessionStorage.
+    persistUtmsFromUrl();
     trackEvent('freelivetraining_page_viewed', { email_prefilled: !!emailFromUrl() });
     getCountry().then((info) => {
       setCountry(info);
@@ -115,6 +121,13 @@ export function FreeLiveTraining() {
 
     try {
       const composedPhone = composePhone(phone, dialCountry.dial);
+      // Pull ad-click IDs + Meta first-party cookies from URL +
+      // sessionStorage. Always sent in the payload (empty string when
+      // absent) so the Zap editor's sample view sees every field and
+      // downstream steps can map them even when a given test record
+      // happens to carry a blank. Required for Google Ads conversions
+      // (gclid) and Meta CAPI (fbclid / _fbp / _fbc).
+      const attr = readAttribution();
       const res = await fetch('/.netlify/functions/register-freelivetraining', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -131,6 +144,11 @@ export function FreeLiveTraining() {
           audience,
           page_path: typeof window !== 'undefined'
             ? window.location.pathname + window.location.search : '/freelivetraining',
+          // Attribution envelope — always forwarded, blanks included.
+          gclid:  attr.gclid  || '',
+          fbclid: attr.fbclid || '',
+          _fbp:   attr._fbp   || '',
+          _fbc:   attr._fbc   || '',
         }),
       });
       const data = await res.json().catch(() => ({}));
