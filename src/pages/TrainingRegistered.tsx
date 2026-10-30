@@ -150,17 +150,16 @@ export function TrainingRegistered() {
     document.title = `You're In - ${WEBINAR_TITLE}`;
     trackEvent('trainingregistered_page_viewed', { cal_provider_detected: provider });
 
-    // Meta Pixel: the loader in index.html head already defined
-    // window.fbq. Fire a SPA-level PageView (the pixel only
-    // auto-fires on full document load, so route-nav from
-    // /freelivetraining doesn't get one otherwise), and the
-    // standard Lead conversion event since reaching this page
-    // means the opt-in form submitted successfully.
-    // GTM is also global and tracks SPA navigations via its own
-    // triggers, so nothing extra needed on that side.
+    // Meta Pixel: fire ONLY the Lead conversion event. We deliberately
+    // skip the SPA PageView here so the webinar funnel doesn't
+    // double-count views (the pixel already fired PageView on the
+    // /freelivetraining document load before the SPA nav here). The
+    // Lead event is enough for Meta's attribution — it ties back to
+    // the same visitor via _fbp / _fbc. GTM is global and handles
+    // SPA pageviews via its own triggers, so nothing extra on that
+    // side either.
     try {
       const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq;
-      fbq?.('track', 'PageView');
       fbq?.('track', 'Lead');
     } catch { /* no-op */ }
 
