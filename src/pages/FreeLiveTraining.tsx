@@ -145,6 +145,16 @@ export function FreeLiveTraining() {
           page_path: typeof window !== 'undefined'
             ? window.location.pathname + window.location.search : '/freelivetraining',
           // Attribution envelope — always forwarded, blanks included.
+          // UTMs: campaign-level attribution so Zap routing + reporting
+          // can see which ad / piece of content drove the registration.
+          // Click IDs + Meta cookies: offline-conversion uploads
+          // (Google Ads + Meta CAPI).
+          utm_source:   attr.utm_source   || '',
+          utm_medium:   attr.utm_medium   || '',
+          utm_campaign: attr.utm_campaign || '',
+          utm_content:  attr.utm_content  || '',
+          utm_term:     attr.utm_term     || '',
+          utm_id:       attr.utm_id       || '',
           gclid:  attr.gclid  || '',
           fbclid: attr.fbclid || '',
           _fbp:   attr._fbp   || '',

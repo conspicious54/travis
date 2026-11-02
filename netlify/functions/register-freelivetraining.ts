@@ -45,10 +45,19 @@ interface RegisterPayload {
   dial_code?: string;
   dial_touched?: boolean;
   page_path?: string;
-  // Ad-click attribution. Always forwarded to Zapier (empty string
-  // when absent) so Zap filters / routing / Google Ads + Meta CAPI
-  // steps can map them regardless of whether a given test record
-  // happened to carry a value.
+  // Attribution envelope. Always forwarded to Zapier (empty string
+  // when absent) so Zap filters / routing / reporting + offline
+  // conversion steps can map every field regardless of whether a
+  // given test record happened to carry a value.
+  //   utm_* → campaign-level attribution (which ad/content drove it)
+  //   gclid / fbclid → ad-click IDs for Google Ads + Meta offline
+  //   _fbp / _fbc    → Meta first-party cookies for Meta CAPI
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  utm_id?: string;
   gclid?: string;
   fbclid?: string;
   _fbp?: string;
@@ -114,6 +123,12 @@ export const handler: Handler = async (event: HandlerEvent) => {
     ip_address: extractClientIp(event.headers) || '',
     // Attribution — always emitted, empty string when the client
     // didn't carry one. Lets Zapier map every field in sample view.
+    utm_source:   s(body.utm_source),
+    utm_medium:   s(body.utm_medium),
+    utm_campaign: s(body.utm_campaign),
+    utm_content:  s(body.utm_content),
+    utm_term:     s(body.utm_term),
+    utm_id:       s(body.utm_id),
     gclid:  s(body.gclid),
     fbclid: s(body.fbclid),
     _fbp:   s(body._fbp),
@@ -124,6 +139,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
     `[register-freelivetraining] email=${email} ` +
     `name="${s(body.firstname)} ${s(body.lastname)}".trim() ` +
     `audience=${audience} country=${outCountryCode || '?'} ` +
+    `utm=${s(body.utm_source) || '-'}/${s(body.utm_campaign) || '-'} ` +
     `zap_ok=${zapResult.ok} reason=${zapResult.reason || ''}`
   );
 
@@ -157,6 +173,12 @@ interface ZapierPayload {
   dial_touched: boolean;
   page_path: string;
   ip_address: string;
+  utm_source: string;
+  utm_medium: string;
+  utm_campaign: string;
+  utm_content: string;
+  utm_term: string;
+  utm_id: string;
   gclid: string;
   fbclid: string;
   _fbp: string;
