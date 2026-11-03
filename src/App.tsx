@@ -33,6 +33,7 @@ const DmBook                 = lz(() => import('./pages/DmBook'),               
 const MoveForward            = lz(() => import('./pages/MoveForward'),            'MoveForward');
 const NextStep               = lz(() => import('./pages/NextStep'),               'NextStep');
 const ApplyNow               = lz(() => import('./pages/ApplyNow'),               'ApplyNow');
+const ApplyNowDash           = lz(() => import('./pages/ApplyNowDash'),           'ApplyNowDash');
 const DmApplyNow             = lz(() => import('./pages/DmApplyNow'),             'DmApplyNow');
 const WebinarBook            = lz(() => import('./pages/WebinarBook'),            'WebinarBook');
 const WebinarBookCall        = lz(() => import('./pages/WebinarBookCall'),        'WebinarBookCall');
@@ -140,6 +141,7 @@ function AppWrapper() {
                   <Route path="/nextstep" element={<NextStep />} />
                   <Route path="/fasttrack" element={<FastTrack />} />
                   <Route path="/applynow" element={<ApplyNow />} />
+                  <Route path="/apply-now" element={<ApplyNowDash />} />
                   <Route path="/dmapplynow" element={<DmApplyNow />} />
                   <Route path="/webinar/book" element={<WebinarBook />} />
                   <Route path="/webinar/bookacall" element={<WebinarBookCall />} />
