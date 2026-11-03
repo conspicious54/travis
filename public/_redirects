@@ -5,7 +5,6 @@
 # Absolute targets so travisfba.com + travismarziani.com visitors
 # land in one hop.
 # ────────────────────────────────────────────────────────────────────
-/apply-now                    https://start.travismarziani.com/applynow     301!
 /free-book-bonus-pack         https://start.travismarziani.com/?utm_source=free-book-bonus-pack&utm_medium=funnel-redirect&utm_campaign=free-book-bonus-pack  301!
 /actnow                       https://start.travismarziani.com/nextstep?utm_source=SMS&utm_campaign=earlynewyears  301!
 /get-started                  https://start.travismarziani.com/             301!
