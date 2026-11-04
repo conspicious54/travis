@@ -831,14 +831,24 @@ export function NewForm() {
               </Link>
             </div>
 
-            <div className="mt-10 text-center">
-              <a
-                href="#newform-opt-in"
-                className="inline-block bg-[#F28000] hover:bg-[#d97100] text-white font-black text-base md:text-lg px-10 py-4 rounded-xl shadow-md transition-colors"
+            <div className="mt-10">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = document.getElementById('newform-opt-in');
+                  if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                  const first = document.getElementById('firstname');
+                  if (first) setTimeout(() => first.focus({ preventScroll: true }), 600);
+                }}
+                className="w-full bg-[#F00300] hover:bg-[#D80200] text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-red-500/25 transition-all hover:shadow-xl active:translate-y-0"
               >
-                REGISTER FOR THE FREE TRAINING
-              </a>
-              <p className="mt-3 text-xs text-gray-500">
+                SIGN UP TO WATCH NOW
+              </button>
+              <p className="mt-3 text-xs text-gray-500 text-center">
                 The webinar covers both paths, Amazon-first and crowdfunding-first, so you can pick the one that fits your situation.
               </p>
             </div>
