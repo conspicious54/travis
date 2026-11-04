@@ -59,7 +59,7 @@ const STAGE_TAG = 'newform_optin';
 // The `passionproduct.com` WordPress asset that was here before
 // loads the "PASSION PRODUCT FORMULA" 3-line logo instead — wrong
 // mark for parity with CF.
-const LOGO_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/PassionProductFormulaLogo.webp';
+const LOGO_URL = 'https://start.travismarziani.com/freelivetraining/hero.png';
 
 /* ───── Country dial codes ────────────────────────────────────────
    Target markets listed first (US / CA / UK / AU / NZ / IE), then
@@ -417,7 +417,7 @@ export function NewForm() {
           <img
             src={LOGO_URL}
             alt="Passion Product"
-            className="h-[62px] w-auto"
+            className="h-20 md:h-24 w-auto"
             loading="eager"
           />
         </div>
@@ -755,7 +755,7 @@ export function NewForm() {
             alt="Amazon Ads Verified Partner"
             width={2172}
             height={724}
-            className="w-full max-w-[320px] md:max-w-[380px] h-auto"
+            className="w-full max-w-[200px] md:max-w-[240px] h-auto"
             loading="lazy"
             decoding="async"
           />
