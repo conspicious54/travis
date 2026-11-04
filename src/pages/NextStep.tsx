@@ -251,6 +251,19 @@ export function NextStep() {
   const [videoInteracted, setVideoInteracted] = useState(false);
   const [videoPlayedMs, setVideoPlayedMs] = useState(0);
 
+  /* ?version=<slug> — content-only variant switch for the headline.
+     version=ga renders a Google Ads-policy-safe headline (no earnings
+     figure, no time-to-result promise) so paid search traffic lands on
+     copy that won't trip the Business Opportunity / Misrepresentation
+     reviews. Default page copy is unchanged for everyone else. */
+  const pageVersion = useMemo<string>(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      return (new URL(window.location.href).searchParams.get('version') || '').toLowerCase().trim();
+    } catch { return ''; }
+  }, []);
+  const isGoogleAdsSafe = pageVersion === 'ga';
+
   // Pull attention back when the visitor switches tabs mid-VSL
   useTabUrgency('⏰ Don\'t lose your spot!', 'nextstep');
 
@@ -271,7 +284,10 @@ export function NextStep() {
     }
     trackEvent('nextstep_page_viewed', {
       email_in_url: !!id.email,
+      page_version: pageVersion || 'default',
     });
+  // pageVersion is captured once from the URL on mount; safe to omit.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -581,7 +597,15 @@ export function NextStep() {
             Free Training
           </div>
           <h1 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] mb-2 text-slate-900">
-            How I Used <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">&ldquo;The Passion Product Formula&rdquo;</span> to Create a 7-Figure Amazon Business in Under 3 Months
+            {isGoogleAdsSafe ? (
+              <>
+                How I Use <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">&ldquo;The Passion Product Formula&rdquo;</span> to Research, Design, and Launch Products on Amazon
+              </>
+            ) : (
+              <>
+                How I Used <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">&ldquo;The Passion Product Formula&rdquo;</span> to Create a 7-Figure Amazon Business in Under 3 Months
+              </>
+            )}
           </h1>
           {/* Subtle bounce on the "Hit Play" prompt until the visitor
               starts the video. nextstep-bounce keyframe defined inline
