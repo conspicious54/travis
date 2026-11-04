@@ -264,6 +264,18 @@ export function NextStep() {
   }, []);
   const isGoogleAdsSafe = pageVersion === 'ga';
 
+  /* Testimonials gate. On the Google Ads-safe variant, hold the
+     testimonial block (plus its scroll-down CTA + lead-in) for at
+     least 25 seconds so the VSL has time to establish context before
+     income-shaped social proof appears. Every other variant renders
+     them immediately, same as before. */
+  const [testimonialsReady, setTestimonialsReady] = useState(!isGoogleAdsSafe);
+  useEffect(() => {
+    if (!isGoogleAdsSafe) return;
+    const t = setTimeout(() => setTestimonialsReady(true), 25 * 1000);
+    return () => clearTimeout(t);
+  }, [isGoogleAdsSafe]);
+
   // Pull attention back when the visitor switches tabs mid-VSL
   useTabUrgency('⏰ Don\'t lose your spot!', 'nextstep');
 
@@ -685,42 +697,49 @@ export function NextStep() {
           />
         </div>
 
-        {/* Primary scroll-down CTA */}
-        <button
-          type="button"
-          onClick={scrollToTestimonials}
-          className="w-full max-w-3xl mx-auto flex bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-base md:text-xl font-black tracking-tight py-3 md:py-4 px-6 rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 items-center justify-center gap-3"
-        >
-          <ArrowDown className="w-5 h-5 flex-shrink-0" />
-          <span>Watch how this system changes lives...</span>
-        </button>
+        {/* Scroll-down CTA + lead-in + testimonials. All three are
+            gated by `testimonialsReady` so the GA-safe variant holds
+            them for ~25s. Default variant renders immediately. */}
+        {testimonialsReady && (
+          <>
+            {/* Primary scroll-down CTA */}
+            <button
+              type="button"
+              onClick={scrollToTestimonials}
+              className="w-full max-w-3xl mx-auto flex bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-base md:text-xl font-black tracking-tight py-3 md:py-4 px-6 rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 items-center justify-center gap-3"
+            >
+              <ArrowDown className="w-5 h-5 flex-shrink-0" />
+              <span>Watch how this system changes lives...</span>
+            </button>
 
-        {/* Lead-in to testimonials */}
-        <p className="text-center text-gray-600 italic text-sm md:text-base mt-7 mb-6 max-w-2xl mx-auto">
-          These are just a handful of the hundreds of success stories created through the Passion Product blueprint.
-        </p>
+            {/* Lead-in to testimonials */}
+            <p className="text-center text-gray-600 italic text-sm md:text-base mt-7 mb-6 max-w-2xl mx-auto">
+              These are just a handful of the hundreds of success stories created through the Passion Product blueprint.
+            </p>
 
-        {/* Testimonials section */}
-        <div ref={testimonialsRef} className="space-y-7">
-          {TESTIMONIALS.map((t, idx) => (
-            <React.Fragment key={idx}>
-              <TestimonialCard testimonial={t} />
-              {/* Green "YES! I'm Ready To Learn More" CTA after every
-                  ~2 testimonials, mirroring the CF page rhythm */}
-              {(idx === 1 || idx === 2 || idx === 3 || idx === 5) && (
-                <div className="flex justify-center pt-2">
-                  <Link
-                    to={ctaHref}
-                    onClick={(e) => onCtaClick(`after_testimonial_${idx + 1}`, e)}
-                    className="inline-block bg-green-500 hover:bg-green-600 text-white text-base md:text-lg font-black tracking-tight px-8 md:px-12 py-4 md:py-5 rounded-lg shadow-md shadow-green-500/25 transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
-                  >
-                    {ctaText}
-                  </Link>
-                </div>
-              )}
-            </React.Fragment>
-          ))}
-        </div>
+            {/* Testimonials section */}
+            <div ref={testimonialsRef} className="space-y-7">
+              {TESTIMONIALS.map((t, idx) => (
+                <React.Fragment key={idx}>
+                  <TestimonialCard testimonial={t} />
+                  {/* Green "YES! I'm Ready To Learn More" CTA after every
+                      ~2 testimonials, mirroring the CF page rhythm */}
+                  {(idx === 1 || idx === 2 || idx === 3 || idx === 5) && (
+                    <div className="flex justify-center pt-2">
+                      <Link
+                        to={ctaHref}
+                        onClick={(e) => onCtaClick(`after_testimonial_${idx + 1}`, e)}
+                        className="inline-block bg-green-500 hover:bg-green-600 text-white text-base md:text-lg font-black tracking-tight px-8 md:px-12 py-4 md:py-5 rounded-lg shadow-md shadow-green-500/25 transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                      >
+                        {ctaText}
+                      </Link>
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+          </>
+        )}
       </main>
 
       {/* Sticky mobile CTA bar - only renders on mobile (md:hidden).
