@@ -745,20 +745,44 @@ export function NewForm() {
           </div>
         </div>
 
-        {/* Amazon Ads Partner badge. Third-party credibility signal,
-            rendered on every variant (not version-gated). Sits right
-            below the opt-in so the badge reinforces the form rather
-            than getting buried beneath the countdown + crowdfund block. */}
-        <div className="mt-8 md:mt-10 flex justify-center">
-          <img
-            src="https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/AmazonAdsPartner.png"
-            alt="Amazon Ads Verified Partner"
-            width={2172}
-            height={724}
-            className="w-full max-w-[200px] md:max-w-[240px] h-auto"
-            loading="lazy"
-            decoding="async"
-          />
+        {/* Trust-mark carousel. Continuous horizontal marquee of
+            third-party credibility badges, rendered on every variant.
+            Sits right below the opt-in so these reinforce the form
+            rather than getting buried beneath the countdown + crowdfund
+            block. The list is duplicated so the translateX(-50%) loop
+            seams cleanly, and the edges fade with a CSS mask. */}
+        <div
+          className="mt-8 md:mt-10 overflow-hidden"
+          style={{
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
+            maskImage:       'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
+          }}
+        >
+          <div className="flex w-max animate-logo-marquee gap-10 md:gap-16 items-center">
+            {[
+              { src: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/AmazonAdsPartner.png', alt: 'Amazon Ads Verified Partner' },
+              { src: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/h10carousel.png',      alt: 'Helium 10 Partner' },
+              { src: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/4000Students.png',     alt: '4,000+ Students' },
+              { src: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/500k.png',             alt: '500,000+ Subscribers' },
+              // Duplicated for seamless loop; browser caches the second
+              // pass so there's no extra network cost.
+              { src: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/AmazonAdsPartner.png', alt: '' },
+              { src: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/h10carousel.png',      alt: '' },
+              { src: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/4000Students.png',     alt: '' },
+              { src: 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/500k.png',             alt: '' },
+            ].map((b, i) => (
+              <img
+                key={`${b.src}-${i}`}
+                src={b.src}
+                alt={b.alt}
+                aria-hidden={b.alt === '' ? true : undefined}
+                className="h-12 md:h-16 w-auto flex-shrink-0 select-none"
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Countdown - 4-minute window, so only MM:SS shown (HOURS

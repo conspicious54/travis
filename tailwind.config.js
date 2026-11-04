@@ -48,6 +48,10 @@ export default {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%':      { transform: 'translateY(4px)' },
         },
+        'logo-marquee': {
+          '0%':   { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
       },
       animation: {
         'confirm-check-in':       'confirm-check-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both',
@@ -62,6 +66,7 @@ export default {
         'banner-rise-2':          'banner-rise 0.5s ease-out 0.35s both',
         'banner-rise-3':          'banner-rise 0.5s ease-out 0.50s both',
         'point-down':             'point-down 1.2s ease-in-out infinite',
+        'logo-marquee':           'logo-marquee 40s linear infinite',
       },
     },
   },
