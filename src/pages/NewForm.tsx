@@ -745,6 +745,22 @@ export function NewForm() {
           </div>
         </div>
 
+        {/* Amazon Ads Partner badge. Third-party credibility signal,
+            rendered on every variant (not version-gated). Sits right
+            below the opt-in so the badge reinforces the form rather
+            than getting buried beneath the countdown + crowdfund block. */}
+        <div className="mt-8 md:mt-10 flex justify-center">
+          <img
+            src="https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/AmazonAdsPartner.png"
+            alt="Amazon Ads Verified Partner"
+            width={2172}
+            height={724}
+            className="w-full max-w-[320px] md:max-w-[380px] h-auto"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+
         {/* Countdown - 4-minute window, so only MM:SS shown (HOURS
             tile would always read "00" and look weird). */}
         <div className="text-center mt-10">
