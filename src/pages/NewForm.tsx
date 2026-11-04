@@ -213,6 +213,18 @@ export function NewForm() {
   const [variant] = useState(() => loadCampaignVariant());
   const leadMagnet = variant ? findLeadMagnet(variant.lead_magnet_id) : null;
 
+  /* ?version=<slug> — content-only variant switch independent of the
+     UTM-driven `variant` above. Lets us link a cold ad at
+     /?version=crowdfund and reveal the crowdfunding explainer below
+     the opt-in without touching default rendering for everyone else.
+     Resolved once from the URL on mount (SSR-safe). */
+  const pageVersion = useMemo<string>(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      return (new URL(window.location.href).searchParams.get('version') || '').toLowerCase().trim();
+    } catch { return ''; }
+  }, []);
+
   /* Phone field is only shown to target-market visitors (US / CA / UK /
      AU / NZ / IE — see TARGET_COUNTRIES in detectCountry.ts). Non-target
      leads route to Mailchimp and never get a sales call, so collecting
@@ -751,6 +763,87 @@ export function NewForm() {
             ))}
           </div>
         </div>
+
+        {/* ?version=crowdfund — crowdfund path explainer. Honest framing:
+            a method some students use to validate demand and fund their
+            first production run before Amazon. AJ is cited as a real
+            student example with a link to his full video on /aj. No
+            income claims, no guarantees, no prices. Rendered only when
+            the URL carries ?version=crowdfund; default page is untouched. */}
+        {pageVersion === 'crowdfund' ? (
+          <section className="mt-16 md:mt-20 max-w-3xl mx-auto">
+            <div className="text-center mb-8 md:mb-10">
+              <p className="text-[11px] md:text-xs font-bold uppercase tracking-[0.2em] text-orange-700 mb-3">
+                Inside the training
+              </p>
+              <h2 className="text-[24px] md:text-[34px] font-black text-gray-900 leading-tight">
+                What crowdfunding actually is, and why some sellers start there
+              </h2>
+              <p className="mt-4 text-base md:text-lg text-gray-600 leading-relaxed">
+                A quick, no-hype explainer of the path a few of our students, including AJ, used to launch their first product.
+              </p>
+            </div>
+
+            <ol className="relative border-l-2 border-orange-200 pl-6 md:pl-8 space-y-7 md:space-y-8">
+              {[
+                {
+                  title: 'Prove demand before you make the product',
+                  body: 'On a platform like Kickstarter, people back the product before it exists. If strangers are willing to put money down, that is real signal, not a guess. If nobody backs it, you learn that for a few weeks of work instead of a full production run.',
+                },
+                {
+                  title: 'Use the raise to fund your first inventory run',
+                  body: 'A funded campaign can cover a meaningful chunk of your first manufacturing order, which is the part most new sellers struggle to pay for out of pocket. It is not free money: you owe every backer their product, and you still need to deliver on time.',
+                },
+                {
+                  title: 'Carry that proof over to Amazon',
+                  body: 'A completed campaign gives you an audience that already knows the product, early reviews, and usable content. That is a different starting line than listing cold on day one. Crowdfunding is not a shortcut around the work; it is a different order of operations.',
+                },
+              ].map((step, i) => (
+                <li key={step.title} className="relative">
+                  <span className="absolute -left-[33px] md:-left-[41px] top-0 w-7 h-7 md:w-8 md:h-8 rounded-full bg-orange-500 text-white font-black text-sm md:text-base flex items-center justify-center shadow-sm">
+                    {i + 1}
+                  </span>
+                  <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1.5">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm md:text-base text-gray-700 leading-relaxed">
+                    {step.body}
+                  </p>
+                </li>
+              ))}
+            </ol>
+
+            <div className="mt-10 rounded-2xl border border-orange-200 bg-gradient-to-b from-orange-50/70 to-white p-5 md:p-7">
+              <p className="text-[11px] md:text-xs font-bold uppercase tracking-[0.2em] text-orange-700 mb-2">
+                Real student example
+              </p>
+              <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
+                AJ took this path after losing his bartending job
+              </h3>
+              <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
+                AJ used the crowdfunding route to launch his first product, then rolled it onto Amazon. His story is his own and does not predict what anyone else will do. The point of showing it is that this path is a real option, not a theory.
+              </p>
+              <Link
+                to="/aj"
+                className="inline-flex items-center gap-2 text-orange-700 font-bold underline underline-offset-4 hover:text-orange-800"
+              >
+                Watch AJ tell it himself →
+              </Link>
+            </div>
+
+            <div className="mt-10 text-center">
+              <a
+                href="#newform-opt-in"
+                className="inline-block bg-[#F28000] hover:bg-[#d97100] text-white font-black text-base md:text-lg px-10 py-4 rounded-xl shadow-md transition-colors"
+              >
+                REGISTER FOR THE FREE TRAINING
+              </a>
+              <p className="mt-3 text-xs text-gray-500">
+                The webinar covers both paths, Amazon-first and crowdfunding-first, so you can pick the one that fits your situation.
+              </p>
+            </div>
+          </section>
+        ) : null}
       </main>
 
       {/* Footer - disclaimer blocks copied verbatim from the original */}
