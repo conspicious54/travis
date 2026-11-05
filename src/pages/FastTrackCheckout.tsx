@@ -1,36 +1,51 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ArrowDown, ChevronRight } from 'lucide-react';
-import { identifyUser, trackEvent } from '../lib/posthog';
-import { persistUtmsFromUrl, readAttribution } from '../lib/syncUtm';
+import { useEffect } from 'react';
+import { CheckCircle2, ArrowDown } from 'lucide-react';
+import { trackEvent } from '../lib/posthog';
+import { persistUtmsFromUrl } from '../lib/syncUtm';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ───── /fast-track — Fast Track checkout page ─────────────────────
-   1:1 layout rebuild of the ClickFunnels Fast Track checkout: top
-   "Limited Spots Available" bar, orange headline, Wistia VSL,
-   2-column body (Contact + Billing stepper on the left; course +
-   bonus stack on the right), totals, then "Why starting Amazon
-   sellers chose us..." lead-in to testimonials.
+   Layout rebuild of the ClickFunnels Fast Track order page in the
+   site's design system: urgency bar, orange headline, Wistia VSL,
+   2-column body (embedded Whop checkout on the left; course + bonus
+   stack on the right), totals, then "Why starting Amazon sellers
+   chose us..." lead-in to testimonials.
 
-   Payment integration note:
-     The Step-1 "Claim your $97 bootcamp" button captures contact
-     info to PostHog + the attribution envelope, then hands the
-     visitor off to the Fast Track checkout URL (set below). When
-     you wire a native Stripe / payment-processor flow into this
-     repo, swap CHECKOUT_REDIRECT_URL for an in-page Step-2 billing
-     UI and submit to that processor from here.
+   Payment flow: Whop Elements checkout widget mounts into #checkout.
+   The widget handles contact + billing + payment + success redirect
+   on its own. The return-URL dance (?payment=…&status=…) is
+   preserved verbatim from Whop's embed snippet so bank-redirect /
+   financing methods (ClarityPay, Klarna, …) land back cleanly.
 ───────────────────────────────────────────────────────────────── */
 
-// Where to send the visitor to collect payment. Leaving this pointed
-// at the existing hosted ClickFunnels Fast Track order page so the
-// page is live-ready; swap for a Stripe / in-app billing flow when
-// ready.
-const CHECKOUT_REDIRECT_URL = 'https://start.travismarziani.com/passion-product-fasttrack';
+const WHOP_SCRIPT_SRC = 'https://cdn.whop.com/elements/amber/elements.js';
+const WHOP_PLAN       = 'plan_9LsQqvkI3Ln2Q';
+const AFTER_PURCHASE  = 'https://whop.com/joined/biz_Y1y6ihD8NR7J4F/';
 
-// Wistia media id supplied in the design brief.
-const WISTIA_MEDIA_ID = 'taxkq7e3yk';
+const WISTIA_MEDIA_ID    = 'taxkq7e3yk';
+const PRICE_LABEL        = '$97';
+const TOTAL_VALUE_LABEL  = '$3,997';
 
-const PRICE_LABEL = '$97';
-const TOTAL_VALUE_LABEL = '$3,997';
+// Shape of the global the Whop script injects. Narrow to what we call.
+declare global {
+  interface Window {
+    WhopElements?: () => {
+      checkout: {
+        create: (opts: {
+          plan: string;
+          returnUrl?: string;
+          metadata?: Record<string, string>;
+          appearance?: {
+            theme?: { appearance?: 'light' | 'dark' };
+            classes?: Record<string, Record<string, string>>;
+          };
+        }) => {
+          create: (slot: string) => { mount: (selector: string) => void };
+        };
+      };
+    };
+  }
+}
 
 function WistiaEmbed({ mediaId }: { mediaId: string }) {
   return (
@@ -46,45 +61,117 @@ function WistiaEmbed({ mediaId }: { mediaId: string }) {
   );
 }
 
-interface ContactForm {
-  firstname: string;
-  lastname: string;
-  email: string;
-  phone: string;
-}
+/* ───── Whop embed lifecycle ──────────────────────────────────────
+   Runs once on mount. Handles three states:
 
-const EMPTY_CONTACT: ContactForm = { firstname: '', lastname: '', email: '', phone: '' };
+     1. Return from an off-site payment method with status=succeeded
+        → redirect to the Whop AFTER_PURCHASE URL with ids attached.
+     2. Return with status=failed | canceled → show inline message,
+        leave the checkout widget mounted so they can retry.
+     3. First visit → load the Whop script (once per session), then
+        mount the checkout widget into #checkout.
 
-function readSeedFromUrl(): ContactForm {
-  if (typeof window === 'undefined') return EMPTY_CONTACT;
-  const p = new URLSearchParams(window.location.search);
-  return {
-    firstname: p.get('first_name') || p.get('firstname') || '',
-    lastname:  p.get('last_name')  || p.get('lastname')  || '',
-    email:     p.get('email') || '',
-    phone:     p.get('phone') || '',
-  };
+   Mirrors the vendor snippet verbatim so a Whop-side change to the
+   snippet can be reapplied with a copy/paste. */
+function initWhopCheckout(
+  returnBox: HTMLElement,
+): 'redirected' | 'succeeded_message' | 'failure_message' | 'mounted' | 'noop' {
+  // Mirrors the IIFE in the vendor snippet.
+  const RETURN = (() => {
+    const here = new URL(location.href);
+    const payment = here.searchParams.get('payment');
+    const status  = here.searchParams.get('status');
+    here.searchParams.delete('payment');
+    here.searchParams.delete('status');
+    here.hash = '';
+    if (payment) {
+      history.replaceState(history.state, '', here.pathname + here.search + location.hash);
+    }
+    const allowed = here.protocol === 'https:'
+      || ['localhost', '127.0.0.1', '[::1]'].includes(here.hostname);
+    return {
+      url:     allowed ? here.href : null,
+      payment: payment,
+      status:  payment ? status : null,
+    };
+  })();
+
+  const RETURN_DONE = RETURN.status === 'succeeded';
+  if (RETURN_DONE && AFTER_PURCHASE) {
+    const next = new URL(AFTER_PURCHASE);
+    if (RETURN.payment) {
+      next.searchParams.set('payment_id', RETURN.payment);
+      next.searchParams.set('receipt_id', RETURN.payment);
+    }
+    next.searchParams.set('status', 'success');
+    location.replace(next.href);
+    return 'redirected';
+  }
+  if (RETURN_DONE) {
+    document
+      .querySelectorAll<HTMLElement>('label[data-whop-option], label[data-whop-bump]')
+      .forEach((l) => (l.style.display = 'none'));
+    returnBox.textContent = 'Your payment was approved. Check your email for your receipt and access.';
+    returnBox.style.color = '#15803d';
+    return 'succeeded_message';
+  }
+  if (RETURN.status === 'failed' || RETURN.status === 'canceled') {
+    returnBox.textContent = 'Your payment wasn’t completed. Try again or choose another payment method.';
+  }
+
+  if (!window.WhopElements) return 'noop';
+  const handle = window.WhopElements().checkout.create({
+    plan: WHOP_PLAN,
+    ...(RETURN.url ? { returnUrl: RETURN.url } : {}),
+    metadata: { source: 'fast_track_landing' },
+    appearance: {
+      theme: { appearance: 'light' },
+      classes: {
+        'whop-CheckoutPayButton':      { backgroundColor: '#1bb148', borderColor: '#1bb148', color: '#ffffff' },
+        'whop-CheckoutSeller':         { display: 'none' },
+        'whop-CheckoutSellerLogo':     { display: 'none' },
+        'whop-CheckoutDetailsToggle':  { display: 'none' },
+        'whop-CheckoutPromoRow':       { display: 'none' },
+        'whop-CheckoutPromoChip':      { display: 'none' },
+        'whop-CheckoutPromoInput':     { display: 'none' },
+        'whop-CheckoutPromoApply':     { display: 'none' },
+        'whop-CheckoutPromoActions':   { display: 'none' },
+        'whop-CheckoutPromoApplied':   { display: 'none' },
+        'whop-CheckoutPromoDiscount':  { display: 'none' },
+        'whop-CheckoutPromoPeriod':    { display: 'none' },
+      },
+    },
+  });
+  handle.create('checkout').mount('#checkout');
+  return 'mounted';
 }
 
 export function FastTrackCheckout() {
-  const seed = useMemo(readSeedFromUrl, []);
-  const [form, setForm] = useState<ContactForm>(seed);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
   useEffect(() => {
     document.title = 'Fast Track — Use Amazon to Make Your First $1,000';
     persistUtmsFromUrl();
-    trackEvent('fasttrack_checkout_viewed', {
-      has_email_in_url: !!seed.email,
-    });
-  }, [seed.email]);
+    trackEvent('fasttrack_checkout_viewed', {});
 
-  const bonuses = [
-    { n: 1, title: 'Checklist Bonus',           value: '$197', body: 'A complete step-by-step checklist so you can move through the Amazon FBA process faster.' },
-    { n: 2, title: 'Product Research Bonus',    value: '$97',  body: 'How to find higher-demand product opportunities with no prior research experience, in a fraction of the time.' },
-    { n: 3, title: 'Mystery Gift',              value: '$197', body: 'One extra bonus unlocked after checkout, hand-picked for new Fast Track members.' },
-  ];
+    const returnBox = document.getElementById('whop-return');
+    if (!returnBox) return;
+
+    // Load the Whop script once; retry init when it finishes loading.
+    const existing = document.querySelector<HTMLScriptElement>('script[data-whop-elements]');
+    if (window.WhopElements) {
+      initWhopCheckout(returnBox);
+      return;
+    }
+    if (existing) {
+      existing.addEventListener('load', () => initWhopCheckout(returnBox), { once: true });
+      return;
+    }
+    const s = document.createElement('script');
+    s.src = WHOP_SCRIPT_SRC;
+    s.setAttribute('data-whop-elements', '');
+    s.async = true;
+    s.addEventListener('load', () => initWhopCheckout(returnBox), { once: true });
+    document.head.appendChild(s);
+  }, []);
 
   const includedModules = [
     { title: 'Mastering Your Mindset',           body: 'Business and mindset foundations for the Amazon marketplace.' },
@@ -95,52 +182,11 @@ export function FastTrackCheckout() {
     { title: 'Key Steps To Launch On Autopilot', body: 'Use the Launch module to drive initial sales and compound into momentum.' },
   ];
 
-  const canProceed = form.firstname.trim().length > 0
-    && form.lastname.trim().length > 0
-    && form.email.includes('@')
-    && form.phone.trim().length >= 7;
-
-  function handleClaim(e: React.FormEvent) {
-    e.preventDefault();
-    if (submitting) return;
-    setError('');
-    if (!canProceed) {
-      setError('Please fill in every field so we can send your receipt + bonuses.');
-      return;
-    }
-    setSubmitting(true);
-
-    const email = form.email.trim().toLowerCase();
-    try {
-      identifyUser(email, {
-        first_name: form.firstname.trim(),
-        last_name:  form.lastname.trim(),
-        phone:      form.phone.trim(),
-      });
-    } catch { /* no-op */ }
-
-    const attr = readAttribution();
-    trackEvent('fasttrack_claim_clicked', {
-      email,
-      utm_source:   attr.utm_source   || null,
-      utm_campaign: attr.utm_campaign || null,
-      utm_medium:   attr.utm_medium   || null,
-      gclid:        attr.gclid        || null,
-      fbclid:       attr.fbclid       || null,
-    });
-
-    // Hand off to the current Fast Track order page with identity
-    // + UTMs appended so attribution survives the hop.
-    const url = new URL(CHECKOUT_REDIRECT_URL);
-    url.searchParams.set('first_name', form.firstname.trim());
-    url.searchParams.set('last_name',  form.lastname.trim());
-    url.searchParams.set('email',      email);
-    url.searchParams.set('phone',      form.phone.trim());
-    for (const [k, v] of Object.entries(attr)) {
-      if (v) url.searchParams.set(k, String(v));
-    }
-    window.location.href = url.toString();
-  }
+  const bonuses = [
+    { n: 1, title: 'Checklist Bonus',        value: '$197', body: 'A complete step-by-step checklist so you can move through the Amazon FBA process faster.' },
+    { n: 2, title: 'Product Research Bonus', value: '$97',  body: 'How to find higher-demand product opportunities with no prior research experience, in a fraction of the time.' },
+    { n: 3, title: 'Mystery Gift',           value: '$197', body: 'One extra bonus unlocked after checkout, hand-picked for new Fast Track members.' },
+  ];
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -167,105 +213,31 @@ export function FastTrackCheckout() {
 
         {/* Two-column body */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8">
-          {/* LEFT: Checkout card */}
+          {/* LEFT: Whop embedded checkout */}
           <div className="lg:col-span-2">
             <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 md:p-7 shadow-sm">
               <p className="text-center text-red-600 font-black italic text-lg md:text-xl mb-1">
                 LIMITED TIME OFFER
               </p>
               <h2 className="text-center text-xl md:text-2xl font-bold text-gray-900 mb-5">
-                Get FULL Access Today For <br /><span className="font-black">ONLY {PRICE_LABEL}</span>
+                Get FULL Access Today For <br />
+                <span className="font-black">ONLY {PRICE_LABEL}</span>
               </h2>
 
-              {/* Stepper */}
-              <div className="grid grid-cols-2 gap-2 mb-4 border-b border-gray-200 pb-2">
-                <div className="flex items-center gap-2 border-b-2 border-orange-500 pb-2">
-                  <span className="w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center">1</span>
-                  <div className="leading-tight">
-                    <p className="text-xs font-bold text-orange-600 uppercase tracking-wider">Contact Info</p>
-                    <p className="text-[11px] text-gray-500">Your contact information</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 pb-2 opacity-60">
-                  <span className="w-6 h-6 rounded-full bg-gray-300 text-gray-700 text-xs font-bold flex items-center justify-center">2</span>
-                  <div className="leading-tight">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Billing Info</p>
-                    <p className="text-[11px] text-gray-500">Your billing information</p>
-                  </div>
-                </div>
-              </div>
+              {/* Status line Whop writes into on return from an off-site
+                  payment method. Rendered empty on first paint, Whop
+                  fills it in with red / green text. */}
+              <div
+                id="whop-return"
+                role="status"
+                className="text-sm text-red-700 mb-2 min-h-[1rem]"
+              />
 
-              <form onSubmit={handleClaim} className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="First Name"
-                    value={form.firstname}
-                    onChange={(e) => setForm((f) => ({ ...f, firstname: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none text-sm"
-                    autoComplete="given-name"
-                    required
-                  />
-                  <input
-                    type="text"
-                    placeholder="Last Name"
-                    value={form.lastname}
-                    onChange={(e) => setForm((f) => ({ ...f, lastname: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none text-sm"
-                    autoComplete="family-name"
-                    required
-                  />
-                </div>
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none text-sm"
-                  autoComplete="email"
-                  required
-                />
-                <input
-                  type="tel"
-                  placeholder="Phone Number"
-                  value={form.phone}
-                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none text-sm"
-                  autoComplete="tel"
-                  required
-                />
+              {/* Whop checkout mount point. React never writes children
+                  here; the vendor script paints into it imperatively. */}
+              <div id="checkout" />
 
-                {error ? (
-                  <p className="text-red-600 text-xs font-medium">{error}</p>
-                ) : null}
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-black py-4 rounded-lg shadow-md shadow-green-500/25 transition-colors"
-                >
-                  <span className="flex items-center justify-center gap-2 text-base md:text-lg">
-                    <ChevronRight className="w-5 h-5" />
-                    Claim your {PRICE_LABEL} bootcamp
-                  </span>
-                  <span className="block text-[11px] font-medium opacity-90 mt-0.5">
-                    &amp; Unlock your 3 bonuses
-                  </span>
-                </button>
-
-                <p className="text-center text-[11px] text-gray-500 mt-2">
-                  We Never Share Your Information With Anyone
-                </p>
-              </form>
-
-              {/* Payment logos (simple text row; swap for brand images when uploaded) */}
-              <div className="mt-5 flex items-center justify-center gap-3 flex-wrap text-[11px] font-bold text-gray-600 tracking-widest">
-                <span className="px-2.5 py-1 border border-gray-300 rounded bg-white">VISA</span>
-                <span className="px-2.5 py-1 border border-gray-300 rounded bg-white">MASTERCARD</span>
-                <span className="px-2.5 py-1 border border-gray-300 rounded bg-white">DISCOVER</span>
-                <span className="px-2.5 py-1 border border-gray-300 rounded bg-white">AMEX</span>
-              </div>
-              <p className="text-center text-[11px] text-gray-500 mt-3 italic">
+              <p className="text-center text-[11px] text-gray-500 mt-4 italic">
                 Product purchase is complete upon receiving instant access
               </p>
             </div>
@@ -348,9 +320,6 @@ export function FastTrackCheckout() {
             These are just a handful of the hundreds of success stories created through the Passion Product blueprint.
           </p>
 
-          {/* Testimonial strip — two Wistia placeholders matching the
-              layout rhythm from the screenshot. Swap mediaIds for the
-              specific Fast Track testimonial videos when picked. */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
             {['9GSDrJRv2CE', 'Vw9OrGVTGoI'].map((ytId) => (
               <div key={ytId} className="relative overflow-hidden rounded-xl bg-slate-900 shadow-xl" style={{ paddingTop: '56.25%' }}>
