@@ -80,10 +80,17 @@ export function ApplyNow() {
     trackEvent('applynow_page_viewed', { email_in_url: !!id.email });
   }, []);
 
-  // (Typeform's embed.js is no longer needed — we render the form in
-  // a direct iframe below so the standalone experience, including the
-  // Start / welcome screen, is preserved. embed.js' data-tf-live mode
-  // auto-skips the welcome screen.)
+  // Inject Typeform's embed script once. The script auto-mounts on
+  // any [data-tf-live] element it finds in the DOM.
+  useEffect(() => {
+    if (!TYPEFORM_LIVE_ID) return;
+    if (document.getElementById('pp-typeform-embed-loader')) return;
+    const s = document.createElement('script');
+    s.id = 'pp-typeform-embed-loader';
+    s.src = '//embed.typeform.com/next/embed.js';
+    s.async = true;
+    document.body.appendChild(s);
+  }, []);
 
   /* Typeform postMessage listener. The Typeform embed fires
      postMessages with event types like:
@@ -222,34 +229,42 @@ export function ApplyNow() {
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   }, []);
 
-  /* Build the full Typeform URL with hidden-field prefills as URL
-     query params. Each key below must be declared as a Hidden Field in
-     the Typeform admin — Typeform ignores query params that aren't
-     pre-declared. URLSearchParams takes care of encoding so values
-     like `info@foo.com` land correctly as `info%40foo.com` in the URL
-     and Typeform decodes them on receipt. */
-  const typeformSrc = useMemo(() => {
-    if (!TYPEFORM_LIVE_ID || typeof window === 'undefined') return '';
-    const params = new URLSearchParams();
+  const hiddenFields = useMemo(() => {
+    if (typeof window === 'undefined') return '';
     const incoming = new URLSearchParams(window.location.search);
+    const parts: string[] = [];
+    // Identity via getCleanIdentity so both naming conventions
+    // (firstname + first_name) resolve. Then write BOTH to the
+    // Typeform hidden string — Typeform admin can have either
+    // declared as a hidden field and will pick up whichever matches.
+    //
+    // IMPORTANT: do NOT URL-encode values here. Typeform's
+    // data-tf-hidden attribute does NOT URL-decode the values it
+    // reads — it uses them raw. Encoding would land `info%40` in
+    // the Typeform email field instead of `info@`, breaking the
+    // autofill. Only strip commas (the pair separator) and equals
+    // (the key/value separator) from values to keep parsing safe.
+    const safe = (v: string) => v.replace(/[,=]/g, '');
     const id = getCleanIdentity(incoming);
-    if (id.email)     params.set('email', id.email);
+    if (id.email)     parts.push(`email=${safe(id.email)}`);
     if (id.firstname) {
-      params.set('firstname',  id.firstname);
-      params.set('first_name', id.firstname);
+      parts.push(`firstname=${safe(id.firstname)}`);
+      parts.push(`first_name=${safe(id.firstname)}`);
     }
     if (id.lastname) {
-      params.set('lastname',  id.lastname);
-      params.set('last_name', id.lastname);
+      parts.push(`lastname=${safe(id.lastname)}`);
+      parts.push(`last_name=${safe(id.lastname)}`);
     }
-    if (id.phone) params.set('phone', id.phone);
-    // readAttribution merges URL + sessionStorage so attribution rides
-    // along even if the URL chain dropped a UTM upstream.
-    for (const [k, v] of Object.entries(readAttribution())) {
-      if (v) params.set(k, String(v));
+    if (id.phone)     parts.push(`phone=${safe(id.phone)}`);
+    // readAttribution merges URL + sessionStorage so Typeform's
+    // hidden fields get the attribution even if the URL chain
+    // dropped them somewhere upstream (the booking pages already
+    // populate sessionStorage via persistUtmsFromUrl).
+    const attribution = readAttribution();
+    for (const [k, v] of Object.entries(attribution)) {
+      if (v) parts.push(`${k}=${safe(String(v))}`);
     }
-    const qs = params.toString();
-    return `https://form.typeform.com/to/${TYPEFORM_LIVE_ID}${qs ? '?' + qs : ''}`;
+    return parts.join(',');
   }, []);
 
   return (
@@ -294,12 +309,11 @@ export function ApplyNow() {
           </div>
 
           {TYPEFORM_LIVE_ID ? (
-            <iframe
-              src={typeformSrc}
-              title="The Passion Product Strategy Session"
-              allow="camera; microphone; autoplay; clipboard-read; clipboard-write"
+            <div
+              data-tf-live={TYPEFORM_LIVE_ID}
+              data-tf-hidden={hiddenFields}
               style={{ height: `min(${TYPEFORM_HEIGHT_PX}px, calc(100vh - 120px))` }}
-              className="w-full bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+              className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
             />
           ) : (
             <div

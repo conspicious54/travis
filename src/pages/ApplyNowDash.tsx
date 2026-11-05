@@ -292,8 +292,16 @@ export function ApplyNowDash() {
               src={typeformSrc}
               title="The Passion Product Strategy Session"
               allow="camera; microphone; autoplay; clipboard-read; clipboard-write"
-              style={{ height: `min(${TYPEFORM_HEIGHT_PX}px, calc(100vh - 120px))` }}
-              className="w-full bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+              scrolling="yes"
+              // Fixed pixel height, not viewport-relative. On a short
+              // mobile viewport (iPhone ≈ 667px), a viewport-minus-chrome
+              // calc shrunk the iframe below Typeform's own welcome-
+              // screen layout, which clipped the Start button off the
+              // bottom. Giving the iframe its full 720px lets the
+              // outer page scroll past it on mobile instead, and the
+              // welcome screen renders complete, Start button included.
+              style={{ height: `${TYPEFORM_HEIGHT_PX}px` }}
+              className="w-full bg-white rounded-xl border border-gray-200 shadow-sm"
             />
           ) : (
             <div
