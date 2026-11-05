@@ -45,6 +45,7 @@ const Terms                  = lz(() => import('./pages/Terms'),                
 const OptIn                  = lz(() => import('./pages/OptIn'),                  'OptIn');
 const FreeCourse             = lz(() => import('./pages/FreeCourse'),             'FreeCourse');
 const FastTrack              = lz(() => import('./pages/FastTrack'),              'FastTrack');
+const FastTrackCheckout      = lz(() => import('./pages/FastTrackCheckout'),      'FastTrackCheckout');
 const AJ                     = lz(() => import('./pages/AJ'),                     'AJ');
 const Darryl                 = lz(() => import('./pages/Darryl'),                 'Darryl');
 const ProductResearchBonus   = lz(() => import('./pages/ProductResearchBonus'),   'ProductResearchBonus');
@@ -142,6 +143,7 @@ function AppWrapper() {
                   <Route path="/moveforward" element={<MoveForward />} />
                   <Route path="/nextstep" element={<NextStep />} />
                   <Route path="/fasttrack" element={<FastTrack />} />
+                  <Route path="/fast-track" element={<FastTrackCheckout />} />
                   <Route path="/applynow" element={<ApplyNow />} />
                   <Route path="/apply-now" element={<ApplyNowDash />} />
                   <Route path="/dmapplynow" element={<DmApplyNow />} />
