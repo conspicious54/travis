@@ -25,7 +25,7 @@ export const WEBINAR_DURATION_MIN = 60;
    is PST.
 ──────────────────────────────────────────────────────────────────── */
 export const WEBINAR_SCHEDULE: readonly string[] = [
-  '2026-11-05T15:00:00-08:00', // Thursday, Nov 5 2026, 3:00 PM PT
+  '2026-11-09T15:30:00-08:00', // Monday, Nov 9 2026, 3:30 PM PT
 ];
 
 export function getNextWebinarStartIso(): string {
@@ -43,7 +43,7 @@ export const WEBINAR_START_ISO = getNextWebinarStartIso();
 // encodes them correctly when the URL is embedded in the Google /
 // Outlook calendar deep links, and the ICS LOCATION field renders it
 // as-is (no commas/semicolons/backslashes to escape).
-export const WEBINAR_JOIN_URL = 'https://us06web.zoom.us/webinar/register/WN_10B7BORxQ8uflR-FgzW1ew';
+export const WEBINAR_JOIN_URL = 'https://us06web.zoom.us/webinar/register/WN_w36uOpQITom95PGmBNW_DQ';
 export const WEBINAR_DESCRIPTION =
   "Travis Marziani's live training: how he picks winning products, the launch playbook he uses, and how to avoid the most common mistakes new sellers make.";
 
