@@ -28,6 +28,7 @@ const Live                   = lz(() => import('./pages/Live'),                 
 const VA                     = lz(() => import('./pages/VA'),                     'VA');
 const PPC                    = lz(() => import('./pages/PPC'),                    'PPC');
 const RouterPage             = lz(() => import('./pages/Router'),                 'Router');
+const DQPage                 = lz(() => import('./pages/DQ'),                     'DQ');
 const Book                   = lz(() => import('./pages/Book'),                   'Book');
 const DmBook                 = lz(() => import('./pages/DmBook'),                 'DmBook');
 const MoveForward            = lz(() => import('./pages/MoveForward'),            'MoveForward');
@@ -134,6 +135,7 @@ function AppWrapper() {
                   <Route path="/va" element={<VA />} />
                   <Route path="/ppc" element={<PPC />} />
                   <Route path="/router" element={<RouterPage />} />
+                  <Route path="/dq" element={<DQPage />} />
                   <Route path="/book" element={<Book />} />
                   <Route path="/dmbook" element={<DmBook />} />
                   <Route path="/newform" element={<NewForm />} />
