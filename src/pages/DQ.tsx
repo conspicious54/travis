@@ -14,7 +14,9 @@ import { getCleanParam } from '../lib/urlParams';
    entry points identically.
 ─────────────────────────────────────────────────────────────────── */
 
-const GROUP_B_URL = 'https://start.travismarziani.com/passion-product-fasttrack';
+// "No $500" answers now land on the in-app Whop checkout at /fast-track
+// (kept in sync with Router.tsx so both DQ entry points go the same place).
+const GROUP_B_URL = '/fast-track';
 const DQ_YES_URL = 'https://thepassionproductformula.com/waitlist';
 const TRACKING_ENDPOINT = 'https://dashboardpp.vercel.app/api/webhooks/router';
 

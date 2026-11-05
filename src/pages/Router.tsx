@@ -11,7 +11,13 @@ type RouterState = 'loading' | 'dq-question' | 'redirecting';
 // identity bridge needed downstream). The CF version at
 // start.travismarziani.com/nextstep is being retired as we migrate.
 const GROUP_A_URL = "/nextstep";
-const GROUP_B_URL = "https://start.travismarziani.com/passion-product-fasttrack";
+// "No $500" answers now land on the in-app Whop checkout at /fast-track
+// (replaces the old hosted ClickFunnels order page at
+// start.travismarziani.com/passion-product-fasttrack). Relative URL
+// keeps the visitor on this origin so passthrough params and session
+// state (PostHog anon id, Garlic, sessionStorage attribution) survive
+// the hop with no cross-domain bridge.
+const GROUP_B_URL = "/fast-track";
 const DQ_YES_URL = "https://thepassionproductformula.com/waitlist";
 const TRACKING_ENDPOINT = "https://dashboardpp.vercel.app/api/webhooks/router";
 
