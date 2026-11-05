@@ -265,18 +265,6 @@ export function ApplyNowDash() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      {/* Minimal header - brand icon only */}
-      <header className="bg-white border-b border-gray-100">
-        <div className="max-w-3xl mx-auto px-5 py-4 flex items-center justify-center">
-          <img
-            src="https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Passion%20Product%20Formula%20-%20ICON.png"
-            alt="Passion Product Formula"
-            className="w-10 h-10 rounded-lg object-contain"
-            loading="eager"
-          />
-        </div>
-      </header>
-
       {/* Step banner */}
       <div className="bg-green-500 text-white">
         <div className="max-w-4xl mx-auto px-5 py-3 text-center">
@@ -293,17 +281,10 @@ export function ApplyNowDash() {
             : 'Complete This Quick Application to See How We Can Support Your Goals'}
         </p>
 
-        {/* Typeform inline embed */}
+        {/* Typeform inline embed. Heading + subhead removed because the
+            Typeform welcome screen already carries that copy — rendering
+            it twice looked like a duplicated title. */}
         <div ref={formRef} className="max-w-3xl mx-auto">
-          <div className="text-center mb-3">
-            <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-              The Passion Product Strategy Session
-            </h2>
-            <p className="text-gray-600 text-sm md:text-base mt-1">
-              Take This Self Assessment To See If You're A Fit
-            </p>
-          </div>
-
           {TYPEFORM_LIVE_ID ? (
             <div
               data-tf-live={TYPEFORM_LIVE_ID}
