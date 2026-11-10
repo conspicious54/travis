@@ -43,7 +43,7 @@ export const WEBINAR_START_ISO = getNextWebinarStartIso();
 // encodes them correctly when the URL is embedded in the Google /
 // Outlook calendar deep links, and the ICS LOCATION field renders it
 // as-is (no commas/semicolons/backslashes to escape).
-export const WEBINAR_JOIN_URL = 'https://us06web.zoom.us/webinar/register/WN_w36uOpQITom95PGmBNW_DQ';
+export const WEBINAR_JOIN_URL = 'https://us06web.zoom.us/w/87431426194?tk=rMSz_zy09r3KhW-ZHfjEppEYEr2cDR1Fd9v6YxRoijU.DQkAAAAUW1GwkhYtSl9jRzE3OVN0aWdaZ0hpZmMxMldRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&uuid=WN_L324M2r2R4mu3wifn_1hbg';
 export const WEBINAR_DESCRIPTION =
   "Travis Marziani's live training: how he picks winning products, the launch playbook he uses, and how to avoid the most common mistakes new sellers make.";
 
