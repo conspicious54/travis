@@ -25,7 +25,7 @@ export const WEBINAR_DURATION_MIN = 60;
    is PST.
 ──────────────────────────────────────────────────────────────────── */
 export const WEBINAR_SCHEDULE: readonly string[] = [
-  '2026-11-09T15:30:00-08:00', // Monday, Nov 9 2026, 3:30 PM PT
+  '2026-11-12T15:00:00-08:00', // Thursday, Nov 12 2026, 3:00 PM PT
 ];
 
 export function getNextWebinarStartIso(): string {
