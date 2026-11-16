@@ -371,17 +371,16 @@ export function BookCall() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-10 md:py-14">
+      <div className="max-w-4xl mx-auto px-4 py-4 md:py-6">
         {/* Qualified celebration */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-green-700 mb-5">
+        <div className="text-center mb-5 md:mb-6">
+          <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-green-700 mb-3">
             <CheckCircle className="w-3.5 h-3.5" />
             You Qualified
           </div>
 
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.05] mb-4">
-            Congrats - You're In.<br />
-            <span className="text-orange-600">Now Pick Your Time.</span>
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.05] mb-2 md:mb-3">
+            You're In. <span className="text-orange-600">Now Pick Your Time.</span>
           </h1>
 
           <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto">
@@ -395,7 +394,7 @@ export function BookCall() {
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
               <Sparkles className="w-4 h-4 text-orange-600" />
-              <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below - spots fill up fast</p>
+              <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below, spots fill up fast!</p>
             </div>
             <div
               ref={containerRef}
