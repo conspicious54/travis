@@ -89,10 +89,27 @@ function getOncehubPrefill(): { name?: string; email?: string; phone?: string } 
 
 export function Book() {
   const containerRef = useRef<HTMLDivElement>(null);
-  // Which OnceHub calendar is currently mounted. Starts on the
-  // primary; "See More Times" swaps to FALLBACK_CALENDAR_ID.
-  const [calendarId, setCalendarId] = useState<string>(ONCEHUB_CALENDAR_ID);
+  // Which OnceHub calendar is currently mounted. Driven by the
+  // ?calendar=more URL param rather than in-place state so the
+  // page can fully reload on swap. OnceHub's embed loader scans
+  // the DOM once on script load and has no re-scan hook, so an
+  // in-place React re-mount leaves the fallback div blank. A real
+  // page navigation with the param flipped puts us back on the
+  // first-load path that already works.
+  const [calendarId] = useState<string>(() => {
+    if (typeof window === 'undefined') return ONCEHUB_CALENDAR_ID;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('calendar') === 'more'
+      ? FALLBACK_CALENDAR_ID
+      : ONCEHUB_CALENDAR_ID;
+  });
   const showingFallback = calendarId !== ONCEHUB_CALENDAR_ID;
+  const goToFallbackCalendar = () => {
+    trackEvent('booking_see_more_times_clicked', { booking_type: 'closer' });
+    const url = new URL(window.location.href);
+    url.searchParams.set('calendar', 'more');
+    window.location.href = url.toString();
+  };
 
   useEffect(() => {
     persistTypeformAnswers();
@@ -347,33 +364,10 @@ export function Book() {
     };
   }, []);
 
-  // After the first mount, if the visitor swaps to the fallback
-  // calendar, the empty div React just mounted has a fresh
-  // data-oh-booking-calendar-id but no iframe — OnceHub's embed.js
-  // only scans the DOM when it first loads, so the new div stays
-  // blank. Re-inject the embed script with a cache-buster so it
-  // runs again and picks up the new div. Skip on the initial
-  // calendar (the main-effect injection handles that).
-  const isInitialMount = useRef(true);
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    const old = document.querySelectorAll('script[src*="cdn.oncehub.com/cal/embed.js"]');
-    old.forEach((s) => s.remove());
-    const script = document.createElement('script');
-    script.src = `https://cdn.oncehub.com/cal/embed.js?_=${Date.now()}`;
-    script.async = true;
-    script.type = 'text/javascript';
-    document.body.appendChild(script);
-  }, [calendarId]);
-
   // Prefill the OnceHub booking form with name/email/phone from URL
-  // params or localStorage. Lives in its own effect keyed on
-  // calendarId so the alternate "See More Times" calendar gets
-  // prefilled too — on swap, React remounts the container with a
-  // new key and this effect re-runs against the new iframe.
+  // params or localStorage. Runs once per page load — the "See
+  // More Times" swap is a full reload, so this fires fresh against
+  // whichever calendar is active.
   useEffect(() => {
     const prefill = getOncehubPrefill();
     const hasPrefill = !!(prefill.name || prefill.email || prefill.phone);
@@ -430,7 +424,7 @@ export function Book() {
     return () => {
       if (pollHandle) clearInterval(pollHandle);
     };
-  }, [calendarId]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white">
@@ -484,24 +478,20 @@ export function Book() {
               <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below, spots fill up fast!</p>
             </div>
             <div
-              key={calendarId}
               ref={containerRef}
               data-oh-booking-calendar-id={calendarId}
               style={{ minWidth: 320, height: 'max(380px, min(700px, calc(100dvh - 250px)))' }}
             />
-            {/* "See More Times" footer — swaps the embed to the
-                fallback calendar on click. Hidden once the fallback
-                is already showing. React's key prop forces the
-                container above to unmount/remount so OnceHub's
-                embed.js picks up the new data-oh-booking-calendar-id
-                and mounts a fresh iframe. */}
+            {/* "See More Times" footer — reloads /book with
+                ?calendar=more so the fallback calendar mounts via
+                the normal first-load path (OnceHub's embed loader
+                has no re-scan hook, so an in-place DOM swap won't
+                mount the new iframe). Hidden once already on the
+                fallback. */}
             {!showingFallback && (
               <button
                 type="button"
-                onClick={() => {
-                  setCalendarId(FALLBACK_CALENDAR_ID);
-                  trackEvent('booking_see_more_times_clicked', { booking_type: 'closer' });
-                }}
+                onClick={goToFallbackCalendar}
                 className="w-full flex items-center justify-center gap-1.5 px-5 py-3 text-xs md:text-sm text-gray-700 bg-gradient-to-r from-orange-50 to-amber-50 border-t border-orange-100 hover:from-orange-100 hover:to-amber-100 transition-colors cursor-pointer"
               >
                 <span>Can't find a time that works for you?</span>
