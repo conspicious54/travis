@@ -603,12 +603,23 @@ export function NextStep() {
         }
       `}</style>
       <main className="max-w-5xl mx-auto px-5 pt-4 md:pt-6 pb-16">
-        {/* Hero - compact stylized header */}
+        {/* Hero - compact stylized header.
+            Badge, H1, and sub-prompt font sizes all clamp against
+            min(vw, dvh) so the whole hero shrinks in lockstep with
+            the video on short viewports. The lower bounds (18/10/12 px)
+            keep text readable; the upper bounds reproduce the previous
+            text-5xl / md:text-base rendering on tall screens. */}
         <div className="text-center mb-3 md:mb-4">
-          <div className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full text-[10px] md:text-[11px] font-bold uppercase tracking-wider mb-2.5">
+          <div
+            className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider mb-2.5"
+            style={{ fontSize: 'clamp(0.625rem, min(1.4dvh, 1vw), 0.6875rem)' }}
+          >
             Free Training
           </div>
-          <h1 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] mb-2 text-slate-900">
+          <h1
+            className="font-black tracking-tight leading-[1.05] mb-2 text-slate-900"
+            style={{ fontSize: 'clamp(1.125rem, min(4.5dvh, 4.5vw), 3rem)' }}
+          >
             {isGoogleAdsSafe ? (
               <>
                 How I Use <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent">&ldquo;The Passion Product Formula&rdquo;</span> to Research, Design, and Launch Products on Amazon
@@ -624,7 +635,8 @@ export function NextStep() {
               below the JSX - smaller amplitude than Tailwind's
               animate-bounce so it nudges rather than jumps. */}
           <p
-            className={`text-sm md:text-base text-gray-600 flex items-center justify-center gap-2 ${videoInteracted ? '' : '[animation:nextstep-bounce_1.4s_ease-in-out_infinite]'}`}
+            className={`text-gray-600 flex items-center justify-center gap-2 ${videoInteracted ? '' : '[animation:nextstep-bounce_1.4s_ease-in-out_infinite]'}`}
+            style={{ fontSize: 'clamp(0.75rem, min(1.8dvh, 1.6vw), 1rem)' }}
           >
             <ArrowDown className="w-3.5 h-3.5 text-orange-600" />
             <span><span className="font-bold text-orange-600">"Hit Play"</span> To Watch The Free Training</span>
@@ -644,7 +656,7 @@ export function NextStep() {
         <div
           ref={videoRef}
           className="relative mx-auto"
-          style={{ maxWidth: 'min(56rem, max(320px, calc((100dvh - 400px) * 16 / 9)))' }}
+          style={{ maxWidth: 'min(56rem, max(320px, calc((100dvh - 340px) * 16 / 9)))' }}
           onClick={handleVideoContainerClick}
         >
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
