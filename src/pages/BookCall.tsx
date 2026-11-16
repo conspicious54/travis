@@ -379,7 +379,7 @@ export function BookCall() {
             You Qualified
           </div>
 
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.05] mb-2 md:mb-3">
+          <h1 className="text-xl md:text-3xl lg:text-5xl font-black text-gray-900 tracking-tight leading-[1.05] mb-2 md:mb-3 whitespace-nowrap">
             You're In. <span className="text-orange-600">Now Pick Your Time.</span>
           </h1>
 
