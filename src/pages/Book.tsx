@@ -347,6 +347,28 @@ export function Book() {
     };
   }, []);
 
+  // After the first mount, if the visitor swaps to the fallback
+  // calendar, the empty div React just mounted has a fresh
+  // data-oh-booking-calendar-id but no iframe — OnceHub's embed.js
+  // only scans the DOM when it first loads, so the new div stays
+  // blank. Re-inject the embed script with a cache-buster so it
+  // runs again and picks up the new div. Skip on the initial
+  // calendar (the main-effect injection handles that).
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const old = document.querySelectorAll('script[src*="cdn.oncehub.com/cal/embed.js"]');
+    old.forEach((s) => s.remove());
+    const script = document.createElement('script');
+    script.src = `https://cdn.oncehub.com/cal/embed.js?_=${Date.now()}`;
+    script.async = true;
+    script.type = 'text/javascript';
+    document.body.appendChild(script);
+  }, [calendarId]);
+
   // Prefill the OnceHub booking form with name/email/phone from URL
   // params or localStorage. Lives in its own effect keyed on
   // calendarId so the alternate "See More Times" calendar gets
