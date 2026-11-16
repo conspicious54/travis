@@ -383,7 +383,10 @@ export function BookCall() {
             You're In. <span className="text-orange-600">Now Pick Your Time.</span>
           </h1>
 
-          <p className="text-gray-600 text-base md:text-lg max-w-xl mx-auto">
+          <p
+            className="text-gray-600 mx-auto whitespace-nowrap"
+            style={{ fontSize: 'clamp(0.625rem, min(2.4vw, 1.5dvh), 1.125rem)' }}
+          >
             You're about to get on a call with Travis or one of his top coaches.
           </p>
         </div>
@@ -399,7 +402,7 @@ export function BookCall() {
             <div
               ref={containerRef}
               data-oh-booking-calendar-id={ONCEHUB_CALENDAR_ID}
-              style={{ minWidth: 320, height: 'min(700px, calc(100vh - 120px))' }}
+              style={{ minWidth: 320, height: 'max(380px, min(700px, calc(100dvh - 300px)))' }}
             />
           </div>
         </div>
