@@ -727,22 +727,25 @@ export function NewForm() {
                 {submitting ? 'Reserving Your Spot...' : (variant?.cta_text || 'SIGN UP TO WATCH NOW')}
               </button>
 
-              <p className="text-xs text-gray-500 leading-relaxed">
-                {showPhoneField ? (
-                  <>
-                    By submitting this form, you agree to receive SMS messages from Passion Product, including
-                    appointment reminders and notifications. Message frequency varies. Message and data rates may apply.
-                    Reply OUT to unsubscribe. Reply HELP for help. Consent is not a condition of purchase.
-                  </>
-                ) : (
-                  <>
-                    By submitting this form, you agree to receive emails from Passion Product. You can
-                    unsubscribe at any time via the link at the bottom of any email.
-                  </>
-                )}
-              </p>
             </form>
           </div>
+          {/* Compliance disclaimer — moved outside the white card so it
+              reads as fine-print under the form rather than part of the
+              primary CTA stack. Smaller type, centered, muted. */}
+          <p className="mt-3 text-[10px] md:text-[11px] leading-snug text-gray-500/90 text-center px-2">
+            {showPhoneField ? (
+              <>
+                By submitting this form, you agree to receive SMS messages from Passion Product, including
+                appointment reminders and notifications. Message frequency varies. Message and data rates may apply.
+                Reply OUT to unsubscribe.
+              </>
+            ) : (
+              <>
+                By submitting this form, you agree to receive emails from Passion Product. You can
+                unsubscribe at any time via the link at the bottom of any email.
+              </>
+            )}
+          </p>
         </div>
 
         {/* Trust-mark carousel. Continuous horizontal marquee of

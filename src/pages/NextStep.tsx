@@ -632,8 +632,21 @@ export function NextStep() {
           </p>
         </div>
 
-        {/* VSL video */}
-        <div ref={videoRef} className="relative max-w-4xl mx-auto" onClick={handleVideoContainerClick}>
+        {/* VSL video.
+            maxWidth caps the video so the rest of the above-the-fold
+            stack (hero + sub-prompt + "Hit Play" + countdown/unlock CTA)
+            fits in the viewport on short screens. The video keeps a
+            16:9 aspect (VidalyticsEmbed uses paddingTop 56.25%), so
+            constraining the width by (reserved vertical space) × 16/9
+            is the same as constraining the video's height. 56rem
+            matches max-w-4xl for tall viewports; `max(320px, …)`
+            keeps the video readable on extreme-short landscape. */}
+        <div
+          ref={videoRef}
+          className="relative mx-auto"
+          style={{ maxWidth: 'min(56rem, max(320px, calc((100dvh - 400px) * 16 / 9)))' }}
+          onClick={handleVideoContainerClick}
+        >
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
           <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-black">
             <VidalyticsEmbed />

@@ -31,7 +31,7 @@ const TYPEFORM_LIVE_ID = '01KMGF6YH9HXWD39CSVYN96VB8';
 // Typeform needs real vertical room - too short and the question
 // area, the OK/next button, and the bottom progress bar get
 // crowded or cut off entirely on multi-choice questions.
-const TYPEFORM_HEIGHT_PX = 720;
+const TYPEFORM_HEIGHT_PX = 540;
 
 const GROUP_PHOTO_URL  = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisGroup.jpg';
 const TRAVIS_STAGE_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisStage.jpg';
