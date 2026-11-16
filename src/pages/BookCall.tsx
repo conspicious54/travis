@@ -351,7 +351,7 @@ export function BookCall() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white">
       {/* Step bar */}
-      <div className="bg-white border-b border-gray-100">
+      <div className="bg-white border-b border-gray-100 [@media(max-height:900px)]:hidden">
         <div className="max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center justify-center gap-3">
             <div className="flex items-center gap-2">
@@ -402,7 +402,7 @@ export function BookCall() {
             <div
               ref={containerRef}
               data-oh-booking-calendar-id={ONCEHUB_CALENDAR_ID}
-              style={{ minWidth: 320, height: 'max(380px, min(700px, calc(100dvh - 300px)))' }}
+              style={{ minWidth: 320, height: 'max(380px, min(700px, calc(100dvh - 250px)))' }}
             />
           </div>
         </div>
