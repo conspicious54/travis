@@ -14,7 +14,7 @@ import type { Handler, HandlerEvent } from '@netlify/functions';
        (server-side, un-blockable) and falls back to the client's
        `country_code` field only when the edge header is absent.
      - Classifies audience against ALLOWED_COUNTRIES (same list as
-       src/pages/Router.tsx — US/CA/AU/NZ + all Europe) and 302s to
+       src/pages/Router.tsx — US/CA/AU/NZ, AE/IL/QA/JP + all Europe) and 302s to
        /nextstep (target) or /router (non_target).
      - Overwrites body.country_code / body.country_name / body.audience
        with the server-resolved values so downstream (/router,
@@ -29,9 +29,17 @@ import type { Handler, HandlerEvent } from '@netlify/functions';
 
 /* ───── allowed-country list ────────────────────────────────────────
    Mirrors the ALLOWED_COUNTRIES list in src/pages/Router.tsx so
-   client + server agree on who's qualified. US/CA/AU/NZ + all of
-   Europe. Non-target → /router for the DQ question UX. Target →
-   straight to /nextstep. ──────────────────────────────────────── */
+   client + server agree on who's qualified. US/CA/AU/NZ, plus
+   AE/IL/QA/JP (qualified on 2026-10-27), plus all of Europe.
+   Non-target → /router for the DQ question UX. Target → straight to
+   /nextstep.
+
+   KEEP IN SYNC with Router.tsx and src/lib/detectCountry.ts. This
+   list is the one that decides: a non-target lead is sent to /router
+   with country_code=DQ, so the router's own list never gets a say.
+   AE/IL/QA/JP were added to the other two on 2026-10-27 but not here,
+   and every lead from those four was turned away until 2026-11-16.
+   ──────────────────────────────────────────────────────────────── */
 
 const EUROPE_COUNTRIES = new Set([
   'AL','AD','AT','BY','BE','BA','BG','HR','CY','CZ','DK','EE','FI','FR',
@@ -39,7 +47,7 @@ const EUROPE_COUNTRIES = new Set([
   'ME','NL','MK','NO','PL','PT','RO','RU','SM','RS','SK','SI','ES','SE',
   'CH','UA','GB','VA',
 ]);
-const ALLOWED_COUNTRIES = new Set(['US', 'CA', 'AU', 'NZ', ...EUROPE_COUNTRIES]);
+const ALLOWED_COUNTRIES = new Set(['US', 'CA', 'AU', 'NZ', 'AE', 'IL', 'QA', 'JP', ...EUROPE_COUNTRIES]);
 const REDIRECT_TARGET = '/nextstep';
 const REDIRECT_NON_TARGET = '/router';
 
