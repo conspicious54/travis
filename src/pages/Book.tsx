@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CheckCircle, Sparkles } from 'lucide-react';
 import { identifyUser, setPersonProperties, trackBookingPageViewed, trackEvent } from '../lib/posthog';
 import { syncContactTimezone } from '../lib/syncTimezone';
@@ -31,6 +31,10 @@ import {
 ────────────────────────────────────────────────────────────────── */
 
 const ONCEHUB_CALENDAR_ID = 'BKC-Q45L7MVX52';
+// Alternate calendar shown when the visitor clicks "See More Times"
+// at the bottom of the frame. Same embed loader, different booking
+// team. Booking postMessage events are accepted from either calendar.
+const FALLBACK_CALENDAR_ID = 'BKC-V8JQXL2W53';
 const STORAGE_KEY = 'pp_booking_data';
 const REDIRECT_TO = '/trainingnew/closer';
 
@@ -85,6 +89,10 @@ function getOncehubPrefill(): { name?: string; email?: string; phone?: string } 
 
 export function Book() {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Which OnceHub calendar is currently mounted. Starts on the
+  // primary; "See More Times" swaps to FALLBACK_CALENDAR_ID.
+  const [calendarId, setCalendarId] = useState<string>(ONCEHUB_CALENDAR_ID);
+  const showingFallback = calendarId !== ONCEHUB_CALENDAR_ID;
 
   useEffect(() => {
     persistTypeformAnswers();
@@ -150,7 +158,13 @@ export function Book() {
         return;
       }
       if (!isFreshBookingConfirmed(event.data)) return;
-      if (!isBookingForCalendar(event.data, ONCEHUB_CALENDAR_ID)) return;
+      // Accept bookings from either the primary or the fallback
+      // calendar — the "See More Times" swap keeps the same success
+      // path.
+      if (
+        !isBookingForCalendar(event.data, ONCEHUB_CALENDAR_ID) &&
+        !isBookingForCalendar(event.data, FALLBACK_CALENDAR_ID)
+      ) return;
       if (bookingHandled) return;
       bookingHandled = true;
 
@@ -328,65 +342,73 @@ export function Book() {
       document.body.appendChild(script);
     }
 
-    // After embed.js mounts the iframe, append name/email/phone query
-    // params to its src so OnceHub's booking form is pre-filled.
-    const prefill = getOncehubPrefill();
-    const hasPrefill = !!(prefill.name || prefill.email || prefill.phone);
-    let pollHandle: ReturnType<typeof setInterval> | null = null;
-    if (hasPrefill) {
-      let attempts = 0;
-      const tryAddPrefill = (): boolean => {
-        const iframe = containerRef.current?.querySelector('iframe') as HTMLIFrameElement | null;
-        if (!iframe || !iframe.src) return false;
-        try {
-          const url = new URL(iframe.src);
-          let changed = false;
-          const setIfAbsent = (key: string, value: string) => {
-            if (!url.searchParams.has(key)) {
-              url.searchParams.set(key, value);
-              changed = true;
-            }
-          };
-          if (prefill.name) {
-            setIfAbsent('name', prefill.name);
-            const parts = prefill.name.split(/\s+/).filter(Boolean);
-            if (parts[0]) setIfAbsent('first_name', parts[0]);
-            if (parts.length > 1) setIfAbsent('last_name', parts.slice(1).join(' '));
-          }
-          if (prefill.email) {
-            setIfAbsent('email', prefill.email);
-          }
-          if (prefill.phone) {
-            setIfAbsent('phone', prefill.phone);
-            setIfAbsent('mobile', prefill.phone);
-            setIfAbsent('mobile_phone', prefill.phone);
-            setIfAbsent('phone_number', prefill.phone);
-            setIfAbsent('cellphone', prefill.phone);
-            const e164 = prefill.phone.replace(/[\s()-]/g, '');
-            if (e164 !== prefill.phone) {
-              url.searchParams.set('phone', e164);
-              url.searchParams.set('mobile', e164);
-              url.searchParams.set('mobile_phone', e164);
-              changed = true;
-            }
-          }
-          if (changed) iframe.src = url.toString();
-        } catch { /* no-op */ }
-        return true;
-      };
-      pollHandle = setInterval(() => {
-        attempts++;
-        if (tryAddPrefill() || attempts > 60) {
-          if (pollHandle) clearInterval(pollHandle);
-        }
-      }, 100);
-    }
-
     return () => {
       window.removeEventListener('message', handleMessage);
-      if (pollHandle) clearInterval(pollHandle);
     };
   }, []);
+
+  // Prefill the OnceHub booking form with name/email/phone from URL
+  // params or localStorage. Lives in its own effect keyed on
+  // calendarId so the alternate "See More Times" calendar gets
+  // prefilled too — on swap, React remounts the container with a
+  // new key and this effect re-runs against the new iframe.
+  useEffect(() => {
+    const prefill = getOncehubPrefill();
+    const hasPrefill = !!(prefill.name || prefill.email || prefill.phone);
+    if (!hasPrefill) return;
+
+    let pollHandle: ReturnType<typeof setInterval> | null = null;
+    let attempts = 0;
+    const tryAddPrefill = (): boolean => {
+      const iframe = containerRef.current?.querySelector('iframe') as HTMLIFrameElement | null;
+      if (!iframe || !iframe.src) return false;
+      try {
+        const url = new URL(iframe.src);
+        let changed = false;
+        const setIfAbsent = (key: string, value: string) => {
+          if (!url.searchParams.has(key)) {
+            url.searchParams.set(key, value);
+            changed = true;
+          }
+        };
+        if (prefill.name) {
+          setIfAbsent('name', prefill.name);
+          const parts = prefill.name.split(/\s+/).filter(Boolean);
+          if (parts[0]) setIfAbsent('first_name', parts[0]);
+          if (parts.length > 1) setIfAbsent('last_name', parts.slice(1).join(' '));
+        }
+        if (prefill.email) {
+          setIfAbsent('email', prefill.email);
+        }
+        if (prefill.phone) {
+          setIfAbsent('phone', prefill.phone);
+          setIfAbsent('mobile', prefill.phone);
+          setIfAbsent('mobile_phone', prefill.phone);
+          setIfAbsent('phone_number', prefill.phone);
+          setIfAbsent('cellphone', prefill.phone);
+          const e164 = prefill.phone.replace(/[\s()-]/g, '');
+          if (e164 !== prefill.phone) {
+            url.searchParams.set('phone', e164);
+            url.searchParams.set('mobile', e164);
+            url.searchParams.set('mobile_phone', e164);
+            changed = true;
+          }
+        }
+        if (changed) iframe.src = url.toString();
+      } catch { /* no-op */ }
+      return true;
+    };
+    pollHandle = setInterval(() => {
+      attempts++;
+      if (tryAddPrefill() || attempts > 60) {
+        if (pollHandle) clearInterval(pollHandle);
+      }
+    }, 100);
+
+    return () => {
+      if (pollHandle) clearInterval(pollHandle);
+    };
+  }, [calendarId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white">
@@ -440,10 +462,30 @@ export function Book() {
               <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below, spots fill up fast!</p>
             </div>
             <div
+              key={calendarId}
               ref={containerRef}
-              data-oh-booking-calendar-id={ONCEHUB_CALENDAR_ID}
+              data-oh-booking-calendar-id={calendarId}
               style={{ minWidth: 320, height: 'max(380px, min(700px, calc(100dvh - 250px)))' }}
             />
+            {/* "See More Times" footer — swaps the embed to the
+                fallback calendar on click. Hidden once the fallback
+                is already showing. React's key prop forces the
+                container above to unmount/remount so OnceHub's
+                embed.js picks up the new data-oh-booking-calendar-id
+                and mounts a fresh iframe. */}
+            {!showingFallback && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCalendarId(FALLBACK_CALENDAR_ID);
+                  trackEvent('booking_see_more_times_clicked', { booking_type: 'closer' });
+                }}
+                className="w-full flex items-center justify-center gap-1.5 px-5 py-3 text-xs md:text-sm text-gray-700 bg-gradient-to-r from-orange-50 to-amber-50 border-t border-orange-100 hover:from-orange-100 hover:to-amber-100 transition-colors cursor-pointer"
+              >
+                <span>Can't find a time that works for you?</span>
+                <span className="font-bold text-orange-600 underline">See More Times</span>
+              </button>
+            )}
           </div>
         </div>
 
