@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { identifyUser, trackEvent, trackConversionLead } from '../lib/posthog';
 import { getCleanIdentity, persistIdentity } from '../lib/urlParams';
@@ -199,6 +199,17 @@ export function NewForm() {
   );
   const [dialTouched, setDialTouched] = useState(false);
   const [dialOpen, setDialOpen]       = useState(false);
+  // Free-text filter inside the dial dropdown. Lets the visitor type
+  // "+44", "UK", "GB", "united kingdom", etc. instead of scrolling
+  // the full country list. Reset whenever the dropdown closes so a
+  // stale filter doesn't hide everything on the next open.
+  const [dialSearch, setDialSearch]   = useState('');
+  // True the moment the visitor touches ANY form field (firstname,
+  // lastname, email, phone). Used to bail out of the async country
+  // auto-prefill if they already started filling in — never yank
+  // the dial code out from under someone mid-type.
+  const hasUserTypedRef = useRef(false);
+  const markUserTyped = () => { hasUserTypedRef.current = true; };
   const [deadline] = useState<number>(() => getCountdownDeadline());
   const [, setNow] = useState<number>(() => Date.now());
 
@@ -268,9 +279,12 @@ export function NewForm() {
         source: info.source,
       });
       // Prefill the dial selector from IP country when the visitor
-      // hasn't manually picked one yet. If the detected code isn't in
+      // hasn't manually picked one AND hasn't started filling in
+      // the form at all. If they've already typed into any field,
+      // leave the dial alone — swapping the country code mid-type
+      // would feel broken. If the detected code isn't in
       // COUNTRY_DIAL, findDialByCountryCode falls back to US.
-      if (!dialTouched) {
+      if (!dialTouched && !hasUserTypedRef.current) {
         const match = findDialByCountryCode(info.code);
         setDialCountry(match);
       }
@@ -576,7 +590,7 @@ export function NewForm() {
                     required
                     placeholder="Your First Name..."
                     value={firstname}
-                    onChange={(e) => setFirstname(e.target.value)}
+                    onChange={(e) => { markUserTyped(); setFirstname(e.target.value); }}
                     className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                   />
                 </div>
@@ -594,7 +608,7 @@ export function NewForm() {
                     required
                     placeholder="Your Last Name..."
                     value={lastname}
-                    onChange={(e) => setLastname(e.target.value)}
+                    onChange={(e) => { markUserTyped(); setLastname(e.target.value); }}
                     className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                   />
                 </div>
@@ -614,7 +628,7 @@ export function NewForm() {
                   required
                   placeholder="Your Email Address Here..."
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { markUserTyped(); setEmail(e.target.value); }}
                   className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                 />
               </div>
@@ -652,13 +666,63 @@ export function NewForm() {
                     id="phone"
                     name="phone"
                     type="tel"
-                    autoComplete="tel"
+                    // tel-national hints the browser to autofill ONLY the
+                    // local portion (no country code), since the dial is
+                    // already selected separately to the left. Safari /
+                    // older Chrome may still fall back to a full E.164
+                    // string — the onChange handler below strips the
+                    // leading "+<dial>" as a safety net, and also
+                    // bumps the dial selector if the caller typed a
+                    // different country's prefix.
+                    autoComplete="tel-national"
                     inputMode="tel"
                     enterKeyHint="done"
                     required
                     placeholder="Your Phone Number Here..."
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => {
+                      markUserTyped();
+                      const raw = e.target.value;
+                      // Any leading "+<1-4 digits>" plus optional
+                      // separators → treat as a country-code prefix.
+                      const m = raw.trimStart().match(/^\+(\d{1,4})[\s\-.()]*(.*)$/);
+                      if (m) {
+                        const typedDial = '+' + m[1];
+                        const localPart = m[2];
+                        // If it matches a known dial country, align
+                        // the selector (handy when autofill hands us
+                        // a full international number for a country
+                        // that isn't currently selected) and strip.
+                        const match = COUNTRY_DIAL.find((c) => c.dial === typedDial);
+                        if (match) {
+                          if (match.code !== dialCountry.code) {
+                            setDialCountry(match);
+                            setDialTouched(true);
+                          }
+                          setPhone(localPart);
+                          return;
+                        }
+                        // Unknown "+<dial>" — strip only if it matches
+                        // the currently-selected dial, otherwise leave
+                        // raw so the caller can fix it manually.
+                        if (typedDial === dialCountry.dial) {
+                          setPhone(localPart);
+                          return;
+                        }
+                      }
+                      // Bare US pattern autofill like "1-706-372-5624"
+                      // (no plus) when +1 is already selected — strip
+                      // the leading "1" + separator so we don't
+                      // double-count the country code.
+                      if (dialCountry.dial === '+1') {
+                        const us = raw.trimStart().match(/^1[\s\-.]\s*(\d.*)$/);
+                        if (us && us[1].replace(/\D/g, '').length >= 9) {
+                          setPhone(us[1]);
+                          return;
+                        }
+                      }
+                      setPhone(raw);
+                    }}
                     className="flex-1 min-w-0 px-4 py-3 bg-transparent text-gray-900 placeholder:text-gray-400 outline-none rounded-r-lg"
                   />
 
@@ -668,40 +732,79 @@ export function NewForm() {
                       <button
                         type="button"
                         aria-label="Close country selector"
-                        onClick={() => setDialOpen(false)}
+                        onClick={() => { setDialOpen(false); setDialSearch(''); }}
                         className="fixed inset-0 z-30 cursor-default"
                       />
-                      <ul
-                        role="listbox"
-                        className="absolute z-40 top-full left-0 mt-1 w-72 max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl py-1"
+                      <div
+                        className="absolute z-40 top-full left-0 mt-1 w-72 max-h-72 overflow-hidden bg-white border border-gray-200 rounded-lg shadow-xl flex flex-col"
                       >
-                        {COUNTRY_DIAL.map((c) => {
-                          const selected = c.code === dialCountry.code;
-                          return (
-                            <li key={c.code}>
-                              <button
-                                type="button"
-                                role="option"
-                                aria-selected={selected}
-                                onClick={() => {
-                                  setDialCountry(c);
-                                  setDialTouched(true);
-                                  setDialOpen(false);
-                                  trackEvent('newform_dial_country_changed', {
-                                    from: dialCountry.code,
-                                    to: c.code,
-                                  });
-                                }}
-                                className={`w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-orange-50 cursor-pointer ${selected ? 'bg-orange-50 font-semibold' : ''}`}
-                              >
-                                <span className="text-lg leading-none shrink-0">{c.flag}</span>
-                                <span className="flex-1 min-w-0 truncate text-gray-900">{c.name}</span>
-                                <span className="tabular-nums text-gray-500 shrink-0">{c.dial}</span>
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
+                        {/* Typing filter — lets the caller search by
+                            dial code ("+44"), ISO code ("GB"), or name
+                            ("united kingdom") instead of scrolling. */}
+                        <div className="shrink-0 border-b border-gray-200 bg-white px-2 py-2">
+                          <input
+                            type="text"
+                            value={dialSearch}
+                            onChange={(e) => setDialSearch(e.target.value)}
+                            placeholder="Type +44, UK, or a country name..."
+                            // Keyboard-first UX on desktop; mobile keyboards
+                            // pop up automatically on tap anyway.
+                            autoFocus
+                            className="w-full px-3 py-1.5 text-sm bg-gray-50 border border-gray-300 rounded focus:bg-white focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                          />
+                        </div>
+                        <ul
+                          role="listbox"
+                          className="flex-1 overflow-y-auto py-1"
+                        >
+                          {(() => {
+                            const q = dialSearch.trim().toLowerCase();
+                            const qNoPlus = q.replace(/^\+/, '');
+                            const filtered = q
+                              ? COUNTRY_DIAL.filter((c) =>
+                                  c.name.toLowerCase().includes(q)
+                                  || c.code.toLowerCase().includes(q)
+                                  || c.dial.toLowerCase().includes(q)
+                                  || c.dial.replace(/^\+/, '').startsWith(qNoPlus)
+                                )
+                              : COUNTRY_DIAL;
+                            if (filtered.length === 0) {
+                              return (
+                                <li className="px-4 py-3 text-sm text-gray-500 text-center">
+                                  No countries match
+                                </li>
+                              );
+                            }
+                            return filtered.map((c) => {
+                              const selected = c.code === dialCountry.code;
+                              return (
+                                <li key={c.code}>
+                                  <button
+                                    type="button"
+                                    role="option"
+                                    aria-selected={selected}
+                                    onClick={() => {
+                                      setDialCountry(c);
+                                      setDialTouched(true);
+                                      setDialOpen(false);
+                                      setDialSearch('');
+                                      trackEvent('newform_dial_country_changed', {
+                                        from: dialCountry.code,
+                                        to: c.code,
+                                      });
+                                    }}
+                                    className={`w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-orange-50 cursor-pointer ${selected ? 'bg-orange-50 font-semibold' : ''}`}
+                                  >
+                                    <span className="text-lg leading-none shrink-0">{c.flag}</span>
+                                    <span className="flex-1 min-w-0 truncate text-gray-900">{c.name}</span>
+                                    <span className="tabular-nums text-gray-500 shrink-0">{c.dial}</span>
+                                  </button>
+                                </li>
+                              );
+                            });
+                          })()}
+                        </ul>
+                      </div>
                     </>
                   )}
                 </div>
