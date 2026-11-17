@@ -40,6 +40,48 @@ export function classifyAudience(countryCode: string): Audience {
   return TARGET_COUNTRIES.has(countryCode.toUpperCase()) ? 'target' : 'non_target';
 }
 
+/* ─── Region bucket for the application page ───────────────────────
+   Collapses the ISO country code into one of five market buckets
+   used by the Typeform application form (via ?region= in the URL):
+
+     USA       - US only
+     Canada    - CA only
+     Europe    - the whole European list PLUS Israel, Qatar, UAE
+                 (grouped there per business routing, not geography)
+     Australia - AU, NZ, Japan
+     Other     - everything else, including unknown / empty
+
+   Only this list drives the bucket — adjust here and every page
+   that reads region picks it up.
+──────────────────────────────────────────────────────────────────── */
+export type Region = 'USA' | 'Canada' | 'Europe' | 'Australia' | 'Other';
+
+const EUROPE_REGION = new Set([
+  // Geographic Europe
+  'AL','AD','AT','BY','BE','BA','BG','HR','CY','CZ','DK','EE','FI','FR',
+  'DE','GR','HU','IS','IE','IT','XK','LV','LI','LT','LU','MT','MD','MC',
+  'ME','NL','MK','NO','PL','PT','RO','RU','SM','RS','SK','SI','ES','SE',
+  'CH','UA','GB','VA',
+  // Routed to Europe per business rules, not geography
+  'IL', 'QA', 'AE',
+]);
+
+const AUSTRALIA_REGION = new Set([
+  'AU', 'NZ',
+  // Japan routed to Australia per business rules
+  'JP',
+]);
+
+export function countryToRegion(countryCode: string | null | undefined): Region {
+  if (!countryCode) return 'Other';
+  const code = countryCode.toUpperCase().trim();
+  if (code === 'US') return 'USA';
+  if (code === 'CA') return 'Canada';
+  if (EUROPE_REGION.has(code)) return 'Europe';
+  if (AUSTRALIA_REGION.has(code)) return 'Australia';
+  return 'Other';
+}
+
 export interface CountryInfo {
   code: string;          // "US"
   name: string;          // "United States" (best-effort)

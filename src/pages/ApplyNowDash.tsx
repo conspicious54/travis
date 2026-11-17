@@ -5,6 +5,7 @@ import { identifyUser, trackEvent, trackConversionApplication } from '../lib/pos
 import { useTabUrgency } from '../lib/useTabUrgency';
 import { getCleanIdentity, getMergedIdentity } from '../lib/urlParams';
 import { persistUtmsFromUrl, readAttribution, syncContactUtms } from '../lib/syncUtm';
+import { countryToRegion } from '../lib/detectCountry';
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
@@ -38,6 +39,30 @@ export function ApplyNowDash() {
   const formRef = useRef<HTMLDivElement>(null);
   const typeformStartedFiredRef = useRef(false);
   const typeformCompletedFiredRef = useRef(false);
+
+  // Ensure ?region= is in the URL so the Typeform application form
+  // (which reads region from the URL query directly) picks it up.
+  // Fired once on first render, synchronously, so the rewrite happens
+  // before Typeform's async embed script processes the page. If a
+  // caller already set region, we leave it alone. If country_code is
+  // missing, we leave the URL untouched — no region beats a wrong one.
+  const regionEnsuredRef = useRef(false);
+  if (typeof window !== 'undefined' && !regionEnsuredRef.current) {
+    regionEnsuredRef.current = true;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get('region')) {
+      const cc = params.get('country_code');
+      if (cc) {
+        params.set('region', countryToRegion(cc));
+        const q = params.toString();
+        history.replaceState(
+          null,
+          '',
+          `${window.location.pathname}${q ? '?' + q : ''}${window.location.hash}`,
+        );
+      }
+    }
+  }
 
   // Pull attention back when the visitor switches tabs mid-application
   useTabUrgency('👋 Come back - finish your application!', 'applynow');

@@ -4,6 +4,7 @@ import { ArrowDown, CheckCircle2 } from 'lucide-react';
 import { identifyUser, trackEvent, useFeatureFlag } from '../lib/posthog';
 import { getCleanIdentity, getMergedIdentity } from '../lib/urlParams';
 import { persistUtmsFromUrl, readAttribution } from '../lib/syncUtm';
+import { countryToRegion } from '../lib/detectCountry';
 import { useTabUrgency } from '../lib/useTabUrgency';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
@@ -578,6 +579,11 @@ export function NextStep() {
     for (const [k, v] of Object.entries(attribution)) {
       if (v) out.set(k, v);
     }
+    // Region bucket for the application Typeform. Classifies the
+    // incoming country_code into USA/Canada/Europe/Australia/Other
+    // (Israel/Qatar/UAE → Europe; Japan/NZ → Australia). Typeform
+    // reads region from the URL query directly.
+    out.set('region', countryToRegion(incoming.get('country_code')));
     return out.toString() ? `${PRIMARY_CTA_DESTINATION}?${out.toString()}` : PRIMARY_CTA_DESTINATION;
   }, []);
 
