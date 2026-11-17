@@ -5,6 +5,7 @@ import { syncContactTimezone } from '../lib/syncTimezone';
 import { persistUtmsFromUrl, syncContactUtms } from '../lib/syncUtm';
 import { getCleanParam, getCleanIdentity } from '../lib/urlParams';
 import { readLeadScoreFromUrl } from '../lib/leadScore';
+import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import {
   emitBookedCallConversion,
@@ -509,6 +510,7 @@ export function Book() {
           </p>
         </div>
       </div>
+      <ExitIntentPopup theme="light" />
       <LegalDisclaimer />
     </div>
   );

@@ -15,11 +15,18 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
   const location = useLocation();
   const isLight = theme === 'light';
   const isBookingPage = location.pathname === '/bookacall';
+  const isBookPage = location.pathname === '/book';
   const isTrainingPage = location.pathname === '/training';
   const isNextStepPage = location.pathname === '/nextstep';
   const isApplyNowPage = location.pathname === '/applynow';
   const isGetStartedPage = location.pathname === '/getstarted';
   const isNewFormPage = location.pathname === '/' || location.pathname === '/newform';
+  // On /book, ?calendar=more means the visitor already clicked
+  // through to the fallback calendar once. A second exit-intent
+  // trigger escalates past "try a different calendar" to "talk
+  // to our team" (the setter calendar at /bookacall).
+  const showingBookFallback = isBookPage
+    && new URLSearchParams(location.search).get('calendar') === 'more';
 
   /* Personalization name - URL-first with localStorage fallback
      so the popup uses the visitor's name even when URL params got
@@ -60,6 +67,74 @@ export const ExitIntentPopup: React.FC<ExitIntentPopupProps> = ({ theme = 'dark'
     setShowExitPopup(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // /book exit popup — two states driven by ?calendar=more.
+  //   PRIMARY  (no calendar param): "Can't find a time?" → click
+  //            swaps to /book?calendar=more (the fallback OnceHub
+  //            calendar). Same destination as the "See More Times"
+  //            footer under the frame.
+  //   FALLBACK (calendar=more): "Still can't find a time?" → click
+  //            escalates to /bookacall, the setter calendar where
+  //            a human sorts out scheduling with them.
+  // Must come BEFORE the generic isBookingPage branch so the
+  // dedicated copy wins on /book.
+  if (isBookPage) {
+    const goToNextTier = () => {
+      const current = new URL(window.location.href);
+      if (showingBookFallback) {
+        // Escalate to the setter calendar. Preserve identity + UTM
+        // params so /bookacall can still identify the visitor, but
+        // drop the calendar=more flag that only means something on
+        // /book.
+        const params = new URLSearchParams(current.search);
+        params.delete('calendar');
+        const qs = params.toString();
+        window.location.href = `/bookacall${qs ? '?' + qs : ''}`;
+      } else {
+        // Swap to the fallback calendar on /book via a full
+        // reload — same path that the "See More Times" footer
+        // button uses (OnceHub's embed loader has no re-scan hook,
+        // so an in-place swap leaves the fallback div blank).
+        current.searchParams.set('calendar', 'more');
+        window.location.href = current.toString();
+      }
+    };
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div
+          className="absolute inset-0 bg-gray-500/40 backdrop-blur-sm"
+          onClick={() => setShowExitPopup(false)}
+        />
+        <div className="relative bg-white border border-gray-200 rounded-2xl p-7 md:p-8 max-w-lg w-full shadow-2xl animate-popup">
+          <button
+            onClick={() => setShowExitPopup(false)}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close"
+          >
+            <X size={24} />
+          </button>
+          <div className="text-center">
+            <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight mb-3">
+              {showingBookFallback
+                ? "Still can't find a time that works?"
+                : "Can't find a time that works for you?"}
+            </h2>
+            <p className="text-base md:text-lg text-gray-600 mb-6">
+              {showingBookFallback
+                ? "Hop on a quick call with our team instead — we'll find a slot that fits your schedule."
+                : "We've got more availability on a different calendar. One click to see more times."}
+            </p>
+            <button
+              onClick={goToNextTier}
+              className="w-full bg-green-500 hover:bg-green-600 text-white text-base md:text-lg font-black tracking-tight px-6 py-4 rounded-xl shadow-lg shadow-green-500/30 transition-all hover:shadow-xl active:translate-y-0 cursor-pointer"
+            >
+              {showingBookFallback ? 'Talk To Our Team' : 'See More Times'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Booking page exit popup
   if (isBookingPage || isTrainingPage || isNextStepPage) {
