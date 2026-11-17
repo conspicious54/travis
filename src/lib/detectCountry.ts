@@ -54,7 +54,7 @@ export function classifyAudience(countryCode: string): Audience {
    Only this list drives the bucket — adjust here and every page
    that reads region picks it up.
 ──────────────────────────────────────────────────────────────────── */
-export type Region = 'USA' | 'Canada' | 'Europe' | 'Australia' | 'Other';
+export type Region = 'USA1' | 'Canada1' | 'Europe1' | 'Australia1' | 'Other1';
 
 const EUROPE_REGION = new Set([
   // Geographic Europe
@@ -73,13 +73,13 @@ const AUSTRALIA_REGION = new Set([
 ]);
 
 export function countryToRegion(countryCode: string | null | undefined): Region {
-  if (!countryCode) return 'Other';
+  if (!countryCode) return 'Other1';
   const code = countryCode.toUpperCase().trim();
-  if (code === 'US') return 'USA';
-  if (code === 'CA') return 'Canada';
-  if (EUROPE_REGION.has(code)) return 'Europe';
-  if (AUSTRALIA_REGION.has(code)) return 'Australia';
-  return 'Other';
+  if (code === 'US') return 'USA1';
+  if (code === 'CA') return 'Canada1';
+  if (EUROPE_REGION.has(code)) return 'Europe1';
+  if (AUSTRALIA_REGION.has(code)) return 'Australia1';
+  return 'Other1';
 }
 
 export interface CountryInfo {
