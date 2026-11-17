@@ -32,14 +32,14 @@ const TYPEFORM_LIVE_ID = '01KMGF6YH9HXWD39CSVYN96VB8';
 // Typeform needs real vertical room - too short and the question
 // area, the OK/next button, and the bottom progress bar get
 // crowded or cut off entirely on multi-choice questions.
-// Fixed frame tall enough to fit the longest question in the
-// assessment (Q10: 4 options + required asterisk + OK button +
-// Typeform's bottom chrome). DO NOT clamp this against viewport
-// height — if the frame is shorter than the content, Typeform
-// clips the OK button and the form becomes impossible to submit.
-// Page scroll on short viewports is strictly better than a
-// cropped CTA.
-const TYPEFORM_HEIGHT_PX = 820;
+// Fixed frame tall enough to fit the LONGEST question in the
+// assessment (multi-option questions on mobile wrap to 2-3 lines
+// each) plus the OK button plus Typeform's bottom chrome. DO NOT
+// clamp this against viewport height — on a short viewport the
+// clamp evaluates to a short frame that crops the submit button
+// and makes the form impossible to complete. Page scroll on short
+// viewports is strictly better than a cropped CTA. Err tall.
+const TYPEFORM_HEIGHT_PX = 960;
 
 const GROUP_PHOTO_URL  = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisGroup.jpg';
 const TRAVIS_STAGE_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisStage.jpg';
