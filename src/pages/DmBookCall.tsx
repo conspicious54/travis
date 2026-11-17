@@ -305,10 +305,10 @@ export function DmBookCall() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-4 md:py-6">
+      <div className="max-w-4xl mx-auto px-4 py-1 md:py-6">
         {/* Qualified celebration */}
         <div className="text-center mb-5 md:mb-6">
-          <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-green-700 mb-3">
+          <div className="hidden md:inline-flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-green-700 mb-3">
             <CheckCircle className="w-3.5 h-3.5" />
             You Qualified
           </div>
@@ -318,7 +318,7 @@ export function DmBookCall() {
           </h1>
 
           <p
-            className="text-gray-600 mx-auto whitespace-nowrap"
+            className="hidden md:block text-gray-600 mx-auto whitespace-nowrap"
             style={{ fontSize: 'clamp(0.625rem, min(2.4vw, 1.5dvh), 1.125rem)' }}
           >
             You're about to get on a call with Travis or one of his top coaches.
@@ -329,20 +329,21 @@ export function DmBookCall() {
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-400/20 via-amber-400/20 to-orange-400/20 rounded-3xl blur-xl" />
           <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
+            <div className="hidden md:flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
               <Sparkles className="w-4 h-4 text-orange-600" />
               <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below, spots fill up fast!</p>
             </div>
             <div
               ref={containerRef}
               data-oh-booking-calendar-id={ONCEHUB_CALENDAR_ID}
-              style={{ minWidth: 320, height: 'max(380px, min(700px, calc(100dvh - 250px)))' }}
+              style={{ minWidth: 320 }}
+              className="h-[max(380px,min(700px,calc(100dvh_-_160px)))] md:h-[max(380px,min(700px,calc(100dvh_-_250px)))]"
             />
           </div>
         </div>
 
         {/* Reassurance below the embed */}
-        <div className="text-center mt-8 max-w-xl mx-auto">
+        <div className="hidden md:block text-center mt-8 max-w-xl mx-auto">
           <p className="text-sm text-gray-500">
             After you book, you'll get a confirmation page with everything you need to prepare for your call - plus stories from real students who started exactly where you are.
           </p>
