@@ -32,7 +32,14 @@ const TYPEFORM_LIVE_ID = '01KMGF6YH9HXWD39CSVYN96VB8';
 // Typeform needs real vertical room - too short and the question
 // area, the OK/next button, and the bottom progress bar get
 // crowded or cut off entirely on multi-choice questions.
-const TYPEFORM_HEIGHT_PX = 680;
+// Fixed frame tall enough to fit the longest question in the
+// assessment (Q10: 4 options + required asterisk + OK button +
+// Typeform's bottom chrome). DO NOT clamp this against viewport
+// height — if the frame is shorter than the content, Typeform
+// clips the OK button and the form becomes impossible to submit.
+// Page scroll on short viewports is strictly better than a
+// cropped CTA.
+const TYPEFORM_HEIGHT_PX = 820;
 
 const GROUP_PHOTO_URL  = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisGroup.jpg';
 const TRAVIS_STAGE_URL = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/TravisStage.jpg';
@@ -337,12 +344,12 @@ export function ApplyNow() {
             <div
               data-tf-live={TYPEFORM_LIVE_ID}
               data-tf-hidden={hiddenFields}
-              style={{ height: `min(${TYPEFORM_HEIGHT_PX}px, calc(100vh - 120px))` }}
+              style={{ height: `${TYPEFORM_HEIGHT_PX}px` }}
               className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
             />
           ) : (
             <div
-              style={{ height: `min(${TYPEFORM_HEIGHT_PX}px, calc(100vh - 120px))` }}
+              style={{ height: `${TYPEFORM_HEIGHT_PX}px` }}
               className="bg-gray-50 rounded-xl border border-dashed border-gray-300 flex items-center justify-center text-center px-6"
             >
               <div className="max-w-sm">
