@@ -112,6 +112,17 @@ export function Book() {
     window.location.href = url.toString();
   };
 
+  // Mobile: calendar opens as a full-screen lightbox from a button
+  // on the card. The inline embed is desktop-only — on phones the
+  // stacked calendar + time list is too tall for a reasonable
+  // container, and the embed-internal scroll was unclear.
+  const modalContainerRef = useRef<HTMLDivElement>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const openModal = () => {
+    trackEvent('booking_mobile_lightbox_opened', { booking_type: 'closer' });
+    setModalOpen(true);
+  };
+
   useEffect(() => {
     persistTypeformAnswers();
     persistUtmsFromUrl();
@@ -144,7 +155,10 @@ export function Book() {
       // oncehub.com / scheduleonce.com over HTTPS, AND the message
       // must come from the exact iframe we embedded.
       if (!isAllowedOnceHubOrigin(event.origin)) return;
-      if (!isFromOnceHubIframe(event, containerRef.current)) return;
+      if (
+        !isFromOnceHubIframe(event, containerRef.current) &&
+        !isFromOnceHubIframe(event, modalContainerRef.current)
+      ) return;
       const origin = event.origin;
 
       // Diagnostic - log every OnceHub postMessage to PostHog so we can
@@ -427,6 +441,58 @@ export function Book() {
     };
   }, []);
 
+  // Mobile-only: when the lightbox modal opens, inject the OnceHub
+  // iframe into its container. We build the iframe by hand (same
+  // src pattern as the embed loader uses) because the loader only
+  // scans the DOM once on initial page load — a modal container
+  // added later wouldn't get an iframe otherwise. The iframe is
+  // destroyed on close by the conditional render, and re-created
+  // on the next open; prefill still lands via the query string.
+  useEffect(() => {
+    if (!modalOpen) return;
+    const container = modalContainerRef.current;
+    if (!container) return;
+    if (container.querySelector('iframe')) return;
+
+    const url = new URL(`https://oncehub.com/c/${calendarId}`);
+    url.searchParams.set('embed_type', 'inline');
+    const parentSearch = new URLSearchParams(window.location.search);
+    parentSearch.forEach((v, k) => {
+      if (!url.searchParams.has(k)) url.searchParams.set(k, v);
+    });
+    const prefill = getOncehubPrefill();
+    if (prefill.name) {
+      url.searchParams.set('name', prefill.name);
+      const parts = prefill.name.split(/\s+/).filter(Boolean);
+      if (parts[0]) url.searchParams.set('first_name', parts[0]);
+      if (parts.length > 1) url.searchParams.set('last_name', parts.slice(1).join(' '));
+    }
+    if (prefill.email) url.searchParams.set('email', prefill.email);
+    if (prefill.phone) {
+      const e164 = prefill.phone.replace(/[\s()-]/g, '');
+      url.searchParams.set('phone', e164);
+      url.searchParams.set('mobile', e164);
+      url.searchParams.set('mobile_phone', e164);
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.src = url.toString();
+    iframe.setAttribute('width', '100%');
+    iframe.setAttribute('height', '100%');
+    iframe.setAttribute('frameborder', '0');
+    iframe.style.cssText = 'display: block; height: 100%; width: 100%; border: 0';
+    container.appendChild(iframe);
+  }, [modalOpen, calendarId]);
+
+  // Lock body scroll while the lightbox is open so touch drags
+  // inside the calendar don't scroll the page behind it.
+  useEffect(() => {
+    if (!modalOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [modalOpen]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white">
       {/* Step bar */}
@@ -478,12 +544,31 @@ export function Book() {
               <Sparkles className="w-4 h-4 text-orange-600" />
               <p className="text-xs md:text-sm font-bold text-gray-900">Pick a time below, spots fill up fast!</p>
             </div>
+            {/* Desktop keeps the inline OnceHub embed — plenty of room
+                for the stacked calendar + time list, no scroll ambiguity. */}
             <div
               ref={containerRef}
               data-oh-booking-calendar-id={calendarId}
               style={{ minWidth: 320 }}
-              className="h-[1100px] md:h-[max(380px,min(700px,calc(100dvh_-_250px)))]"
+              className="hidden md:block md:h-[max(380px,min(700px,calc(100dvh_-_250px)))]"
             />
+
+            {/* Mobile: single button that opens the OnceHub calendar as
+                a full-screen lightbox. Avoids the cramped embed-internal
+                scroll on phones. */}
+            <div className="md:hidden px-6 pt-8 pb-7 text-center">
+              <div className="inline-flex items-center gap-2 mb-5">
+                <Sparkles className="w-4 h-4 text-orange-600" />
+                <p className="text-sm font-bold text-gray-900">Spots fill up fast!</p>
+              </div>
+              <button
+                type="button"
+                onClick={openModal}
+                className="w-full py-5 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white font-black text-lg rounded-xl shadow-lg transition-colors"
+              >
+                Pick Your Time →
+              </button>
+            </div>
             {/* "See More Times" footer — reloads /book with
                 ?calendar=more so the fallback calendar mounts via
                 the normal first-load path (OnceHub's embed loader
@@ -510,6 +595,30 @@ export function Book() {
           </p>
         </div>
       </div>
+      {/* Mobile-only lightbox hosting the OnceHub calendar iframe.
+          The iframe is injected by a useEffect above; here we just
+          own the full-screen chrome around it. */}
+      {modalOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-50 bg-white flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pick your time"
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white shrink-0">
+            <span className="text-sm font-bold text-gray-900">Pick your time</span>
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-900 text-3xl leading-none"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+          <div ref={modalContainerRef} className="flex-1 w-full min-h-0" />
+        </div>
+      )}
       <ExitIntentPopup theme="light" />
       <LegalDisclaimer />
     </div>
