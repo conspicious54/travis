@@ -31,7 +31,7 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 /* ─── Config - tune as needed ──────────────────────────────────── */
 const PRIMARY_CTA_DESTINATION = '/applynow';
-const UNLOCK_DURATION_MS = 45 * 1000; // 45 seconds
+const UNLOCK_DURATION_MS = 20 * 1000; // 20 seconds
 const UNLOCK_STORAGE_KEY = 'pp_nextstep_unlock_started_at';
 // Green CTAs behave conditionally: BEFORE the unlock timer expires,
 // clicking a green CTA scrolls the visitor back up to the video
