@@ -482,7 +482,7 @@ export function Book() {
               ref={containerRef}
               data-oh-booking-calendar-id={calendarId}
               style={{ minWidth: 320 }}
-              className="h-[max(380px,min(700px,calc(100dvh_-_160px)))] md:h-[max(380px,min(700px,calc(100dvh_-_250px)))]"
+              className="h-[1100px] md:h-[max(380px,min(700px,calc(100dvh_-_250px)))]"
             />
             {/* "See More Times" footer — reloads /book with
                 ?calendar=more so the fallback calendar mounts via
