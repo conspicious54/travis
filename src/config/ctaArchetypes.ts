@@ -60,21 +60,22 @@ export const CTA_ARCHETYPE_COPY: Record<Exclude<CtaArchetype, 'default'>, Archet
     newform_button: "LET'S WORK WITH TRAVIS",
     nextstep_button: "Yes! Start My Application",
   },
-  /* Topic-based types: the viewer came for a different business model,
-     so the copy acknowledges that and invites them to compare, rather
-     than assuming they already want Amazon FBA. These win over the
-     pitch-based types above. */
+  /* Topic-based types: the viewer came for a different business model.
+     Still send them straight into the Amazon funnel, but word it as an
+     invitation ("too", "curious?") rather than assuming Amazon FBA is
+     what they came for. No comparisons. These win over the pitch-based
+     types above. */
   dropshipping: {
     label: 'Dropshipping video',
     promise: 'Video about dropshipping (viewer came for a different model)',
-    newform_button: 'SEE WHY AMAZON WINS',
-    nextstep_button: 'Explore Owning My Own Brand',
+    newform_button: 'EXPLORE AMAZON FBA TOO',
+    nextstep_button: "I'm Curious, Show Me More",
   },
   affiliate: {
     label: 'Affiliate / website-tool video',
     promise: 'Affiliate marketing, web hosting, WordPress / WooCommerce tutorials',
-    newform_button: 'SELL MY OWN PRODUCTS',
-    nextstep_button: 'Explore Selling My Own Product',
+    newform_button: 'CURIOUS? SEE AMAZON FBA',
+    nextstep_button: "Yes, I'm Open To Amazon FBA",
   },
 };
 

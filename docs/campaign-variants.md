@@ -125,13 +125,13 @@ No row per video needed.
 | `call` | Pitches a free strategy / coaching / one-on-one call | CLAIM MY FREE CALL | Get My Free Strategy Call |
 | `program` | Pitches the Accelerator / mentorship program | YES, I'M READY TO START | Yes! Help Me Build My Business |
 | `apply` | "Work with us" / "I want to hire / invest in you" | LET'S WORK WITH TRAVIS | Yes! Start My Application |
-| `dropshipping` | Topic is dropshipping (came for a different model) | SEE WHY AMAZON WINS | Explore Owning My Own Brand |
-| `affiliate` | Topic is affiliate marketing / hosting / WordPress / WooCommerce | SELL MY OWN PRODUCTS | Explore Selling My Own Product |
+| `dropshipping` | Topic is dropshipping (came for a different model) | EXPLORE AMAZON FBA TOO | I'm Curious, Show Me More |
+| `affiliate` | Topic is affiliate marketing / hosting / WordPress / WooCommerce | CURIOUS? SEE AMAZON FBA | Yes, I'm Open To Amazon FBA |
 | `default` | Free course / training, other affiliate-tool videos, unknown | SIGN UP TO WATCH NOW | running A/B test copy |
 
 Topic types (`dropshipping`, `affiliate`) win over pitch types: those
-viewers came for something else, so the copy invites them to compare
-instead of assuming they already want Amazon FBA.
+viewers came for something else, so the copy still goes straight into
+the Amazon funnel but is worded as an invitation, not an assumption.
 
 ### Files
 
