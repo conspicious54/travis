@@ -102,6 +102,7 @@ function readFirstTouchProps(): Record<string, any> {
 }
 
 import { isPlaceholder, isValidEmail } from './urlParams';
+import { getStoredVideoCtaProps } from './videoCtaStorage';
 
 /* HubSpot tracking + GTM dataLayer types. The HS embed snippet in
    index.html stubs window._hsq as soon as it executes; the GTM
@@ -292,9 +293,14 @@ export function setActiveExperimentsReader(reader: () => string[]): void {
 
 export function trackEvent(event: string, properties?: Record<string, any>) {
   const active = activeExperimentsReader ? activeExperimentsReader() : [];
+  // Source-video CTA type (cta_archetype + source_video_id) once this
+  // tab was matched to a known YouTube video — see src/lib/videoCta.ts.
+  // Explicit event properties win.
+  const videoProps = getStoredVideoCtaProps();
+  const base = Object.keys(videoProps).length > 0 ? { ...videoProps, ...properties } : properties;
   const enriched = active.length > 0
-    ? { ...properties, active_experiments: active }
-    : properties;
+    ? { ...base, active_experiments: active }
+    : base;
   ph()?.capture(event, enriched);
 }
 

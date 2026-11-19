@@ -105,20 +105,80 @@ lead magnet, hide the offer box, and re-word the CTA (e.g.
 
 ## Sample data
 
-The three sample rows currently in `campaignVariants.ts` are
-labeled `[SAMPLE]` in their `internal_name`. Delete them or turn
-`active: false` before shipping real campaign copy.
+The three sample rows in `campaignVariants.ts` are labeled
+`[SAMPLE]` and set to `active: false`. Copy one as a template.
 
-## Later extensions (not built yet)
+---
 
-- **Different funnel destinations per variant.** Right now every
-  submission goes to `/router`. A variant-specific destination
-  could be added by threading `variant.redirect_to` through the
-  submit handler.
-- **Move config to Netlify Blobs / a headless CMS** so non-devs
-  can edit variants without a git commit. The matcher already
-  reads from an in-memory table — swap the source module without
-  changing consumers.
-- **Instagram-specific variants** — same mechanism, just add rows
-  with `utm_source: 'instagram'` once the agency coordinates
-  outbound tagging.
+## Source-video CTA buttons (per-video, automatic)
+
+Separate from the hand-written variants above. Built on the existing
+YouTube UTM mapping: every video description links to the funnel as
+`?utm_source=youtube&utm_campaign=<slug>`, with slugs assigned in the
+**UTM Tags Tracker** tab of "Effective Ecommerce - Big Sheet". Each
+slug is tagged with a **CTA type**, and the funnel's buttons echo it.
+No row per video needed.
+
+| Type | Video | `/` button | `/nextstep` button |
+|---|---|---|---|
+| `call_plan` | Pitches a free call + custom 90-day / 6-month game plan | GET MY FREE GAME PLAN | Build My Free Game Plan |
+| `call` | Pitches a free strategy / coaching / one-on-one call | CLAIM MY FREE CALL | Get My Free Strategy Call |
+| `program` | Pitches the Accelerator / mentorship program | YES, I'M READY TO START | Yes! Help Me Build My Business |
+| `apply` | "Work with us" / "I want to hire / invest in you" | COUNT ME IN — LET'S TALK | I'm In — Start My Application |
+| `dropshipping` | Topic is dropshipping (came for a different model) | COMPARE TO DROPSHIPPING | Explore Owning My Own Brand |
+| `affiliate` | Topic is affiliate marketing / hosting / WordPress / WooCommerce | SEE ANOTHER WAY TO EARN | Explore Selling My Own Product |
+| `default` | Free course / training, other affiliate-tool videos, unknown | SIGN UP TO WATCH NOW | running A/B test copy |
+
+Topic types (`dropshipping`, `affiliate`) win over pitch types: those
+viewers came for something else, so the copy invites them to compare
+instead of assuming they already want Amazon FBA.
+
+### Files
+
+| File | Purpose |
+|---|---|
+| [`src/config/ctaArchetypes.ts`](../src/config/ctaArchetypes.ts) | Button copy per type — edit copy here |
+| [`data/youtube-utm-tags.csv`](../data/youtube-utm-tags.csv) | Snapshot of the UTM Tags Tracker (video → slug) |
+| [`src/config/videoCtas.ts`](../src/config/videoCtas.ts) | **Generated** slug → type table |
+| [`src/config/videoCtaOverrides.ts`](../src/config/videoCtaOverrides.ts) | Hand-edited per-slug overrides (win over generated) |
+| [`scripts/build_video_ctas.py`](../scripts/build_video_ctas.py) | Rebuilds `videoCtas.ts` from both sheets |
+| [`src/lib/videoCta.ts`](../src/lib/videoCta.ts) | Resolver used by `/` and `/nextstep` |
+
+### Matching
+
+`utm_source=youtube` + a known `utm_campaign` slug, lowercased and
+trimmed (same rules as the campaign variants above). The match is
+stored in sessionStorage (`pp_cta_archetype`, `pp_source_video_id`)
+and forwarded by `newform-post` on the 302 (`source_video_id`,
+`cta_archetype`), so `/nextstep` keeps it.
+
+**Preview any type** without a real link: `?cta_archetype=program`
+(or any type name above).
+
+### Precedence
+
+On `/`: campaign variant `cta_text` → video type → default.
+On `/nextstep`: video type → `nextstep-cta-copy-test` arm.
+
+### Adding new videos
+
+1. Add the video's slug to the UTM Tags Tracker (as you already do),
+   and its CTA to the CTA sheet.
+2. Download the UTM Tags Tracker tab as CSV over
+   `data/youtube-utm-tags.csv`.
+3. `python3 scripts/build_video_ctas.py ~/Downloads/travis-ctas.xlsx`
+   — it also lists CTA-sheet videos that have no slug yet.
+4. Review the diff of `src/config/videoCtas.ts`, commit, push.
+
+Wrong type for one video? Add its slug to `videoCtaOverrides.ts`.
+
+### Tracking
+
+Once matched, every custom PostHog event in the tab carries
+`cta_archetype` and `source_video_id` (enriched in `trackEvent`),
+including `applynow_page_viewed` and `booking_completed`. The
+`/newform` submission (Zapier payload) carries both fields too.
+
+When reading the `nextstep-cta-copy-test` results, filter
+`cta_archetype is not set` — matched visitors see their type's copy,
+not the test arm.

@@ -142,6 +142,9 @@ function buildRedirectUrl(audience: 'target' | 'non_target', body: Record<string
     'gclid', 'fbclid', 'ttclid', 'gbraid', 'wbraid', 'li_fat_id',
     '_fbp', '_fbc',
     'campaign_variant_id', 'lead_magnet_id',
+    // Source-video CTA type (src/lib/videoCta.ts) so /nextstep keeps
+    // the matching button copy even without sessionStorage.
+    'source_video_id', 'cta_archetype',
   ];
   for (const key of forwardFields) {
     const v = (body[key] || '').trim();
@@ -177,6 +180,8 @@ interface ZapierPayload {
   campaign_variant_id: string;
   lead_magnet_id: string;
   lead_magnet_delivery: string;
+  source_video_id: string;
+  cta_archetype: string;
   dial_country: string;
   dial_code: string;
   dial_touched: boolean;
@@ -307,6 +312,8 @@ export const handler: Handler = async (event: HandlerEvent) => {
     campaign_variant_id: s(body.campaign_variant_id),
     lead_magnet_id: s(body.lead_magnet_id),
     lead_magnet_delivery: s(body.lead_magnet_delivery),
+    source_video_id: s(body.source_video_id),
+    cta_archetype: s(body.cta_archetype),
     dial_country: s(body.dial_country),
     dial_code: s(body.dial_code),
     dial_touched: body.dial_touched === 'true' || body.dial_touched === '1',

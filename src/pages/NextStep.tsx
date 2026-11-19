@@ -5,6 +5,7 @@ import { identifyUser, trackEvent, useFeatureFlag } from '../lib/posthog';
 import { getCleanIdentity, getMergedIdentity } from '../lib/urlParams';
 import { persistUtmsFromUrl, readAttribution } from '../lib/syncUtm';
 import { countryToRegion } from '../lib/detectCountry';
+import { loadVideoCta } from '../lib/videoCta';
 import { useTabUrgency } from '../lib/useTabUrgency';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
@@ -540,8 +541,15 @@ export function NextStep() {
      Goal event: applynow_page_viewed (did the click actually
      advance them to the next step). */
   const ctaCopyVariant = useFeatureFlag('nextstep-cta-copy-test');
+  /* Source-video CTA type (src/lib/videoCta.ts) wins over the A/B arm
+     for visitors who came from a known YouTube video, so the button
+     echoes that video's pitch. Those visitors carry cta_archetype on
+     every event (trackEvent enrichment) — filter `cta_archetype is
+     not set` when reading the nextstep-cta-copy-test results. */
+  const videoCta = useMemo(() => loadVideoCta(), []);
   const ctaText =
-    ctaCopyVariant === 'reserve' ? 'Reserve My Free Spot'
+    videoCta.copy ? videoCta.copy.nextstep_button
+    : ctaCopyVariant === 'reserve' ? 'Reserve My Free Spot'
     : ctaCopyVariant === 'access' ? 'Get My Free Strategy Call'
     : "YES! I'm Ready To Learn More";
 

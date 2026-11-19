@@ -7,6 +7,7 @@ import { persistUtmsFromUrl, readAttribution, syncContactUtms } from '../lib/syn
 import { syncContactTimezone } from '../lib/syncTimezone';
 import { retryFetch } from '../lib/retryFetch';
 import { loadCampaignVariant } from '../lib/campaignVariant';
+import { loadVideoCta } from '../lib/videoCta';
 import { findLeadMagnet } from '../config/leadMagnets';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
@@ -223,6 +224,13 @@ export function NewForm() {
      still attach attribution if URL params later get stripped. */
   const [variant] = useState(() => loadCampaignVariant());
   const leadMagnet = variant ? findLeadMagnet(variant.lead_magnet_id) : null;
+
+  /* Source-video CTA type (src/lib/videoCta.ts). When the visitor came
+     from a known YouTube video, the button echoes what that video
+     pitched (free game plan call, accelerator, etc). A campaign
+     variant's cta_text still wins; unknown video → default copy. */
+  const [videoCta] = useState(() => loadVideoCta());
+  const ctaLabel = variant?.cta_text || videoCta.copy?.newform_button || 'SIGN UP TO WATCH NOW';
 
   /* ?version=<slug> — content-only variant switch independent of the
      UTM-driven `variant` above. Lets us link a cold ad at
@@ -541,6 +549,8 @@ export function NewForm() {
               <input type="hidden" name="campaign_variant_id" value={variant?.id ?? ''} />
               <input type="hidden" name="lead_magnet_id" value={leadMagnet?.id ?? ''} />
               <input type="hidden" name="lead_magnet_delivery" value={leadMagnet?.delivery_reference ?? ''} />
+              <input type="hidden" name="source_video_id" value={videoCta.videoId ?? ''} />
+              <input type="hidden" name="cta_archetype" value={videoCta.archetype === 'default' && !videoCta.videoId ? '' : videoCta.archetype} />
               {Object.entries(hiddenAttribution).map(([name, value]) => (
                 <input key={name} type="hidden" name={name} value={value} />
               ))}
@@ -827,7 +837,7 @@ export function NewForm() {
                 disabled={submitting}
                 className="w-full bg-[#F00300] hover:bg-[#D80200] disabled:opacity-60 disabled:cursor-not-allowed text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-red-500/25 transition-all hover:shadow-xl active:translate-y-0"
               >
-                {submitting ? 'Reserving Your Spot...' : (variant?.cta_text || 'SIGN UP TO WATCH NOW')}
+                {submitting ? 'Reserving Your Spot...' : ctaLabel}
               </button>
 
             </form>
@@ -992,7 +1002,7 @@ export function NewForm() {
                 }}
                 className="w-full bg-[#F00300] hover:bg-[#D80200] text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-red-500/25 transition-all hover:shadow-xl active:translate-y-0"
               >
-                SIGN UP TO WATCH NOW
+                {ctaLabel}
               </button>
               <p className="mt-3 text-xs text-gray-500 text-center">
                 The webinar covers both paths, Amazon-first and crowdfunding-first, so you can pick the one that fits your situation.
