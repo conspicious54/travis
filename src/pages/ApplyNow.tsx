@@ -48,6 +48,7 @@ const LOGOS_IMG_URL    = 'https://pub-674a5e7ceb48498e80824c18802d4a94.r2.dev/Lo
 
 export function ApplyNow() {
   const formRef = useRef<HTMLDivElement>(null);
+  const typeformRef = useRef<HTMLDivElement>(null);
   const typeformStartedFiredRef = useRef(false);
   const typeformCompletedFiredRef = useRef(false);
 
@@ -229,6 +230,91 @@ export function ApplyNow() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
+  /* Mobile: when the visitor first engages with the Typeform, scroll so
+     the form is vertically centered in the visible viewport. The form
+     lives in a cross-origin iframe, so "engaged" = either
+       - a tap moves focus into the iframe (window blur with the iframe
+         as document.activeElement), or
+       - Typeform reports a screen change (fallback).
+     We center the IFRAME, not the 960px container: Typeform sizes the
+     iframe to its content (~300px welcome screen, ~600px questions) and
+     it sits at the top of the container. Leaving the welcome screen
+     resizes it, so after engagement we wait for Typeform's
+     form-height-changed message (or 600ms, whichever is first) and then
+     scroll once. If the form is taller than the visible viewport (e.g.
+     keyboard open) we align its top instead so the question isn't cut
+     off. Once per page view, phones only (< md breakpoint). */
+  useEffect(() => {
+    if (!TYPEFORM_LIVE_ID) return;
+    let engaged = false;
+    let scrolled = false;
+    let trigger: 'tap' | 'screen_change' = 'tap';
+    let timer: number | undefined;
+    const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
+
+    const centerNow = () => {
+      if (scrolled) return;
+      scrolled = true;
+      const container = typeformRef.current;
+      if (!container) return;
+      const el = container.querySelector('iframe') ?? container;
+      const rect = el.getBoundingClientRect();
+      const viewH = window.visualViewport?.height ?? window.innerHeight;
+      const target = rect.height > viewH - 24
+        ? window.scrollY + rect.top - 12
+        : window.scrollY + rect.top + rect.height / 2 - viewH / 2;
+      const top = Math.max(0, Math.round(target));
+      if (Math.abs(top - window.scrollY) < 24) return; // already in place
+      window.scrollTo({ top, behavior: 'smooth' });
+      trackEvent('applynow_typeform_autocentered', { trigger });
+    };
+
+    const schedule = (ms: number) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(centerNow, ms);
+    };
+
+    const engage = (t: 'tap' | 'screen_change') => {
+      if (engaged || !isMobile() || !typeformRef.current) return;
+      engaged = true;
+      trigger = t;
+      schedule(600); // fallback if no resize message arrives
+    };
+
+    const onBlur = () => {
+      // activeElement updates after blur fires; check on the next tick.
+      window.setTimeout(() => {
+        const active = document.activeElement;
+        if (active instanceof HTMLIFrameElement && typeformRef.current?.contains(active)) {
+          engage('tap');
+        }
+      }, 0);
+    };
+
+    const onMessage = (event: MessageEvent) => {
+      if (!(event.origin || '').includes('typeform.com')) return;
+      const d = event.data;
+      let typeStr = '';
+      if (typeof d === 'string') typeStr = d;
+      else if (d && typeof d === 'object') {
+        const o = d as Record<string, unknown>;
+        typeStr = [o.type, o.eventType, o.eventName].filter((v) => typeof v === 'string').join(' ');
+      }
+      typeStr = typeStr.toLowerCase();
+      if (typeStr.includes('screen-changed') || typeStr.includes('screen_change')) engage('screen_change');
+      // Iframe just resized after engagement: center against the new size.
+      if (engaged && !scrolled && typeStr.includes('height-changed')) schedule(120);
+    };
+
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('message', onMessage);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('message', onMessage);
+    };
+  }, []);
+
   const scrollToForm = () => {
     trackEvent('applynow_cta_clicked');
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -342,6 +428,7 @@ export function ApplyNow() {
 
           {TYPEFORM_LIVE_ID ? (
             <div
+              ref={typeformRef}
               data-tf-live={TYPEFORM_LIVE_ID}
               data-tf-hidden={hiddenFields}
               style={{ height: `${TYPEFORM_HEIGHT_PX}px` }}
