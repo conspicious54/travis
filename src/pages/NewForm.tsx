@@ -8,6 +8,8 @@ import { syncContactTimezone } from '../lib/syncTimezone';
 import { retryFetch } from '../lib/retryFetch';
 import { loadCampaignVariant } from '../lib/campaignVariant';
 import { loadVideoCta } from '../lib/videoCta';
+import type { CtaArchetype } from '../config/ctaArchetypes';
+import { Banknote, Gift, Map as MapIcon, Play, Rocket, type LucideIcon } from 'lucide-react';
 import { findLeadMagnet } from '../config/leadMagnets';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { ExitIntentPopup } from '../components/ExitIntentPopup';
@@ -178,6 +180,19 @@ function initialFromUrl(): { firstname: string; lastname: string; email: string;
   };
 }
 
+/* Icon shown in the main CTA button, per source-video CTA type
+   (src/config/ctaArchetypes.ts). Default "SIGN UP TO WATCH NOW" gets a
+   play icon; nothing call-related by design. */
+const CTA_ICONS: Record<CtaArchetype, LucideIcon> = {
+  default: Play,
+  dropshipping: Play,
+  affiliate: Play,
+  call_plan: MapIcon,  // GET MY FREE GAME PLAN
+  call: Gift,          // CLAIM MY FREE CALL
+  program: Rocket,     // YES, I'M READY TO START
+  apply: Banknote,     // LET'S WORK WITH TRAVIS
+};
+
 export function NewForm() {
   const seed = useMemo(initialFromUrl, []);
   const [firstname, setFirstname] = useState(seed.firstname);
@@ -231,6 +246,9 @@ export function NewForm() {
      variant's cta_text still wins; unknown video → default copy. */
   const [videoCta] = useState(() => loadVideoCta());
   const ctaLabel = variant?.cta_text || videoCta.copy?.newform_button || 'SIGN UP TO WATCH NOW';
+  // A campaign variant's own cta_text gets the generic play icon.
+  const CtaIcon = variant?.cta_text ? Play : CTA_ICONS[videoCta.archetype];
+  const ctaIconFilled = CtaIcon === Play;
 
   /* ?version=<slug> — content-only variant switch independent of the
      UTM-driven `variant` above. Lets us link a cold ad at
@@ -838,9 +856,14 @@ export function NewForm() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-[#F00300] hover:bg-[#D80200] disabled:opacity-60 disabled:cursor-not-allowed text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-red-500/25 transition-all hover:shadow-xl active:translate-y-0"
+                className="w-full inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-green-500/30 transition-all hover:shadow-xl active:translate-y-0"
               >
-                {submitting ? 'Reserving Your Spot...' : ctaLabel}
+                {submitting ? 'Reserving Your Spot...' : (
+                  <>
+                    <CtaIcon className="w-5 h-5 md:w-6 md:h-6 shrink-0" strokeWidth={2.5} fill={ctaIconFilled ? 'currentColor' : 'none'} aria-hidden="true" />
+                    <span>{ctaLabel}</span>
+                  </>
+                )}
               </button>
 
             </form>
@@ -1003,9 +1026,10 @@ export function NewForm() {
                   const first = document.getElementById('firstname');
                   if (first) setTimeout(() => first.focus({ preventScroll: true }), 600);
                 }}
-                className="w-full bg-[#F00300] hover:bg-[#D80200] text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-red-500/25 transition-all hover:shadow-xl active:translate-y-0"
+                className="w-full inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white text-lg md:text-xl font-black tracking-wide py-4 md:py-5 rounded-xl shadow-lg shadow-green-500/30 transition-all hover:shadow-xl active:translate-y-0"
               >
-                {ctaLabel}
+                <CtaIcon className="w-5 h-5 md:w-6 md:h-6 shrink-0" strokeWidth={2.5} fill={ctaIconFilled ? 'currentColor' : 'none'} aria-hidden="true" />
+                <span>{ctaLabel}</span>
               </button>
               <p className="mt-3 text-xs text-gray-500 text-center">
                 The webinar covers both paths, Amazon-first and crowdfunding-first, so you can pick the one that fits your situation.
