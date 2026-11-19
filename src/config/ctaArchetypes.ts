@@ -61,21 +61,21 @@ export const CTA_ARCHETYPE_COPY: Record<Exclude<CtaArchetype, 'default'>, Archet
     nextstep_button: "Yes! Start My Application",
   },
   /* Topic-based types: the viewer came for a different business model.
-     Still send them straight into the Amazon funnel, but word it as an
-     invitation ("too", "curious?") rather than assuming Amazon FBA is
-     what they came for. No comparisons. These win over the pitch-based
+     Send them straight into the Amazon funnel and frame Amazon FBA as the
+     obvious next step from what they were already doing (level up /
+     next step). No comparisons, no hedging. These win over the pitch-based
      types above. */
   dropshipping: {
     label: 'Dropshipping video',
     promise: 'Video about dropshipping (viewer came for a different model)',
-    newform_button: 'EXPLORE AMAZON FBA TOO',
-    nextstep_button: "I'm Curious, Show Me More",
+    newform_button: 'LEVEL UP TO AMAZON FBA',
+    nextstep_button: 'Yes! Start My Amazon Brand',
   },
   affiliate: {
     label: 'Affiliate / website-tool video',
     promise: 'Affiliate marketing, web hosting, WordPress / WooCommerce tutorials',
-    newform_button: 'CURIOUS? SEE AMAZON FBA',
-    nextstep_button: "Yes, I'm Open To Amazon FBA",
+    newform_button: 'NEXT STEP: SELL ON AMAZON',
+    nextstep_button: 'Yes! Take Me To The Next Step',
   },
 };
 
