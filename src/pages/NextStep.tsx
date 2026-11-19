@@ -548,7 +548,7 @@ export function NextStep() {
      not set` when reading the nextstep-cta-copy-test results. */
   const videoCta = useMemo(() => loadVideoCta(), []);
   const ctaText =
-    videoCta.copy ? videoCta.copy.nextstep_button
+    videoCta.copy?.nextstep_button ? videoCta.copy.nextstep_button
     : ctaCopyVariant === 'reserve' ? 'Reserve My Free Spot'
     : ctaCopyVariant === 'access' ? 'Get My Free Strategy Call'
     : "YES! I'm Ready To Learn More";

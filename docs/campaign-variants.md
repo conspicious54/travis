@@ -125,14 +125,14 @@ No row per video needed.
 | `call` | Pitches a free strategy / coaching / one-on-one call | CLAIM MY FREE CALL | Get My Free Strategy Call |
 | `program` | Pitches the Accelerator / mentorship program | YES, I'M READY TO START | Yes! Help Me Build My Business |
 | `apply` | "Work with us" / "I want to hire / invest in you" | LET'S WORK WITH TRAVIS | Yes! Start My Application |
-| `dropshipping` | Topic is dropshipping (came for a different model) | LEVEL UP TO AMAZON FBA | Yes! Start My Amazon Brand |
-| `affiliate` | Topic is affiliate marketing / hosting / WordPress / WooCommerce | NEXT STEP: SELL ON AMAZON | Yes! Take Me To The Next Step |
+| `dropshipping` | Topic is dropshipping (came for a different model) | default button; headline lead-in: "Dropshipping Taught You the Basics. Now Learn the Exact Process I Use to Help Sellers Reach" | default (A/B test) |
+| `affiliate` | Topic is affiliate marketing / hosting / WordPress / WooCommerce | default button; headline lead-in: "Building Income Online? Learn the Exact Process I Use to Help Sellers Reach" | default (A/B test) |
 | `default` | Free course / training, other affiliate-tool videos, unknown | SIGN UP TO WATCH NOW | running A/B test copy |
 
 Topic types (`dropshipping`, `affiliate`) win over pitch types: those
-viewers came for something else, so the copy still goes straight into
-the Amazon funnel, framed as the obvious next step from what they
-were already doing.
+viewers came for something else, so they keep the regular buttons and
+instead get a headline lead-in that acknowledges where they came from.
+The bold "$100K on Amazon in 2026" clause after it stays the same.
 
 ### Files
 
@@ -180,6 +180,7 @@ Once matched, every custom PostHog event in the tab carries
 including `applynow_page_viewed` and `booking_completed`. The
 `/newform` submission (Zapier payload) carries both fields too.
 
-When reading the `nextstep-cta-copy-test` results, filter
-`cta_archetype is not set` — matched visitors see their type's copy,
-not the test arm.
+When reading the `nextstep-cta-copy-test` results, exclude
+`cta_archetype` in (call_plan, call, program, apply) — those visitors
+see their type's copy, not the test arm. Dropshipping / affiliate
+visitors still see the test arm.

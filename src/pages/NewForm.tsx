@@ -424,6 +424,9 @@ export function NewForm() {
   const DEFAULT_HEADLINE = 'Learn the Exact Process I Use to Help Sellers Reach $100K on Amazon in 2026';
   const eyebrowText = variant ? variant.supporting_copy : DEFAULT_EYEBROW;
   const headlineText = (variant?.headline) || DEFAULT_HEADLINE;
+  // Source-video type can swap the headline lead-in (dropshipping /
+  // affiliate viewers); the bold "$100K on Amazon in 2026" clause stays.
+  const headlineLead = videoCta.copy?.headline_lead || 'Learn the Exact Process I Use to Help Sellers Reach';
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -481,7 +484,7 @@ export function NewForm() {
             {headlineText === DEFAULT_HEADLINE ? (
               <>
                 <span className="font-semibold">
-                  Learn the Exact Process I Use to Help Sellers Reach
+                  {headlineLead}
                 </span>{' '}
                 <span className="font-black">
                   $100K on Amazon in 2026

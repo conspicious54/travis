@@ -11,8 +11,8 @@
    'default' means "no change": the page keeps today's copy (and, on
    /nextstep, the running PostHog CTA-copy A/B test).
 
-   Precedence on /: a campaignVariants.ts row's cta_text wins, then the
-   video's type below, then the page default.
+   Precedence on /: a campaignVariants.ts row's cta_text / headline wins,
+   then the video's type below, then the page default.
 ──────────────────────────────────────────────────────────────────── */
 
 export type CtaArchetype =
@@ -29,10 +29,14 @@ export interface ArchetypeCopy {
   label: string;
   /** What the video promises (for reference only). */
   promise: string;
-  /** Submit button on the / lead page (default: SIGN UP TO WATCH NOW). */
-  newform_button: string;
-  /** Green CTA on /nextstep (default: the nextstep-cta-copy-test arm). */
-  nextstep_button: string;
+  /** Submit button on the / lead page. Omit = default SIGN UP TO WATCH NOW. */
+  newform_button?: string;
+  /** Green CTA on /nextstep. Omit = the nextstep-cta-copy-test arm. */
+  nextstep_button?: string;
+  /** Replaces the headline lead-in on / ("Learn the Exact Process I Use
+      to Help Sellers Reach"). The bold "$100K on Amazon in 2026" clause
+      after it stays. Omit = default lead-in. */
+  headline_lead?: string;
 }
 
 export const CTA_ARCHETYPE_COPY: Record<Exclude<CtaArchetype, 'default'>, ArchetypeCopy> = {
@@ -61,21 +65,19 @@ export const CTA_ARCHETYPE_COPY: Record<Exclude<CtaArchetype, 'default'>, Archet
     nextstep_button: "Yes! Start My Application",
   },
   /* Topic-based types: the viewer came for a different business model.
-     Send them straight into the Amazon funnel and frame Amazon FBA as the
-     obvious next step from what they were already doing (level up /
-     next step). No comparisons, no hedging. These win over the pitch-based
+     The buttons stay the regular funnel CTAs; instead the headline
+     lead-in acknowledges where they're coming from and frames Amazon
+     FBA as the obvious next step. These win over the pitch-based
      types above. */
   dropshipping: {
     label: 'Dropshipping video',
     promise: 'Video about dropshipping (viewer came for a different model)',
-    newform_button: 'LEVEL UP TO AMAZON FBA',
-    nextstep_button: 'Yes! Start My Amazon Brand',
+    headline_lead: 'Dropshipping Taught You the Basics. Now Learn the Exact Process I Use to Help Sellers Reach',
   },
   affiliate: {
     label: 'Affiliate / website-tool video',
     promise: 'Affiliate marketing, web hosting, WordPress / WooCommerce tutorials',
-    newform_button: 'NEXT STEP: SELL ON AMAZON',
-    nextstep_button: 'Yes! Take Me To The Next Step',
+    headline_lead: 'Building Income Online? Learn the Exact Process I Use to Help Sellers Reach',
   },
 };
 
