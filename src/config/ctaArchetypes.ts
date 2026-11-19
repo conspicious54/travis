@@ -57,7 +57,7 @@ export const CTA_ARCHETYPE_COPY: Record<Exclude<CtaArchetype, 'default'>, Archet
   apply: {
     label: 'Work with us / apply',
     promise: '"Work with us", "I want to hire / invest in you"',
-    newform_button: "I'M READY TO WORK WITH TRAVIS",
+    newform_button: "LET'S WORK WITH TRAVIS",
     nextstep_button: "Yes! Start My Application",
   },
   /* Topic-based types: the viewer came for a different business model,

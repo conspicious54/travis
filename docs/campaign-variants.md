@@ -124,7 +124,7 @@ No row per video needed.
 | `call_plan` | Pitches a free call + custom 90-day / 6-month game plan | GET MY FREE GAME PLAN | Build My Free Game Plan |
 | `call` | Pitches a free strategy / coaching / one-on-one call | CLAIM MY FREE CALL | Get My Free Strategy Call |
 | `program` | Pitches the Accelerator / mentorship program | YES, I'M READY TO START | Yes! Help Me Build My Business |
-| `apply` | "Work with us" / "I want to hire / invest in you" | I'M READY TO WORK WITH TRAVIS | Yes! Start My Application |
+| `apply` | "Work with us" / "I want to hire / invest in you" | LET'S WORK WITH TRAVIS | Yes! Start My Application |
 | `dropshipping` | Topic is dropshipping (came for a different model) | SEE WHY AMAZON WINS | Explore Owning My Own Brand |
 | `affiliate` | Topic is affiliate marketing / hosting / WordPress / WooCommerce | SELL MY OWN PRODUCTS | Explore Selling My Own Product |
 | `default` | Free course / training, other affiliate-tool videos, unknown | SIGN UP TO WATCH NOW | running A/B test copy |
