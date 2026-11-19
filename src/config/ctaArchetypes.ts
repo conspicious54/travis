@@ -57,8 +57,8 @@ export const CTA_ARCHETYPE_COPY: Record<Exclude<CtaArchetype, 'default'>, Archet
   apply: {
     label: 'Work with us / apply',
     promise: '"Work with us", "I want to hire / invest in you"',
-    newform_button: "COUNT ME IN — LET'S TALK",
-    nextstep_button: "I'm In — Start My Application",
+    newform_button: "I'M READY TO WORK WITH TRAVIS",
+    nextstep_button: "Yes! Start My Application",
   },
   /* Topic-based types: the viewer came for a different business model,
      so the copy acknowledges that and invites them to compare, rather
@@ -67,13 +67,13 @@ export const CTA_ARCHETYPE_COPY: Record<Exclude<CtaArchetype, 'default'>, Archet
   dropshipping: {
     label: 'Dropshipping video',
     promise: 'Video about dropshipping (viewer came for a different model)',
-    newform_button: 'COMPARE TO DROPSHIPPING',
+    newform_button: 'SEE WHY AMAZON WINS',
     nextstep_button: 'Explore Owning My Own Brand',
   },
   affiliate: {
     label: 'Affiliate / website-tool video',
     promise: 'Affiliate marketing, web hosting, WordPress / WooCommerce tutorials',
-    newform_button: 'SEE ANOTHER WAY TO EARN',
+    newform_button: 'SELL MY OWN PRODUCTS',
     nextstep_button: 'Explore Selling My Own Product',
   },
 };
