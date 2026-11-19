@@ -435,14 +435,14 @@ export function NewForm() {
           full 1088 — otherwise px-5 shaves 40px and the hero wraps
           onto an extra line. Mobile keeps px-5 for safe-area breathing
           room on <1088 viewports. */}
-      <main className="max-w-[1088px] mx-auto px-5 md:px-0 pt-6 md:pt-10 pb-16">
+      <main className="max-w-[1088px] mx-auto px-5 md:px-0 pt-3 md:pt-10 pb-16">
         {/* Logo. CF: 122x62 at every viewport; mb-9 reproduces CF's
             ~35px gap down to the eyebrow. */}
-        <div className="flex justify-center mb-5 md:mb-9">
+        <div className="flex justify-center mb-2.5 md:mb-9">
           <img
             src={LOGO_URL}
             alt="Passion Product"
-            className="h-20 md:h-24 w-auto"
+            className="h-14 md:h-24 w-auto"
             loading="eager"
           />
         </div>
@@ -459,9 +459,9 @@ export function NewForm() {
             Mobile sizes stay at CF-literal values (17 / 21.25) — on
             narrow viewports both pages break identically.
             Gaps measured from CF: logo→eyebrow 35px, eyebrow→headline 5px. */}
-        <div className="text-center mb-8 md:mb-10">
+        <div className="text-center mb-5 md:mb-10">
           {eyebrowText ? (
-            <p className="text-[17px] md:text-[30px] font-normal text-black leading-[1.4] md:leading-none tracking-[0.48px] mb-3 md:mb-1">
+            <p className="text-[17px] md:text-[30px] font-normal text-black leading-[1.4] md:leading-none tracking-[0.48px] mb-1.5 md:mb-1">
               {eyebrowText === DEFAULT_EYEBROW ? (
                 <>
                   Last Year, First Time Amazon Sellers Made Over{' '}
@@ -480,7 +480,7 @@ export function NewForm() {
               to 700, which is why prior weight-only changes were
               invisible on screen. Variant headlines keep uniform weight
               since we don't know which clause to lean on. */}
-          <h1 className="text-[21.25px] md:text-[52px] tracking-[0.48px] leading-[1.4] md:leading-[1.2] text-[#F28000]">
+          <h1 className="text-[24px] md:text-[52px] tracking-[0.48px] leading-[1.3] md:leading-[1.2] text-[#F28000]">
             {headlineText === DEFAULT_HEADLINE ? (
               <>
                 <span className="font-semibold">
@@ -533,7 +533,7 @@ export function NewForm() {
               method="POST"
               action="/.netlify/functions/newform-post"
               onSubmit={handleSubmit}
-              className="p-5 md:p-7 space-y-4"
+              className="px-5 pt-1 pb-5 md:p-7 space-y-3 md:space-y-4"
             >
               {/* Hidden fields — browser form POST includes every
                   input with a name attribute. These carry the geo
@@ -604,7 +604,7 @@ export function NewForm() {
                     placeholder="Your First Name..."
                     value={firstname}
                     onChange={(e) => { markUserTyped(); setFirstname(e.target.value); }}
-                    className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+                    className="w-full px-4 py-2.5 md:py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                   />
                 </div>
                 <div>
@@ -622,7 +622,7 @@ export function NewForm() {
                     placeholder="Your Last Name..."
                     value={lastname}
                     onChange={(e) => { markUserTyped(); setLastname(e.target.value); }}
-                    className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+                    className="w-full px-4 py-2.5 md:py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                   />
                 </div>
               </div>
@@ -642,7 +642,7 @@ export function NewForm() {
                   placeholder="Your Email Address Here..."
                   value={email}
                   onChange={(e) => { markUserTyped(); setEmail(e.target.value); }}
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+                  className="w-full px-4 py-2.5 md:py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                 />
               </div>
 
@@ -667,7 +667,7 @@ export function NewForm() {
                     onClick={() => setDialOpen((v) => !v)}
                     aria-haspopup="listbox"
                     aria-expanded={dialOpen}
-                    className="shrink-0 flex items-center gap-1.5 px-3 py-3 border-r border-gray-300 text-gray-800 hover:bg-gray-100 rounded-l-lg cursor-pointer font-medium"
+                    className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 md:py-3 border-r border-gray-300 text-gray-800 hover:bg-gray-100 rounded-l-lg cursor-pointer font-medium"
                   >
                     <span className="text-lg leading-none" aria-hidden="true">{dialCountry.flag}</span>
                     <span className="tabular-nums text-sm">{dialCountry.dial}</span>
@@ -736,7 +736,7 @@ export function NewForm() {
                       }
                       setPhone(raw);
                     }}
-                    className="flex-1 min-w-0 px-4 py-3 bg-transparent text-gray-900 placeholder:text-gray-400 outline-none rounded-r-lg"
+                    className="flex-1 min-w-0 px-4 py-2.5 md:py-3 bg-transparent text-gray-900 placeholder:text-gray-400 outline-none rounded-r-lg"
                   />
 
                   {dialOpen && (
